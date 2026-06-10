@@ -1,0 +1,27 @@
+# Virtualenv — never commit; rebuild per-machine with ./setup.sh (not portable)
+.venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Runtime / auto-managed state — each deployment builds its own
+state.json
+monitor.log
+logs/
+
+# Local secrets
+.env
+
+# Intermediate/batch configs — only config_all.json is tracked
+config.json
+config_batch_*.json
+config_extended.json
+
+# Saved page dumps used for selector debugging (large, not needed to run)
+*_rendered*.html
+*_page.html
+*_debug*.html
+google_rendered.html
+ms_rendered_debug.html
+cisco_page.html

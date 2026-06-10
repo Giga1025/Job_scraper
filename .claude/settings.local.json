@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash([ -f \"$F\" ])",
+      "Bash(chmod +x run_periodic_monitor.sh run_all_batches.sh)",
+      "Bash(bash -n run_periodic_monitor.sh)",
+      "Bash(bash -n run_all_batches.sh)",
+      "Bash(./run_all_batches.sh --dry-run)",
+      "Bash(grep -E '\\\\.\\(sh|ps1|env\\)$')",
+      "Bash(python3 -m pip --version)",
+      "Bash(chmod +x setup.sh)",
+      "Bash(./setup.sh)",
+      "Bash(.venv/bin/python -c \"import requests, bs4, lxml, playwright; print\\('core imports OK'\\)\")",
+      "Bash(.venv/bin/python -c ' *)",
+      "Bash(./run_periodic_monitor.sh config.json 1)",
+      "Bash(kill %1)",
+      "Bash(wait)"
+    ]
+  }
+}
