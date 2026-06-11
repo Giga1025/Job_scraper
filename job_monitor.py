@@ -960,11 +960,17 @@ def send_email(config: dict, all_new: dict[str, list[dict]]):
     msg.attach(MIMEText(format_html_report(all_new), "html"))
 
     try:
-        with smtplib.SMTP(email_cfg["smtp_server"], email_cfg["smtp_port"]) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.send_message(msg)
+        port = int(email_cfg["smtp_port"])
+        if port == 465:
+            with smtplib.SMTP_SSL(email_cfg["smtp_server"], port) as server:
+                server.login(sender_email, sender_password)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(email_cfg["smtp_server"], port) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(sender_email, sender_password)
+                server.send_message(msg)
         log.info("Email sent successfully.")
     except Exception as exc:
         log.error(f"Failed to send email: {exc}")
