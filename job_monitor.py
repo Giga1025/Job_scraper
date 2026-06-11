@@ -727,6 +727,28 @@ JOB_PATTERNS = re.compile(
     re.IGNORECASE,
 )
 
+# Generic CTA link texts that carry no job-title information — fall back to URL slug
+_GENERIC_LINK_TITLES = frozenset({
+    "see role", "apply", "apply now", "apply here", "view job", "view role",
+    "learn more", "click here", "read more", "view", "open role", "explore",
+    "view open positions", "explore open roles", "explore opportunities",
+})
+
+# URL path fragments that signal nav/UI links rather than job listings
+_NAV_URL_RE = re.compile(
+    r"/(saved[_-]jobs|login|sign-?in|logout|register|clear|reset)(/|$|\?)",
+    re.IGNORECASE,
+)
+
+
+def _title_from_url_slug(url: str) -> str:
+    """Derive a readable title from the last non-empty path segment of a URL."""
+    path = urlparse(url).path.rstrip("/")
+    segment = path.rsplit("/", 1)[-1] if "/" in path else path
+    if not segment or segment.startswith("?"):
+        return ""
+    return segment.replace("-", " ").replace("_", " ").title()
+
 MS_JOB_URL_PATTERNS = [
     re.compile(r"/careers/(job|jobs)/", re.IGNORECASE),
     re.compile(r"/v2/global/en/job/", re.IGNORECASE),
@@ -734,8 +756,14 @@ MS_JOB_URL_PATTERNS = [
 ]
 
 
+_LOGIN_URL_RE = re.compile(r"/(login|sign-?in|register)(\?|/|$)", re.IGNORECASE)
+
+
 def filter_target_noise_jobs(source_url: str, jobs: list[dict]) -> list[dict]:
     """Drop obvious non-job links for known noisy career pages."""
+    # Always strip login/apply-redirect URLs (e.g. iCIMS "Apply Now" buttons)
+    jobs = [j for j in jobs if not _LOGIN_URL_RE.search(j.get("url", ""))]
+
     if "apply.careers.microsoft.com/careers" not in source_url:
         return jobs
 
@@ -782,6 +810,10 @@ def extract_jobs_from_html(html: str, url: str, link_selector: str = "") -> list
 
             if not text or full_url in seen or href.startswith("#"):
                 continue
+            if _NAV_URL_RE.search(full_url):
+                continue
+            if text.lower() in _GENERIC_LINK_TITLES:
+                text = _title_from_url_slug(full_url) or text
 
             seen.add(full_url)
             jobs.append({"title": text[:200], "url": full_url})
@@ -794,8 +826,12 @@ def extract_jobs_from_html(html: str, url: str, link_selector: str = "") -> list
 
             if not text or full_url in seen or href.startswith("#"):
                 continue
+            if _NAV_URL_RE.search(full_url):
+                continue
 
             if JOB_PATTERNS.search(href) or JOB_PATTERNS.search(text):
+                if text.lower() in _GENERIC_LINK_TITLES:
+                    text = _title_from_url_slug(full_url) or text
                 seen.add(full_url)
                 jobs.append({"title": text[:200], "url": full_url})
 
@@ -859,6 +895,7 @@ def filter_by_keywords(jobs: list[dict], keywords: list[str]) -> list[dict]:
     return [j for j in jobs if any(p.search(j["title"]) for p in patterns)]
 
 
+
 # ===================================================================
 # Notifications
 # ===================================================================
@@ -914,7 +951,10 @@ def send_email(config: dict, all_new: dict[str, list[dict]]):
     msg = MIMEMultipart("alternative")
     msg["Subject"] = f"[Job Monitor] {total} new job posting{'s' if total != 1 else ''} found"
     msg["From"] = sender_email
-    msg["To"] = email_cfg["recipient_email"]
+    recipients = email_cfg["recipient_email"]
+    if isinstance(recipients, list):
+        recipients = ", ".join(recipients)
+    msg["To"] = recipients
 
     msg.attach(MIMEText(format_plain_report(all_new), "plain"))
     msg.attach(MIMEText(format_html_report(all_new), "html"))
@@ -980,6 +1020,7 @@ def run(config_override: str | None = None):
         mode = target.get("mode", "html")
         link_selector = target.get("link_selector", "")
         wait_for = target.get("wait_for", "")
+        active_keywords = target.get("keyword_filters", keywords)
 
         log.info(f"Checking: {name}")
         log.info(f"  URL: {url}")
@@ -992,7 +1033,7 @@ def run(config_override: str | None = None):
 
             previous_jobs = state.get(url, [])
             new_jobs = diff_jobs(previous_jobs, current_jobs)
-            new_jobs = filter_by_keywords(new_jobs, keywords)
+            new_jobs = filter_by_keywords(new_jobs, active_keywords)
 
             if new_jobs:
                 log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
@@ -1011,7 +1052,7 @@ def run(config_override: str | None = None):
 
                 previous_jobs = state.get(url, [])
                 new_jobs = diff_jobs(previous_jobs, current_jobs)
-                new_jobs = filter_by_keywords(new_jobs, keywords)
+                new_jobs = filter_by_keywords(new_jobs, active_keywords)
 
                 if new_jobs:
                     log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
@@ -1030,7 +1071,7 @@ def run(config_override: str | None = None):
 
                 previous_jobs = state.get(url, [])
                 new_jobs = diff_jobs(previous_jobs, current_jobs)
-                new_jobs = filter_by_keywords(new_jobs, keywords)
+                new_jobs = filter_by_keywords(new_jobs, active_keywords)
 
                 if new_jobs:
                     log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
@@ -1049,7 +1090,7 @@ def run(config_override: str | None = None):
 
                 previous_jobs = state.get(url, [])
                 new_jobs = diff_jobs(previous_jobs, current_jobs)
-                new_jobs = filter_by_keywords(new_jobs, keywords)
+                new_jobs = filter_by_keywords(new_jobs, active_keywords)
 
                 if new_jobs:
                     log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
@@ -1069,7 +1110,7 @@ def run(config_override: str | None = None):
 
                 previous_jobs = state.get(url, [])
                 new_jobs = diff_jobs(previous_jobs, current_jobs)
-                new_jobs = filter_by_keywords(new_jobs, keywords)
+                new_jobs = filter_by_keywords(new_jobs, active_keywords)
 
                 if new_jobs:
                     log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
