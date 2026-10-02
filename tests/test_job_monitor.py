@@ -346,6 +346,31 @@ class DetectionTests(MonitorTestCase):
         self.assertEqual(len(reported["Acme"]), 3)
         self.assertNotIn("Sales Lead", reported["Acme"])
 
+    def test_keywords_do_not_match_across_words(self):
+        titles = {
+            "sre": "Sales Representative",
+            "pm": "Help Manager",
+            "ios": "Radio Specialist",
+            "hr": "Growth Recruiter",
+            " ai ": "Aircraft Mechanic",
+        }
+        for keyword, title in titles.items():
+            jobs = [{"title": title, "url": "https://acme.example/jobs/1"}]
+            self.assertEqual(jm.filter_by_keywords(jobs, [keyword]), [], keyword)
+
+    def test_keywords_keep_substring_matching(self):
+        cases = {
+            "data": "Metadata Engineer",
+            "ios": "Scenarios Analyst",
+            " ai ": "Senior AI Engineer",
+            "javascript": "Java Script Developer",  # from <em>Java</em>Script
+            "c++": "C ++ Developer",  # from <b>C</b>++
+            "": "Anything",
+        }
+        for keyword, title in cases.items():
+            jobs = [{"title": title, "url": "https://acme.example/jobs/1"}]
+            self.assertEqual(jm.filter_by_keywords(jobs, [keyword]), jobs, keyword)
+
     def test_global_keywords_apply_when_target_has_none(self):
         self.pages[URL] = page(*jobs_named("Software Engineer", "Quant Trader"))
         _, reported = self.run_monitor([target()], keyword_filters=["engineer"])
@@ -500,6 +525,17 @@ class StateFileTests(MonitorTestCase):
         _, reported = self.run_monitor([target()])
         self.assertEqual(reported, {})
 
+    @unittest.skipIf(sys.platform == "win32", "fcntl is POSIX-only")
+    def test_save_works_when_lock_file_cannot_be_opened(self):
+        (self.tmp / "state.json.lock").mkdir()  # opening it for append fails
+        self.pages[URL] = page(*jobs_named("Data Analyst"))
+        with self.assertLogs(jm.log, "WARNING"):
+            ok, reported = self.run_monitor([target()])
+        self.assertTrue(ok)
+        self.assertEqual(reported, {"Acme": ["Data Analyst"]})
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {})
+
     @unittest.skipIf(sys.platform == "win32", "POSIX permissions and symlinks")
     def test_save_keeps_file_permissions(self):
         umask = os.umask(0)
@@ -579,13 +615,28 @@ class StateFileTests(MonitorTestCase):
     def test_corrupt_file_race_keeps_the_other_monitors_save(self):
         other = "https://other.example/careers"
         jm.STATE_PATH.write_text("{not json")
-        with self.assertLogs(jm.log, "ERROR"):
-            jm.load_state()  # monitor A starts and reads the corrupt file...
-        with self.assertLogs(jm.log, "ERROR"):
-            jm.save_state({other: [self.JOB_B]})  # ...monitor B sets it aside and saves...
-        jm.save_state({URL: [self.JOB_A]})  # ...then A saves its own target
+        real_load = json.load
+        calls = []
+
+        def load_while_other_monitor_saves(fh, *args, **kwargs):
+            calls.append(1)
+            if len(calls) > 1:
+                return real_load(fh, *args, **kwargs)
+            try:
+                return real_load(fh, *args, **kwargs)  # monitor A fails to parse the file...
+            finally:
+                # ...and before A does anything about it, monitor B runs a whole save.
+                with mock.patch.object(jm.json, "load", real_load):
+                    jm.save_state({other: [self.JOB_B]})
+
+        with mock.patch.object(jm.json, "load", load_while_other_monitor_saves), \
+                self.assertLogs(jm.log, "ERROR"):
+            self.assertEqual(jm.load_state(), {})
+        jm.save_state({URL: [self.JOB_A]})  # then A saves its own target
+
         self.assertEqual(self.saved_state(), {other: [self.JOB_B], URL: [self.JOB_A]})
-        self.assertEqual(len(list(self.tmp.glob("state.json.corrupt-*"))), 1)
+        [backup] = self.tmp.glob("state.json.corrupt-*")
+        self.assertEqual(backup.read_text(), "{not json")
 
     def test_save_does_not_overwrite_another_writers_targets(self):
         jm.save_state({URL: [self.JOB_A], "https://other.example/careers": [self.JOB_A]})

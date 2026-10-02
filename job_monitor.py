@@ -72,6 +72,10 @@ STALE_TEMP_FILE_SECONDS = 600
 
 _IS_WINDOWS = os.name == "nt"
 
+# Read once at startup: os.umask() can only be read by briefly changing it.
+_UMASK = os.umask(0)
+os.umask(_UMASK)
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
@@ -137,9 +141,7 @@ def _file_mode(path: Path) -> int:
     try:
         return stat.S_IMODE(path.stat().st_mode)
     except FileNotFoundError:
-        umask = os.umask(0)
-        os.umask(umask)
-        return 0o666 & ~umask
+        return 0o666 & ~_UMASK
 
 
 def _replace_file(src: str, dst: Path):
@@ -225,19 +227,23 @@ def _state_lock():
     if fcntl is None:
         yield
         return
-    with open(STATE_PATH.with_name(STATE_PATH.name + ".lock"), "a") as lock_file:
-        try:
-            fcntl.flock(lock_file, fcntl.LOCK_EX)
-            locked = True
-        except OSError as exc:
-            # Some network filesystems (Lustre without flock, NFS without lockd) can't lock.
-            log.warning(f"Could not lock {lock_file.name} ({exc}); saving without a lock.")
-            locked = False
-        try:
-            yield
-        finally:
-            if locked:
-                fcntl.flock(lock_file, fcntl.LOCK_UN)
+    lock_path = STATE_PATH.with_name(STATE_PATH.name + ".lock")
+    lock_file = None
+    try:
+        lock_file = open(lock_path, "a")
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+    except OSError as exc:
+        # E.g. Lustre without flock, NFS without lockd, or a lock file we can't open.
+        log.warning(f"Could not lock {lock_path.name} ({exc}); saving without a lock.")
+        if lock_file is not None:
+            lock_file.close()
+            lock_file = None
+    try:
+        yield
+    finally:
+        if lock_file is not None:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
+            lock_file.close()
 
 
 def _remove_stale_temp_files():
@@ -1025,17 +1031,23 @@ def merge_jobs_new_first(old_jobs: list[dict], current_jobs: list[dict], max_job
 # ===================================================================
 # Keyword filtering
 # ===================================================================
-def _without_whitespace(text: str) -> str:
-    return re.sub(r"\s+", "", text)
+def _keyword_pattern(keyword: str) -> re.Pattern:
+    """Match the keyword anywhere in a title, as typed, or as a word that a tag in the
+    page split with a space ("Infra<wbr>structure" reaches the title as "Infra structure")."""
+    alternatives = [re.escape(keyword)]
+    letters = "".join(keyword.split())
+    if letters:
+        split_word = r"\s*".join(re.escape(c) for c in letters)
+        end = r"(?!\w)" if keyword[-1].isspace() else ""
+        alternatives.append(rf"(?<!\w){split_word}{end}")
+    return re.compile("|".join(alternatives), re.IGNORECASE)
 
 
 def filter_by_keywords(jobs: list[dict], keywords: list[str]) -> list[dict]:
     if not keywords:
         return jobs
-    # Compare with whitespace removed, so a word split by an inline tag in the
-    # page ("Infra<wbr>structure" -> "Infra structure") still matches.
-    patterns = [re.compile(re.escape(_without_whitespace(kw)), re.IGNORECASE) for kw in keywords]
-    return [j for j in jobs if any(p.search(_without_whitespace(j["title"])) for p in patterns)]
+    patterns = [_keyword_pattern(kw) for kw in keywords]
+    return [j for j in jobs if any(p.search(j["title"]) for p in patterns)]
 
 
 
