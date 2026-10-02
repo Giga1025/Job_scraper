@@ -22,6 +22,7 @@ import os
 import sys
 import argparse
 import smtplib
+import ssl
 import logging
 import time
 import html as html_lib
@@ -49,6 +50,13 @@ CONFIG_PATH = BASE_DIR / "config.json"
 CONFIG_ALL_PATH = BASE_DIR / "config_all.json"
 STATE_PATH = BASE_DIR / "state.json"
 LOG_PATH = BASE_DIR / "monitor.log"
+
+# Seen jobs remembered per target. Large enough that a job is never forgotten
+# while it is still listed, so it can't be re-alerted after dropping off and
+# coming back; small enough that state.json doesn't grow without bound.
+STATE_RETENTION_PER_TARGET = 1000
+
+SMTP_TIMEOUT_SECONDS = 30
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -81,7 +89,6 @@ DEFAULT_CONFIG = {
         "sender_password": "your-app-password",
         "recipient_email": "you@gmail.com",
     },
-    "max_jobs_per_target": 10,
     "keyword_filters": [],
     "targets": [
         {
@@ -938,42 +945,53 @@ def format_html_report(all_new: dict[str, list[dict]]) -> str:
     """
 
 
-def send_email(config: dict, all_new: dict[str, list[dict]]):
-    email_cfg = config["email"]
-    if not email_cfg.get("enabled"):
-        log.info("Email disabled — printing report to console only.")
-        return
-
-    sender_email = email_cfg.get("sender_email") or os.environ.get("SENDER_EMAIL", "")
-    sender_password = email_cfg.get("sender_password") or os.environ.get("SENDER_PASSWORD", "")
-
-    total = sum(len(v) for v in all_new.values())
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"[Job Monitor] {total} new job posting{'s' if total != 1 else ''} found"
-    msg["From"] = sender_email
-    recipients = email_cfg["recipient_email"]
-    if isinstance(recipients, list):
-        recipients = ", ".join(recipients)
-    msg["To"] = recipients
-
-    msg.attach(MIMEText(format_plain_report(all_new), "plain"))
-    msg.attach(MIMEText(format_html_report(all_new), "html"))
-
+def send_email(config: dict, all_new: dict[str, list[dict]]) -> bool:
+    """Email the report. Returns False if email is enabled but sending failed."""
     try:
+        email_cfg = config.get("email") or {}
+        if not email_cfg.get("enabled"):
+            log.info("Email disabled — printing report to console only.")
+            return True
+
+        sender_email = email_cfg.get("sender_email") or os.environ.get("SENDER_EMAIL", "")
+        sender_password = email_cfg.get("sender_password") or os.environ.get("SENDER_PASSWORD", "")
+
+        recipients = email_cfg.get("recipient_email") or ""
+        if isinstance(recipients, list):
+            recipients = ", ".join(r for r in recipients if r)
+        if not recipients.strip():
+            log.error("Failed to send email: recipient_email is empty in the config.")
+            return False
+
+        total = sum(len(v) for v in all_new.values())
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"[Job Monitor] {total} new job posting{'s' if total != 1 else ''} found"
+        msg["From"] = sender_email
+        msg["To"] = recipients
+
+        msg.attach(MIMEText(format_plain_report(all_new), "plain"))
+        msg.attach(MIMEText(format_html_report(all_new), "html"))
+
+        # Verify the server's certificate so the password can't be sent to an impostor.
+        context = ssl.create_default_context()
         port = int(email_cfg["smtp_port"])
         if port == 465:
-            with smtplib.SMTP_SSL(email_cfg["smtp_server"], port) as server:
+            with smtplib.SMTP_SSL(
+                email_cfg["smtp_server"], port, context=context, timeout=SMTP_TIMEOUT_SECONDS
+            ) as server:
                 server.login(sender_email, sender_password)
                 server.send_message(msg)
         else:
-            with smtplib.SMTP(email_cfg["smtp_server"], port) as server:
+            with smtplib.SMTP(email_cfg["smtp_server"], port, timeout=SMTP_TIMEOUT_SECONDS) as server:
                 server.ehlo()
-                server.starttls()
+                server.starttls(context=context)
                 server.login(sender_email, sender_password)
                 server.send_message(msg)
         log.info("Email sent successfully.")
+        return True
     except Exception as exc:
         log.error(f"Failed to send email: {exc}")
+        return False
 
 
 def print_console_safe(text: str):
@@ -995,21 +1013,129 @@ def print_console_safe(text: str):
         print(text.encode("ascii", errors="replace").decode("ascii"))
 
 
-def limit_jobs_per_target(jobs: list[dict], max_jobs: int) -> list[dict]:
-    """Keep only the first N jobs for stable periodic comparison; 0 disables limiting."""
-    if max_jobs <= 0:
-        return jobs
-    return jobs[:max_jobs]
-
-
 # ===================================================================
 # Main
 # ===================================================================
-def run(config_override: str | None = None):
+def fetch_target_jobs(url: str, mode: str, link_selector: str, wait_for: str) -> list[dict] | None:
+    """Return every job currently listed for a target, or None if the page could not be fetched."""
+    google_jobs = fetch_google_jobs_from_page(url)
+    if google_jobs is not None:
+        log.info(f"  [google] Found {len(google_jobs)} job links from results page")
+        return google_jobs
+
+    # Prefer structured sources (official APIs, embedded data) over rendering the page.
+    if mode in ("browser", "api", "eightfold"):
+        for tag, fetcher, source in (
+            ("eightfold-api", fetch_eightfold_jobs_via_api, "API"),
+            ("phenom", fetch_phenom_jobs_from_page, "embedded data"),
+            ("wd-api", fetch_workday_jobs_via_api, "API"),
+            ("ms-api", fetch_microsoft_jobs_via_api, "API"),
+        ):
+            jobs = fetcher(url)
+            if jobs is not None:
+                log.info(f"  [{tag}] Found {len(jobs)} job links from {source}")
+                return jobs
+
+    # --- Fetch page content ---
+    html = None
+    browser_payloads: list[str] = []
+    if mode in ("browser", "eightfold"):
+        html, browser_payloads = fetch_browser(url, wait_for=wait_for)
+    else:
+        html = fetch_html(url)
+
+    if html is None:
+        log.error(f"  Could not fetch page, skipping.")
+        return None
+
+    # --- Extract jobs ---
+    # In browser mode without an explicit selector, prefer structured data
+    # before loose anchor heuristics to avoid nav/footer false positives.
+    current_jobs: list[dict] = []
+
+    if mode in ("browser", "eightfold") and not link_selector:
+        if browser_payloads:
+            payload_jobs = extract_jobs_from_json_payloads(browser_payloads, url)
+            if payload_jobs:
+                log.info(f"  [browser] Fallback extracted {len(payload_jobs)} jobs from API payloads")
+                current_jobs = payload_jobs
+
+        if not current_jobs:
+            embedded_jobs = extract_jobs_from_embedded_json(html, url)
+            if embedded_jobs:
+                log.info(f"  [browser] Fallback extracted {len(embedded_jobs)} jobs from embedded JSON")
+                current_jobs = embedded_jobs
+
+        if not current_jobs:
+            current_jobs = extract_jobs_from_html(html, url, link_selector)
+    else:
+        current_jobs = extract_jobs_from_html(html, url, link_selector)
+
+        if not current_jobs and browser_payloads:
+            payload_jobs = extract_jobs_from_json_payloads(browser_payloads, url)
+            if payload_jobs:
+                log.info(f"  [browser] Fallback extracted {len(payload_jobs)} jobs from API payloads")
+                current_jobs = payload_jobs
+
+        if not current_jobs:
+            embedded_jobs = extract_jobs_from_embedded_json(html, url)
+            if embedded_jobs:
+                log.info(f"  [browser] Fallback extracted {len(embedded_jobs)} jobs from embedded JSON")
+                current_jobs = embedded_jobs
+
+    filtered_jobs = filter_target_noise_jobs(url, current_jobs)
+    if len(filtered_jobs) != len(current_jobs):
+        log.info(f"  [filter] Removed {len(current_jobs) - len(filtered_jobs)} non-job links")
+        current_jobs = filtered_jobs
+
+    log.info(f"  Found {len(current_jobs)} job links on page")
+
+    if len(current_jobs) == 0:
+        log.warning(
+            f"  [warning] No jobs found. If this page definitely has listings, try:\n"
+            f"     - Switch mode to 'browser' if currently 'html'\n"
+            f"     - Add/adjust link_selector and wait_for in config\n"
+            f"     - Increase wait time for slow-loading pages"
+        )
+
+    return current_jobs
+
+
+def check_target(target: dict, state: dict, default_keywords: list[str]) -> list[dict]:
+    """Scrape one target, record what it lists in state, and return its new (keyword-matching) jobs."""
+    name = target["name"]
+    url = target["url"]
+    mode = target.get("mode", "html")
+
+    log.info(f"Checking: {name}")
+    log.info(f"  URL: {url}")
+    log.info(f"  Mode: {mode}")
+
+    current_jobs = fetch_target_jobs(
+        url, mode, target.get("link_selector", ""), target.get("wait_for", "")
+    )
+    if current_jobs is None:
+        return []
+
+    # --- Diff against last run ---
+    previous_jobs = state.get(url, [])
+    new_jobs = diff_jobs(previous_jobs, current_jobs)
+    new_jobs = filter_by_keywords(new_jobs, target.get("keyword_filters", default_keywords))
+
+    if new_jobs:
+        log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
+    else:
+        log.info(f"  No new postings since last check.")
+
+    state[url] = merge_jobs_new_first(previous_jobs, current_jobs, STATE_RETENTION_PER_TARGET)
+    return new_jobs
+
+
+def run(config_override: str | None = None) -> bool:
+    """Check every target once. Returns False if new jobs were found but the email failed."""
     config = ensure_config(config_override)
     state = load_state()
     keywords = config.get("keyword_filters", [])
-    max_jobs_per_target = int(config.get("max_jobs_per_target", 10) or 0)
     all_new: dict[str, list[dict]] = {}
 
     for target in config["targets"]:
@@ -1023,196 +1149,31 @@ def run(config_override: str | None = None):
         if not name or not url:
             log.warning(f"Skipping target entry missing name/url: {target}")
             continue
-        mode = target.get("mode", "html")
-        link_selector = target.get("link_selector", "")
-        wait_for = target.get("wait_for", "")
-        active_keywords = target.get("keyword_filters", keywords)
 
-        log.info(f"Checking: {name}")
-        log.info(f"  URL: {url}")
-        log.info(f"  Mode: {mode}")
-
-        google_jobs = fetch_google_jobs_from_page(url)
-        if google_jobs is not None:
-            current_jobs = limit_jobs_per_target(google_jobs, max_jobs_per_target)
-            log.info(f"  [google] Found {len(current_jobs)} job links from results page")
-
-            previous_jobs = state.get(url, [])
-            new_jobs = diff_jobs(previous_jobs, current_jobs)
-            new_jobs = filter_by_keywords(new_jobs, active_keywords)
-
-            if new_jobs:
-                log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
-                all_new[name] = new_jobs
-            else:
-                log.info(f"  No new postings since last check.")
-
-            state[url] = merge_jobs_new_first(previous_jobs, current_jobs, max_jobs_per_target)
+        # One broken target (bad selector, unexpected API response) must not
+        # stop the remaining targets from being checked, saved and emailed.
+        try:
+            new_jobs = check_target(target, state, keywords)
+        except Exception:
+            log.exception(f"  Failed to check {name}, skipping it this run")
             continue
-
-        if mode in ("browser", "api", "eightfold"):
-            eightfold_jobs = fetch_eightfold_jobs_via_api(url)
-            if eightfold_jobs is not None:
-                current_jobs = limit_jobs_per_target(eightfold_jobs, max_jobs_per_target)
-                log.info(f"  [eightfold-api] Found {len(current_jobs)} job links from API")
-
-                previous_jobs = state.get(url, [])
-                new_jobs = diff_jobs(previous_jobs, current_jobs)
-                new_jobs = filter_by_keywords(new_jobs, active_keywords)
-
-                if new_jobs:
-                    log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
-                    all_new[name] = new_jobs
-                else:
-                    log.info(f"  No new postings since last check.")
-
-                state[url] = merge_jobs_new_first(previous_jobs, current_jobs, max_jobs_per_target)
-                continue
-
-        if mode in ("browser", "api", "eightfold"):
-            phenom_jobs = fetch_phenom_jobs_from_page(url)
-            if phenom_jobs is not None:
-                current_jobs = limit_jobs_per_target(phenom_jobs, max_jobs_per_target)
-                log.info(f"  [phenom] Found {len(current_jobs)} job links from embedded data")
-
-                previous_jobs = state.get(url, [])
-                new_jobs = diff_jobs(previous_jobs, current_jobs)
-                new_jobs = filter_by_keywords(new_jobs, active_keywords)
-
-                if new_jobs:
-                    log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
-                    all_new[name] = new_jobs
-                else:
-                    log.info(f"  No new postings since last check.")
-
-                state[url] = merge_jobs_new_first(previous_jobs, current_jobs, max_jobs_per_target)
-                continue
-
-        if mode in ("browser", "api", "eightfold"):
-            wd_jobs = fetch_workday_jobs_via_api(url)
-            if wd_jobs is not None:
-                current_jobs = limit_jobs_per_target(wd_jobs, max_jobs_per_target)
-                log.info(f"  [wd-api] Found {len(current_jobs)} job links from API")
-
-                previous_jobs = state.get(url, [])
-                new_jobs = diff_jobs(previous_jobs, current_jobs)
-                new_jobs = filter_by_keywords(new_jobs, active_keywords)
-
-                if new_jobs:
-                    log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
-                    all_new[name] = new_jobs
-                else:
-                    log.info(f"  No new postings since last check.")
-
-                state[url] = merge_jobs_new_first(previous_jobs, current_jobs, max_jobs_per_target)
-                continue
-
-        # Prefer official API for Microsoft careers pages when available.
-        if mode in ("browser", "api", "eightfold"):
-            ms_jobs = fetch_microsoft_jobs_via_api(url)
-            if ms_jobs is not None:
-                current_jobs = limit_jobs_per_target(ms_jobs, max_jobs_per_target)
-                log.info(f"  [ms-api] Found {len(current_jobs)} job links from API")
-
-                previous_jobs = state.get(url, [])
-                new_jobs = diff_jobs(previous_jobs, current_jobs)
-                new_jobs = filter_by_keywords(new_jobs, active_keywords)
-
-                if new_jobs:
-                    log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
-                    all_new[name] = new_jobs
-                else:
-                    log.info(f"  No new postings since last check.")
-
-                state[url] = merge_jobs_new_first(previous_jobs, current_jobs, max_jobs_per_target)
-                continue
-
-        # --- Fetch page content ---
-        html = None
-        browser_payloads: list[str] = []
-        if mode in ("browser", "eightfold"):
-            html, browser_payloads = fetch_browser(url, wait_for=wait_for)
-        else:
-            html = fetch_html(url)
-
-        if html is None:
-            log.error(f"  Could not fetch page, skipping.")
-            continue
-
-        # --- Extract jobs ---
-        # In browser mode without an explicit selector, prefer structured data
-        # before loose anchor heuristics to avoid nav/footer false positives.
-        current_jobs: list[dict] = []
-
-        if mode in ("browser", "eightfold") and not link_selector:
-            if browser_payloads:
-                payload_jobs = extract_jobs_from_json_payloads(browser_payloads, url)
-                if payload_jobs:
-                    log.info(f"  [browser] Fallback extracted {len(payload_jobs)} jobs from API payloads")
-                    current_jobs = payload_jobs
-
-            if not current_jobs:
-                embedded_jobs = extract_jobs_from_embedded_json(html, url)
-                if embedded_jobs:
-                    log.info(f"  [browser] Fallback extracted {len(embedded_jobs)} jobs from embedded JSON")
-                    current_jobs = embedded_jobs
-
-            if not current_jobs:
-                current_jobs = extract_jobs_from_html(html, url, link_selector)
-        else:
-            current_jobs = extract_jobs_from_html(html, url, link_selector)
-
-            if not current_jobs and browser_payloads:
-                payload_jobs = extract_jobs_from_json_payloads(browser_payloads, url)
-                if payload_jobs:
-                    log.info(f"  [browser] Fallback extracted {len(payload_jobs)} jobs from API payloads")
-                    current_jobs = payload_jobs
-
-            if not current_jobs:
-                embedded_jobs = extract_jobs_from_embedded_json(html, url)
-                if embedded_jobs:
-                    log.info(f"  [browser] Fallback extracted {len(embedded_jobs)} jobs from embedded JSON")
-                    current_jobs = embedded_jobs
-
-        filtered_jobs = filter_target_noise_jobs(url, current_jobs)
-        if len(filtered_jobs) != len(current_jobs):
-            log.info(f"  [filter] Removed {len(current_jobs) - len(filtered_jobs)} non-job links")
-            current_jobs = filtered_jobs
-
-        current_jobs = limit_jobs_per_target(current_jobs, max_jobs_per_target)
-
-        log.info(f"  Found {len(current_jobs)} job links on page")
-
-        if len(current_jobs) == 0:
-            log.warning(
-                f"  [warning] No jobs found. If this page definitely has listings, try:\n"
-                f"     - Switch mode to 'browser' if currently 'html'\n"
-                f"     - Add/adjust link_selector and wait_for in config\n"
-                f"     - Increase wait time for slow-loading pages"
-            )
-
-        # --- Diff against last run ---
-        previous_jobs = state.get(url, [])
-        new_jobs = diff_jobs(previous_jobs, current_jobs)
-        new_jobs = filter_by_keywords(new_jobs, keywords)
-
         if new_jobs:
-            log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
             all_new[name] = new_jobs
-        else:
-            log.info(f"  No new postings since last check.")
 
-        # Update state
-        state[url] = merge_jobs_new_first(previous_jobs, current_jobs, max_jobs_per_target)
+    if not all_new:
+        save_state(state)
+        log.info("No new postings found across all targets.")
+        return True
+
+    report = format_plain_report(all_new)
+    print_console_safe("\n" + report)
+    if not send_email(config, all_new):
+        # Leave state.json as it was so these postings are reported again next run.
+        log.error("State not saved: the new postings above will be reported again on the next run.")
+        return False
 
     save_state(state)
-
-    if all_new:
-        report = format_plain_report(all_new)
-        print_console_safe("\n" + report)
-        send_email(config, all_new)
-    else:
-        log.info("No new postings found across all targets.")
+    return True
 
 
 if __name__ == "__main__":
@@ -1242,4 +1203,4 @@ if __name__ == "__main__":
             log.info(f"Sleeping for {interval_seconds} second(s) before next run")
             time.sleep(interval_seconds)
     else:
-        run(args.config)
+        sys.exit(0 if run(args.config) else 1)

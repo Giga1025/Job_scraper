@@ -48,7 +48,6 @@ Adjust the URL, add more targets, and set up email:
     "sender_password": "abcd efgh ijkl mnop",
     "recipient_email": "you@gmail.com"
   },
-  "max_jobs_per_target": 10,
   "keyword_filters": ["analyst", "engineer", "data", "quant"],
   "targets": [
     {
