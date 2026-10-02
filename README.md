@@ -211,7 +211,7 @@ jobs:
         run: |
           git config user.name "Job Monitor"
           git config user.email "bot@noreply.com"
-          git add state.json
+          git add -f state.json  # -f: state.json is in .gitignore
           git diff --cached --quiet || git commit -m "Update state"
           git push
 ```

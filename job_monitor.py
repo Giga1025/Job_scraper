@@ -23,6 +23,7 @@ import os
 import sys
 import argparse
 import smtplib
+import stat
 import ssl
 import logging
 import tempfile
@@ -65,6 +66,11 @@ LOG_PATH = BASE_DIR / "monitor.log"
 STATE_RETENTION_PER_TARGET = 1000
 
 SMTP_TIMEOUT_SECONDS = 30
+
+# A state.json temp file older than this was left by a monitor killed mid-save.
+STALE_TEMP_FILE_SECONDS = 600
+
+_IS_WINDOWS = os.name == "nt"
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -126,16 +132,42 @@ def load_json(path: Path, default=None):
     return default
 
 
+def _file_mode(path: Path) -> int:
+    """Permissions to give a rewritten file: its current ones, or the umask default for a new file."""
+    try:
+        return stat.S_IMODE(path.stat().st_mode)
+    except FileNotFoundError:
+        umask = os.umask(0)
+        os.umask(umask)
+        return 0o666 & ~umask
+
+
+def _replace_file(src: str, dst: Path):
+    for attempt in range(5):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            # On Windows the rename fails while another process (a second
+            # monitor, antivirus) briefly has the file open, so retry.
+            if not _IS_WINDOWS or attempt == 4:
+                raise
+            time.sleep(0.2 * (attempt + 1))
+
+
 def save_json(path: Path, data):
     # Write a temp file and rename it into place, so a crash or a full disk
-    # mid-write can never leave a truncated file behind.
+    # mid-write can never leave a truncated file behind. Resolve symlinks so
+    # the link's target is updated rather than the link being replaced.
+    path = Path(os.path.realpath(path))
     fd, tmp_path = tempfile.mkstemp(dir=path.parent, prefix=f"{path.name}.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp_path, path)
+        os.chmod(tmp_path, _file_mode(path))  # mkstemp creates it as 0600
+        _replace_file(tmp_path, path)
     except BaseException:
         try:
             os.unlink(tmp_path)
@@ -162,26 +194,29 @@ def ensure_config(config_override: str | None = None):
     return load_json(active_config_path)
 
 
-def load_state() -> dict:
+def _read_state() -> dict | None:
+    """state.json's contents: {} if it doesn't exist, None if it can't be parsed."""
     try:
-        state = load_json(STATE_PATH, default={})
-        if isinstance(state, dict):
-            return state
-        problem = f"expected a JSON object, found {type(state).__name__}"
-    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-        problem = str(exc)
+        with open(STATE_PATH, "r", encoding="utf-8") as f:
+            state = json.load(f)
+    except FileNotFoundError:
+        return {}
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    return state if isinstance(state, dict) else None
 
-    # Don't let one bad file break every future run: keep it for inspection and start over.
-    backup = STATE_PATH.with_name(f"{STATE_PATH.name}.corrupt-{datetime.now():%Y%m%d-%H%M%S-%f}")
-    try:
-        STATE_PATH.replace(backup)
-    except OSError:
-        pass  # another monitor process already moved it
-    log.error(
-        f"{STATE_PATH.name} is unreadable ({problem}). Moved it to {backup.name} and starting "
-        f"with empty state, so jobs already seen may be reported again."
-    )
-    return {}
+
+def load_state() -> dict:
+    state = _read_state()
+    if state is None:
+        # Only save_state() moves the bad file aside, while holding the lock,
+        # so a reader can never move a good file another monitor just wrote.
+        log.error(
+            f"{STATE_PATH.name} is unreadable; treating it as empty. It will be set aside "
+            f"on the next save, and jobs already seen may be reported again."
+        )
+        return {}
+    return state
 
 
 @contextmanager
@@ -191,22 +226,45 @@ def _state_lock():
         yield
         return
     with open(STATE_PATH.with_name(STATE_PATH.name + ".lock"), "a") as lock_file:
-        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            locked = True
+        except OSError as exc:
+            # Some network filesystems (Lustre without flock, NFS without lockd) can't lock.
+            log.warning(f"Could not lock {lock_file.name} ({exc}); saving without a lock.")
+            locked = False
         try:
             yield
         finally:
-            fcntl.flock(lock_file, fcntl.LOCK_UN)
+            if locked:
+                fcntl.flock(lock_file, fcntl.LOCK_UN)
+
+
+def _remove_stale_temp_files():
+    """Delete temp files left by a monitor that was killed mid-save."""
+    real_path = Path(os.path.realpath(STATE_PATH))
+    for leftover in real_path.parent.glob(f"{real_path.name}.*.tmp"):
+        try:
+            if time.time() - leftover.stat().st_mtime > STALE_TEMP_FILE_SECONDS:
+                leftover.unlink()
+        except OSError:
+            pass
 
 
 def save_state(updates: dict):
     """Write these targets' entries to state.json, keeping all other targets as they are on disk."""
     with _state_lock():
-        if fcntl is not None:
-            # Temp files from a monitor killed mid-save. Nothing else can be
-            # writing one while we hold the lock, so they're safe to remove.
-            for leftover in STATE_PATH.parent.glob(f"{STATE_PATH.name}.*.tmp"):
-                leftover.unlink(missing_ok=True)
-        state = load_state()
+        _remove_stale_temp_files()
+        state = _read_state()
+        if state is None:
+            # Don't let one bad file break every future run: keep it for inspection and start over.
+            backup = STATE_PATH.with_name(f"{STATE_PATH.name}.corrupt-{datetime.now():%Y%m%d-%H%M%S-%f}")
+            try:
+                STATE_PATH.replace(backup)
+                log.error(f"Moved unreadable {STATE_PATH.name} to {backup.name}.")
+            except OSError as exc:
+                log.error(f"Could not move unreadable {STATE_PATH.name} aside ({exc}); overwriting it.")
+            state = {}
         state.update(updates)
         save_json(STATE_PATH, state)
 
@@ -967,11 +1025,17 @@ def merge_jobs_new_first(old_jobs: list[dict], current_jobs: list[dict], max_job
 # ===================================================================
 # Keyword filtering
 # ===================================================================
+def _without_whitespace(text: str) -> str:
+    return re.sub(r"\s+", "", text)
+
+
 def filter_by_keywords(jobs: list[dict], keywords: list[str]) -> list[dict]:
     if not keywords:
         return jobs
-    patterns = [re.compile(re.escape(kw), re.IGNORECASE) for kw in keywords]
-    return [j for j in jobs if any(p.search(j["title"]) for p in patterns)]
+    # Compare with whitespace removed, so a word split by an inline tag in the
+    # page ("Infra<wbr>structure" -> "Infra structure") still matches.
+    patterns = [re.compile(re.escape(_without_whitespace(kw)), re.IGNORECASE) for kw in keywords]
+    return [j for j in jobs if any(p.search(_without_whitespace(j["title"])) for p in patterns)]
 
 
 
@@ -1028,9 +1092,11 @@ def send_email(config: dict, all_new: dict[str, list[dict]]) -> bool:
         sender_email = email_cfg.get("sender_email") or os.environ.get("SENDER_EMAIL", "")
         sender_password = email_cfg.get("sender_password") or os.environ.get("SENDER_PASSWORD", "")
 
-        recipients = email_cfg.get("recipient_email") or os.environ.get("RECIPIENT_EMAIL", "")
+        recipients = email_cfg.get("recipient_email") or ""
         if isinstance(recipients, list):
-            recipients = ", ".join(r for r in recipients if r)
+            recipients = ", ".join(str(r).strip() for r in recipients if str(r).strip())
+        if not recipients.strip():
+            recipients = os.environ.get("RECIPIENT_EMAIL", "")
         if not recipients.strip():
             log.error(
                 "Failed to send email: no recipient. Set recipient_email in the config "

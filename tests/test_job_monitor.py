@@ -6,6 +6,7 @@ Run from the repo root:
 """
 
 import email.utils
+import errno
 import json
 import logging
 import multiprocessing
@@ -14,6 +15,7 @@ import shutil
 import smtplib
 import socket
 import ssl
+import stat
 import subprocess
 import sys
 import tempfile
@@ -215,6 +217,14 @@ class EmailDeliveryTests(MonitorTestCase):
         [(recipients, _msg)] = self.emails_sent()
         self.assertEqual(recipients, ["me@example.com"])
 
+    def test_blank_config_recipient_falls_back_to_env(self):
+        os.environ["RECIPIENT_EMAIL"] = "me@example.com"
+        for blank in ([""], "  ", [" ", ""]):
+            FakeSMTP.instances = []
+            cfg = {"email": dict(WORKING_EMAIL, recipient_email=blank)}
+            self.assertTrue(jm.send_email(cfg, ALERTS), blank)
+            self.assertEqual(self.emails_sent()[0][0], ["me@example.com"])
+
     def test_no_recipient_anywhere_fails(self):
         cfg = {"email": dict(WORKING_EMAIL, recipient_email=[])}
         with self.assertLogs(jm.log, "ERROR"):
@@ -322,6 +332,19 @@ class DetectionTests(MonitorTestCase):
         targets = [target(keyword_filters=["trader"])]
         _, reported = self.run_monitor(targets, keyword_filters=["engineer"])
         self.assertEqual(reported, {"Acme": ["Quant Trader"]})
+
+    def test_keywords_match_words_split_by_inline_tags(self):
+        self.pages[URL] = page(
+            ("1", "Infra<wbr>structure Engineer"),
+            ("2", "<mark>Engineer</mark>ing Manager"),
+            ("3", "Data Analyst"),
+            ("4", "Sales Lead"),
+        )
+        _, reported = self.run_monitor(
+            [target()], keyword_filters=["infrastructure", "engineering", "data analyst"]
+        )
+        self.assertEqual(len(reported["Acme"]), 3)
+        self.assertNotIn("Sales Lead", reported["Acme"])
 
     def test_global_keywords_apply_when_target_has_none(self):
         self.pages[URL] = page(*jobs_named("Software Engineer", "Quant Trader"))
@@ -445,16 +468,88 @@ class StateFileTests(MonitorTestCase):
         leftovers = [p.name for p in self.tmp.iterdir() if p.name not in ("state.json", "state.json.lock")]
         self.assertEqual(leftovers, [])
 
-    @unittest.skipIf(sys.platform == "win32", "cleanup only runs while holding the POSIX lock")
-    def test_temp_files_from_a_killed_save_are_cleaned_up(self):
-        leftover = self.tmp / "state.json.abc123.tmp"
-        leftover.write_text('{"partial": [')
+    def test_stale_temp_files_from_a_killed_save_are_cleaned_up(self):
+        stale = self.tmp / "state.json.abc123.tmp"
+        stale.write_text('{"partial": [')
+        an_hour_ago = time.time() - 3600
+        os.utime(stale, (an_hour_ago, an_hour_ago))
+        in_progress = self.tmp / "state.json.def456.tmp"  # another monitor may be writing this
+        in_progress.write_text('{"partial": [')
         unrelated = self.tmp / "notes.tmp"
         unrelated.write_text("keep me")
+        os.utime(unrelated, (an_hour_ago, an_hour_ago))
+
         jm.save_state({URL: [self.JOB_A]})
-        self.assertFalse(leftover.exists())
+
+        self.assertFalse(stale.exists())
+        self.assertTrue(in_progress.exists())
         self.assertTrue(unrelated.exists())
         self.assertEqual(self.saved_state(), {URL: [self.JOB_A]})
+
+    @unittest.skipIf(sys.platform == "win32", "fcntl is POSIX-only")
+    def test_save_works_where_file_locking_is_unsupported(self):
+        def no_flock(*args):  # e.g. Lustre without the flock mount option
+            raise OSError(errno.ENOSYS, "Function not implemented")
+
+        self.patch(jm.fcntl, "flock", no_flock)
+        self.pages[URL] = page(*jobs_named("Data Analyst"))
+        with self.assertLogs(jm.log, "WARNING"):
+            ok, reported = self.run_monitor([target()])
+        self.assertTrue(ok)
+        self.assertEqual(reported, {"Acme": ["Data Analyst"]})
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {})
+
+    @unittest.skipIf(sys.platform == "win32", "POSIX permissions and symlinks")
+    def test_save_keeps_file_permissions(self):
+        umask = os.umask(0)
+        os.umask(umask)
+        jm.save_state({URL: [self.JOB_A]})
+        self.assertEqual(stat.S_IMODE(jm.STATE_PATH.stat().st_mode), 0o666 & ~umask)
+        os.chmod(jm.STATE_PATH, 0o640)
+        jm.save_state({URL: [self.JOB_B]})
+        self.assertEqual(stat.S_IMODE(jm.STATE_PATH.stat().st_mode), 0o640)
+
+    @unittest.skipIf(sys.platform == "win32", "POSIX permissions and symlinks")
+    def test_save_writes_through_a_symlink(self):
+        real = self.tmp / "shared" / "real_state.json"
+        real.parent.mkdir()
+        real.write_text("{}")
+        jm.STATE_PATH.symlink_to(real)
+        jm.save_state({URL: [self.JOB_A]})
+        self.assertTrue(jm.STATE_PATH.is_symlink())
+        self.assertEqual(json.loads(real.read_text()), {URL: [self.JOB_A]})
+
+    def test_windows_retries_rename_while_file_is_open_elsewhere(self):
+        real_replace = os.replace
+        calls = []
+
+        def replace_blocked_twice(src, dst):
+            calls.append(dst)
+            if len(calls) < 3:
+                raise PermissionError(13, "The process cannot access the file")
+            real_replace(src, dst)
+
+        self.patch(jm, "_IS_WINDOWS", True)
+        self.patch(jm.os, "replace", replace_blocked_twice)
+        self.patch(jm.time, "sleep", lambda seconds: None)
+        jm.save_state({URL: [self.JOB_A]})
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(self.saved_state(), {URL: [self.JOB_A]})
+
+    def test_permission_error_is_not_retried_elsewhere(self):
+        calls = []
+
+        def replace_denied(src, dst):
+            calls.append(dst)
+            raise PermissionError(13, "Permission denied")
+
+        self.patch(jm, "_IS_WINDOWS", False)
+        self.patch(jm.os, "replace", replace_denied)
+        with self.assertRaises(PermissionError):
+            jm.save_state({URL: [self.JOB_A]})
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(list(self.tmp.glob("state.json.*.tmp")), [])
 
     def test_corrupt_file_is_set_aside_and_run_continues(self):
         jm.STATE_PATH.write_text('{"https://acme.example/careers": [{"title": "Data An')
@@ -469,10 +564,27 @@ class StateFileTests(MonitorTestCase):
         [backup] = self.tmp.glob("state.json.corrupt-*")
         self.assertIn("Data An", backup.read_text())
 
-    def test_state_that_is_not_an_object_is_set_aside(self):
+    def test_state_that_is_not_an_object_is_set_aside_on_save(self):
         jm.STATE_PATH.write_text("[]")
         with self.assertLogs(jm.log, "ERROR"):
             self.assertEqual(jm.load_state(), {})
+        self.assertEqual(jm.STATE_PATH.read_text(), "[]")  # reading alone never moves it
+
+        with self.assertLogs(jm.log, "ERROR"):
+            jm.save_state({URL: [self.JOB_A]})
+        [backup] = self.tmp.glob("state.json.corrupt-*")
+        self.assertEqual(backup.read_text(), "[]")
+        self.assertEqual(self.saved_state(), {URL: [self.JOB_A]})
+
+    def test_corrupt_file_race_keeps_the_other_monitors_save(self):
+        other = "https://other.example/careers"
+        jm.STATE_PATH.write_text("{not json")
+        with self.assertLogs(jm.log, "ERROR"):
+            jm.load_state()  # monitor A starts and reads the corrupt file...
+        with self.assertLogs(jm.log, "ERROR"):
+            jm.save_state({other: [self.JOB_B]})  # ...monitor B sets it aside and saves...
+        jm.save_state({URL: [self.JOB_A]})  # ...then A saves its own target
+        self.assertEqual(self.saved_state(), {other: [self.JOB_B], URL: [self.JOB_A]})
         self.assertEqual(len(list(self.tmp.glob("state.json.corrupt-*"))), 1)
 
     def test_save_does_not_overwrite_another_writers_targets(self):
