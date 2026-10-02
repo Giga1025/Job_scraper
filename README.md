@@ -138,6 +138,20 @@ Each target has these fields:
 
 For Outlook: use `smtp-mail.outlook.com` port `587`.
 
+### Keeping credentials out of the config file
+
+Any of these environment variables is used when the matching config value is empty,
+so you can leave them blank in a tracked config such as `config_all.json`:
+
+| Variable | Config field | Example |
+|---|---|---|
+| `SENDER_EMAIL` | `sender_email` | `you@gmail.com` |
+| `SENDER_PASSWORD` | `sender_password` | the 16-character app password |
+| `RECIPIENT_EMAIL` | `recipient_email` | `you@gmail.com, friend@example.com` |
+
+If an email can't be sent, the new postings aren't marked as seen: they're printed,
+the error is logged, and they're emailed again on the next run.
+
 ---
 
 ## Scheduling
@@ -190,7 +204,9 @@ jobs:
           playwright install chromium
       - run: python job_monitor.py
         env:
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
       - name: Save state
         run: |
           git config user.name "Job Monitor"
@@ -209,6 +225,14 @@ jobs:
 | `config.json` | Your settings (edit this) |
 | `state.json` | Last-seen jobs (auto-managed, don't edit) |
 | `monitor.log` | Run history and errors |
+
+## Tests
+
+The tests run offline (network and email are faked) and need only the packages in `requirements.txt`:
+
+```bash
+python -m unittest discover -s tests -v
+```
 
 ## Tips
 

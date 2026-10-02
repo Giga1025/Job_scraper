@@ -25,3 +25,6 @@ config_extended.json
 google_rendered.html
 ms_rendered_debug.html
 cisco_page.html
+
+# state.json lock, temp and set-aside corrupt copies
+state.json.*

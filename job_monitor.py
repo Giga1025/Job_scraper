@@ -15,6 +15,7 @@ Requirements:
     playwright install chromium
 """
 
+import copy
 import json
 import hashlib
 import re
@@ -24,14 +25,21 @@ import argparse
 import smtplib
 import ssl
 import logging
+import tempfile
 import time
 import html as html_lib
+from contextlib import contextmanager
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urljoin
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, urlunparse, parse_qs
+
+try:
+    import fcntl  # POSIX only; on Windows saves to state.json are not locked
+except ImportError:
+    fcntl = None
 
 try:
     import requests
@@ -119,8 +127,21 @@ def load_json(path: Path, default=None):
 
 
 def save_json(path: Path, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    # Write a temp file and rename it into place, so a crash or a full disk
+    # mid-write can never leave a truncated file behind.
+    fd, tmp_path = tempfile.mkstemp(dir=path.parent, prefix=f"{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, path)
+    except BaseException:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def ensure_config(config_override: str | None = None):
@@ -142,11 +163,52 @@ def ensure_config(config_override: str | None = None):
 
 
 def load_state() -> dict:
-    return load_json(STATE_PATH, default={})
+    try:
+        state = load_json(STATE_PATH, default={})
+        if isinstance(state, dict):
+            return state
+        problem = f"expected a JSON object, found {type(state).__name__}"
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        problem = str(exc)
+
+    # Don't let one bad file break every future run: keep it for inspection and start over.
+    backup = STATE_PATH.with_name(f"{STATE_PATH.name}.corrupt-{datetime.now():%Y%m%d-%H%M%S-%f}")
+    try:
+        STATE_PATH.replace(backup)
+    except OSError:
+        pass  # another monitor process already moved it
+    log.error(
+        f"{STATE_PATH.name} is unreadable ({problem}). Moved it to {backup.name} and starting "
+        f"with empty state, so jobs already seen may be reported again."
+    )
+    return {}
 
 
-def save_state(state: dict):
-    save_json(STATE_PATH, state)
+@contextmanager
+def _state_lock():
+    """Exclusive lock so monitors running at the same time don't interleave saves."""
+    if fcntl is None:
+        yield
+        return
+    with open(STATE_PATH.with_name(STATE_PATH.name + ".lock"), "a") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
+
+
+def save_state(updates: dict):
+    """Write these targets' entries to state.json, keeping all other targets as they are on disk."""
+    with _state_lock():
+        if fcntl is not None:
+            # Temp files from a monitor killed mid-save. Nothing else can be
+            # writing one while we hold the lock, so they're safe to remove.
+            for leftover in STATE_PATH.parent.glob(f"{STATE_PATH.name}.*.tmp"):
+                leftover.unlink(missing_ok=True)
+        state = load_state()
+        state.update(updates)
+        save_json(STATE_PATH, state)
 
 
 # ===================================================================
@@ -813,7 +875,7 @@ def extract_jobs_from_html(html: str, url: str, link_selector: str = "") -> list
             full_url = urljoin(url, href)
 
             # Get text: prefer the element's full text over just the <a> text
-            text = el.get_text(strip=True) or a_tag.get_text(strip=True)
+            text = el.get_text(" ", strip=True) or a_tag.get_text(" ", strip=True)
 
             if not text or full_url in seen or href.startswith("#"):
                 continue
@@ -829,7 +891,7 @@ def extract_jobs_from_html(html: str, url: str, link_selector: str = "") -> list
         for a_tag in soup.find_all("a", href=True):
             href = a_tag["href"].strip()
             full_url = urljoin(url, href)
-            text = a_tag.get_text(strip=True)
+            text = a_tag.get_text(" ", strip=True)
 
             if not text or full_url in seen or href.startswith("#"):
                 continue
@@ -848,8 +910,17 @@ def extract_jobs_from_html(html: str, url: str, link_selector: str = "") -> list
 # ===================================================================
 # Diffing
 # ===================================================================
+def _job_identity_url(url: str) -> str:
+    """Normalize a job URL for comparison: ignore case, utm_* tracking params and a trailing slash."""
+    parsed = urlparse(url.strip().lower())
+    query = "&".join(p for p in parsed.query.split("&") if p and not p.startswith("utm_"))
+    return urlunparse(parsed._replace(path=parsed.path.rstrip("/"), query=query))
+
+
 def compute_job_id(job: dict) -> str:
-    raw = f"{job['url']}|{job['title']}".lower().strip()
+    # Identify a job by its URL only: titles scraped from job cards often include
+    # changing text ("Posted 2 days ago") that would make the same job look new.
+    raw = _job_identity_url(job["url"])
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
@@ -888,7 +959,8 @@ def merge_jobs_new_first(old_jobs: list[dict], current_jobs: list[dict], max_job
             merged_ids.add(jid)
 
     if max_jobs > 0:
-        return merged[:max_jobs]
+        # Never forget a job that is still listed, or it would be reported again next run.
+        return merged[:max(max_jobs, len(current_ids))]
     return merged
 
 
@@ -956,11 +1028,14 @@ def send_email(config: dict, all_new: dict[str, list[dict]]) -> bool:
         sender_email = email_cfg.get("sender_email") or os.environ.get("SENDER_EMAIL", "")
         sender_password = email_cfg.get("sender_password") or os.environ.get("SENDER_PASSWORD", "")
 
-        recipients = email_cfg.get("recipient_email") or ""
+        recipients = email_cfg.get("recipient_email") or os.environ.get("RECIPIENT_EMAIL", "")
         if isinstance(recipients, list):
             recipients = ", ".join(r for r in recipients if r)
         if not recipients.strip():
-            log.error("Failed to send email: recipient_email is empty in the config.")
+            log.error(
+                "Failed to send email: no recipient. Set recipient_email in the config "
+                "or the RECIPIENT_EMAIL environment variable."
+            )
             return False
 
         total = sum(len(v) for v in all_new.values())
@@ -1135,6 +1210,7 @@ def run(config_override: str | None = None) -> bool:
     """Check every target once. Returns False if new jobs were found but the email failed."""
     config = ensure_config(config_override)
     state = load_state()
+    loaded_state = copy.deepcopy(state)
     keywords = config.get("keyword_filters", [])
     all_new: dict[str, list[dict]] = {}
 
@@ -1160,8 +1236,13 @@ def run(config_override: str | None = None) -> bool:
         if new_jobs:
             all_new[name] = new_jobs
 
+    # Save only the targets this run changed, so another monitor process
+    # saving its own targets at the same time isn't overwritten.
+    updates = {url: jobs for url, jobs in state.items() if loaded_state.get(url) != jobs}
+
     if not all_new:
-        save_state(state)
+        if updates:
+            save_state(updates)
         log.info("No new postings found across all targets.")
         return True
 
@@ -1172,7 +1253,7 @@ def run(config_override: str | None = None) -> bool:
         log.error("State not saved: the new postings above will be reported again on the next run.")
         return False
 
-    save_state(state)
+    save_state(updates)
     return True
 
 
