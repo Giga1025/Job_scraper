@@ -184,14 +184,23 @@ def ensure_config(config_override: str | None = None):
         active_config_path = Path(override)
         if not active_config_path.is_absolute():
             active_config_path = BASE_DIR / active_config_path
+        if not active_config_path.exists():
+            # Never fall back to writing a default config here: a typo in the
+            # path would otherwise overwrite the user's config.json.
+            log.error(f"Config file not found: {active_config_path}")
+            sys.exit(2)
     else:
         active_config_path = CONFIG_ALL_PATH if CONFIG_ALL_PATH.exists() else CONFIG_PATH
-
-    if not active_config_path.exists():
-        save_json(CONFIG_PATH, DEFAULT_CONFIG)
-        log.info(f"Created default config at {CONFIG_PATH}")
-        log.info("Edit it with your targets and re-run.")
-        sys.exit(0)
+        if not active_config_path.exists():
+            save_json(CONFIG_PATH, DEFAULT_CONFIG)
+            log.info(f"Created default config at {CONFIG_PATH}")
+            log.info("Edit it with your targets and re-run.")
+            sys.exit(0)
+        if active_config_path == CONFIG_ALL_PATH and CONFIG_PATH.exists():
+            log.warning(
+                f"Using {CONFIG_ALL_PATH.name}; {CONFIG_PATH.name} is ignored. "
+                f"To use it, run with --config {CONFIG_PATH.name}."
+            )
     log.info(f"Using config file: {active_config_path.name}")
     return load_json(active_config_path)
 
@@ -214,8 +223,9 @@ def load_state() -> dict:
         # Only save_state() moves the bad file aside, while holding the lock,
         # so a reader can never move a good file another monitor just wrote.
         log.error(
-            f"{STATE_PATH.name} is unreadable; treating it as empty. It will be set aside "
-            f"on the next save, and jobs already seen may be reported again."
+            f"{STATE_PATH.name} is unreadable; treating it as empty, so every target records "
+            f"a fresh baseline this run and postings since the last good run won't be alerted. "
+            f"It will be set aside on the next save."
         )
         return {}
     return state
@@ -1270,8 +1280,18 @@ def check_target(target: dict, state: dict, default_keywords: list[str]) -> list
     if current_jobs is None:
         return []
 
+    previous_jobs = state.get(url)
+    if previous_jobs is None:
+        # First check of this target: record what's already listed without
+        # alerting, so adding a target doesn't email every job it has.
+        state[url] = merge_jobs_new_first([], current_jobs, STATE_RETENTION_PER_TARGET)
+        log.info(
+            f"  [baseline] First check: recorded {len(current_jobs)} job(s). "
+            f"New postings will be alerted from the next run."
+        )
+        return []
+
     # --- Diff against last run ---
-    previous_jobs = state.get(url, [])
     new_jobs = diff_jobs(previous_jobs, current_jobs)
     new_jobs = filter_by_keywords(new_jobs, target.get("keyword_filters", default_keywords))
 

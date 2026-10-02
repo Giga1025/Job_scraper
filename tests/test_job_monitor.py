@@ -178,6 +178,11 @@ class MonitorTestCase(unittest.TestCase):
     def saved_state(self):
         return json.loads(jm.STATE_PATH.read_text())
 
+    def mark_known(self, *urls):
+        """Mark targets as already monitored (no jobs listed at the last check),
+        so the next run alerts what it finds instead of recording a baseline."""
+        jm.save_state({url: [] for url in urls})
+
     def emails_sent(self):
         return [sent for smtp in FakeSMTP.instances for sent in smtp.sent]
 
@@ -187,13 +192,14 @@ class MonitorTestCase(unittest.TestCase):
 # ===================================================================
 class EmailDeliveryTests(MonitorTestCase):
     def test_failed_email_keeps_jobs_for_next_run(self):
+        self.mark_known(URL)
         self.pages[URL] = page(*jobs_named("Data Analyst"))
         FakeSMTP.fail_with = smtplib.SMTPAuthenticationError(535, b"bad password")
 
         ok, reported = self.run_monitor([target()], email=WORKING_EMAIL)
         self.assertFalse(ok)
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
-        self.assertFalse(jm.STATE_PATH.exists())
+        self.assertEqual(self.saved_state(), {URL: []})
 
         FakeSMTP.fail_with = None
         ok, reported = self.run_monitor([target()], email=WORKING_EMAIL)
@@ -244,6 +250,7 @@ class EmailDeliveryTests(MonitorTestCase):
         self.assertEqual(smtp.sent[0][0], ["me@example.com"])
 
     def test_disabled_email_counts_as_delivered(self):
+        self.mark_known(URL)
         self.pages[URL] = page(*jobs_named("Data Analyst"))
         ok, reported = self.run_monitor([target()])
         self.assertTrue(ok)
@@ -282,10 +289,125 @@ class SmtpTimeoutTests(unittest.TestCase):
 
 
 # ===================================================================
+# Choosing the config file
+# ===================================================================
+class ConfigFileTests(MonitorTestCase):
+    MINE = {"email": {"enabled": False}, "targets": [{"name": "Mine", "url": URL}]}
+    ALL = {"email": {"enabled": False}, "targets": [{"name": "All", "url": URL}]}
+
+    def setUp(self):
+        super().setUp()
+        self.patch(jm, "BASE_DIR", self.tmp)
+        self.patch(jm, "CONFIG_PATH", self.tmp / "config.json")
+        self.patch(jm, "CONFIG_ALL_PATH", self.tmp / "config_all.json")
+        os.environ.pop("JOB_MONITOR_CONFIG", None)
+
+    def write(self, name, data):
+        (self.tmp / name).write_text(json.dumps(data))
+
+    def test_missing_config_path_is_an_error_and_writes_nothing(self):
+        self.write("config.json", self.MINE)
+        before = sorted(p.name for p in self.tmp.iterdir())
+        for how in ("argument", "environment"):
+            with self.subTest(how=how):
+                if how == "environment":
+                    os.environ["JOB_MONITOR_CONFIG"] = "confg.json"
+                with self.assertLogs(jm.log, "ERROR") as logs, self.assertRaises(SystemExit) as exit_:
+                    jm.ensure_config("confg.json" if how == "argument" else None)
+                self.assertNotEqual(exit_.exception.code, 0)
+                self.assertTrue(any("confg.json" in line for line in logs.output))
+                self.assertEqual(json.loads((self.tmp / "config.json").read_text()), self.MINE)
+                self.assertEqual(sorted(p.name for p in self.tmp.iterdir()), before)
+
+    def test_first_run_without_any_config_creates_a_starter(self):
+        with self.assertRaises(SystemExit) as exit_:
+            jm.ensure_config()
+        self.assertEqual(exit_.exception.code, 0)
+        self.assertEqual(json.loads((self.tmp / "config.json").read_text()), jm.DEFAULT_CONFIG)
+
+    def test_default_is_still_config_all_and_ignored_config_json_is_flagged(self):
+        self.write("config.json", self.MINE)
+        self.write("config_all.json", self.ALL)
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            self.assertEqual(jm.ensure_config(), self.ALL)
+        self.assertTrue(any("config.json" in line and "--config" in line for line in logs.output))
+
+    def test_no_warning_when_there_is_nothing_to_ignore(self):
+        self.write("config_all.json", self.ALL)
+        with self.assertNoLogs(jm.log, "WARNING"):
+            self.assertEqual(jm.ensure_config(), self.ALL)
+
+    def test_explicit_config_is_used_without_warning(self):
+        self.write("config.json", self.MINE)
+        self.write("config_all.json", self.ALL)
+        with self.assertNoLogs(jm.log, "WARNING"):
+            self.assertEqual(jm.ensure_config("config.json"), self.MINE)
+
+    def test_config_json_is_used_when_there_is_no_config_all(self):
+        self.write("config.json", self.MINE)
+        self.assertEqual(jm.ensure_config(), self.MINE)
+
+
+# ===================================================================
+# First check of a target: silent baseline
+# ===================================================================
+class BaselineTests(MonitorTestCase):
+    def test_first_check_records_jobs_without_alerting(self):
+        self.pages[URL] = page(*jobs_named("Data Analyst", "Quant Researcher"))
+        with self.assertLogs(jm.log, "INFO") as logs:
+            ok, reported = self.run_monitor([target()], email=WORKING_EMAIL)
+        self.assertTrue(ok)
+        self.assertEqual(reported, {})
+        self.assertEqual(self.emails_sent(), [])
+        self.assertEqual(len(self.saved_state()[URL]), 2)
+        self.assertTrue(any("baseline" in line.lower() for line in logs.output))
+
+        self.pages[URL] = page(*jobs_named("Data Analyst", "Quant Researcher", "ML Engineer"))
+        ok, reported = self.run_monitor([target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["ML Engineer"]})
+        self.assertEqual(len(self.emails_sent()), 1)
+
+    def test_adding_a_target_does_not_alert_its_existing_jobs(self):
+        other = "https://other.example/careers"
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Data Analyst"))
+        self.pages[other] = page(*jobs_named("Quant Researcher", "Trader"))
+        _, reported = self.run_monitor([target(), target(name="Other", url=other)])
+        self.assertEqual(reported, {"Acme": ["Data Analyst"]})
+        self.assertEqual(len(self.saved_state()[other]), 2)
+
+    def test_empty_first_check_still_counts_as_the_baseline(self):
+        self.pages[URL] = page()
+        self.run_monitor([target()])
+        self.assertEqual(self.saved_state()[URL], [])
+        self.pages[URL] = page(*jobs_named("First Ever Opening"))
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {"Acme": ["First Ever Opening"]})
+
+    def test_failed_first_fetch_records_no_baseline(self):
+        with self.assertLogs(jm.log, "ERROR"):
+            self.run_monitor([target()])  # no page: the fetch fails
+        self.assertFalse(jm.STATE_PATH.exists())
+        self.pages[URL] = page(*jobs_named("Data Analyst"))
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {})
+        self.assertIn(URL, self.saved_state())
+
+    def test_targets_already_in_state_are_not_rebaselined(self):
+        jm.STATE_PATH.write_text(json.dumps({
+            URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst"}]
+        }))
+        self.pages[URL] = page(*jobs_named("Data Analyst", "Quant Researcher"))
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {"Acme": ["Quant Researcher"]})
+
+
+# ===================================================================
 # Detecting new jobs
 # ===================================================================
 class DetectionTests(MonitorTestCase):
     def test_jobs_beyond_the_tenth_link_are_detected(self):
+        self.mark_known(URL)
         names = [f"Job {i:02d}" for i in range(15)]
         self.pages[URL] = page(*jobs_named(*names))
         _, reported = self.run_monitor([target()])
@@ -315,6 +437,7 @@ class DetectionTests(MonitorTestCase):
 
     def test_retention_never_drops_jobs_still_listed(self):
         with mock.patch.object(jm, "STATE_RETENTION_PER_TARGET", 3):
+            self.mark_known(URL)
             self.pages[URL] = page(*jobs_named("A", "B", "C", "D", "E"))
             _, reported = self.run_monitor([target()])
             self.assertEqual(len(reported["Acme"]), 5)
@@ -328,12 +451,14 @@ class DetectionTests(MonitorTestCase):
             self.assertEqual(remembered, ["F", "G", "A"])
 
     def test_per_target_keywords_apply_on_html_path(self):
+        self.mark_known(URL)
         self.pages[URL] = page(*jobs_named("Software Engineer", "Quant Trader"))
         targets = [target(keyword_filters=["trader"])]
         _, reported = self.run_monitor(targets, keyword_filters=["engineer"])
         self.assertEqual(reported, {"Acme": ["Quant Trader"]})
 
     def test_keywords_match_words_split_by_inline_tags(self):
+        self.mark_known(URL)
         self.pages[URL] = page(
             ("1", "Infra<wbr>structure Engineer"),
             ("2", "<mark>Engineer</mark>ing Manager"),
@@ -372,12 +497,14 @@ class DetectionTests(MonitorTestCase):
             self.assertEqual(jm.filter_by_keywords(jobs, [keyword]), jobs, keyword)
 
     def test_global_keywords_apply_when_target_has_none(self):
+        self.mark_known(URL)
         self.pages[URL] = page(*jobs_named("Software Engineer", "Quant Trader"))
         _, reported = self.run_monitor([target()], keyword_filters=["engineer"])
         self.assertEqual(reported, {"Acme": ["Software Engineer"]})
 
     def test_broken_target_does_not_stop_the_others(self):
         other = "https://other.example/careers"
+        self.mark_known(URL, other)
         self.pages[URL] = page(*jobs_named("Data Analyst"))
         self.pages[other] = page(*jobs_named("Quant Researcher"))
         targets = [
@@ -513,6 +640,8 @@ class StateFileTests(MonitorTestCase):
 
     @unittest.skipIf(sys.platform == "win32", "fcntl is POSIX-only")
     def test_save_works_where_file_locking_is_unsupported(self):
+        self.mark_known(URL)
+
         def no_flock(*args):  # e.g. Lustre without the flock mount option
             raise OSError(errno.ENOSYS, "Function not implemented")
 
@@ -527,7 +656,10 @@ class StateFileTests(MonitorTestCase):
 
     @unittest.skipIf(sys.platform == "win32", "fcntl is POSIX-only")
     def test_save_works_when_lock_file_cannot_be_opened(self):
-        (self.tmp / "state.json.lock").mkdir()  # opening it for append fails
+        self.mark_known(URL)
+        lock_path = self.tmp / "state.json.lock"
+        lock_path.unlink()
+        lock_path.mkdir()  # opening it for append fails
         self.pages[URL] = page(*jobs_named("Data Analyst"))
         with self.assertLogs(jm.log, "WARNING"):
             ok, reported = self.run_monitor([target()])
@@ -594,9 +726,10 @@ class StateFileTests(MonitorTestCase):
         with self.assertLogs(jm.log, "ERROR"):
             ok, reported = self.run_monitor([target()])
 
+        # Every target starts a fresh, silent baseline instead of re-alerting everything.
         self.assertTrue(ok)
-        self.assertEqual(reported, {"Acme": ["Data Analyst"]})
-        self.assertIn(URL, self.saved_state())
+        self.assertEqual(reported, {})
+        self.assertEqual(len(self.saved_state()[URL]), 1)
         [backup] = self.tmp.glob("state.json.corrupt-*")
         self.assertIn("Data An", backup.read_text())
 
@@ -703,20 +836,56 @@ class CommandLineTests(unittest.TestCase):
         self.tmp = Path(tmp.name)
         shutil.copy(REPO_DIR / "job_monitor.py", self.tmp / "job_monitor.py")
 
-        server = ThreadingHTTPServer(("127.0.0.1", 0), _CareersPage)
+        self.handler = type("Page", (_CareersPage,), {})
+        server = ThreadingHTTPServer(("127.0.0.1", 0), self.handler)
         threading.Thread(target=server.serve_forever, daemon=True).start()
         self.addCleanup(server.shutdown)
         self.page_url = f"http://127.0.0.1:{server.server_address[1]}/careers"
 
-    def run_script(self, email_cfg):
+    def run_script(self, email_cfg, config_name="config.json"):
         config = {"email": email_cfg, "targets": [target(url=self.page_url)]}
         (self.tmp / "config.json").write_text(json.dumps(config))
-        env = {k: v for k, v in os.environ.items() if k not in EMAIL_ENV_VARS}
+        env = {k: v for k, v in os.environ.items() if k not in EMAIL_ENV_VARS + ("JOB_MONITOR_CONFIG",)}
         env.update(NO_PROXY="127.0.0.1,localhost", no_proxy="127.0.0.1,localhost")
         return subprocess.run(
-            [sys.executable, "job_monitor.py", "--config", "config.json"],
+            [sys.executable, "job_monitor.py", "--config", config_name],
             cwd=self.tmp, env=env, capture_output=True, text=True, timeout=120,
         )
+
+    def test_mistyped_config_fails_and_leaves_config_json_alone(self):
+        self.run_script({"enabled": False})  # writes config.json and records a baseline
+        before = (self.tmp / "config.json").read_text()
+        result = self.run_script({"enabled": False}, config_name="confg.json")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("confg.json", result.stderr)
+        self.assertEqual((self.tmp / "config.json").read_text(), before)
+        self.assertFalse((self.tmp / "confg.json").exists())
+
+    def test_first_run_is_silent_then_new_postings_are_emailed(self):
+        closed = socket.socket()
+        closed.bind(("127.0.0.1", 0))
+        closed_port = closed.getsockname()[1]
+        closed.close()  # nothing listens here, so SMTP is refused
+        unreachable = dict(WORKING_EMAIL, smtp_server="127.0.0.1", smtp_port=closed_port)
+
+        # First run: baseline only, so no email is attempted and the run succeeds.
+        result = self.run_script(unreachable)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("Data Analyst", result.stdout)
+        self.assertEqual(len(json.loads((self.tmp / "state.json").read_text())[self.page_url]), 2)
+
+        # A new posting with SMTP down: reported, exit 1, and not marked as seen.
+        self.handler.body = page(*jobs_named("Data Analyst", "Quant Researcher", "ML Engineer")).encode()
+        result = self.run_script(unreachable)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("ML Engineer", result.stdout)
+        self.assertEqual(len(json.loads((self.tmp / "state.json").read_text())[self.page_url]), 2)
+
+        # Delivered on the next run.
+        result = self.run_script({"enabled": False})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("ML Engineer", result.stdout)
+        self.assertEqual(len(json.loads((self.tmp / "state.json").read_text())[self.page_url]), 3)
 
     def test_exit_code_and_state_follow_email_delivery(self):
         closed = socket.socket()
@@ -725,10 +894,11 @@ class CommandLineTests(unittest.TestCase):
         closed.close()  # nothing listens here, so SMTP is refused
 
         unreachable = dict(WORKING_EMAIL, smtp_server="127.0.0.1", smtp_port=closed_port)
+        (self.tmp / "state.json").write_text(json.dumps({self.page_url: []}))  # already monitored
         result = self.run_script(unreachable)
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("Data Analyst", result.stdout)
-        self.assertFalse((self.tmp / "state.json").exists())
+        self.assertEqual(json.loads((self.tmp / "state.json").read_text()), {self.page_url: []})
 
         result = self.run_script({"enabled": False})
         self.assertEqual(result.returncode, 0, result.stderr)

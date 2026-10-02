@@ -14,11 +14,16 @@ playwright install chromium
 
 The `playwright install chromium` step downloads a headless Chromium browser (~150MB one-time download).
 
-### 2. First run (generates config)
+### 2. Pick a config file
 
-```bash
-python job_monitor.py
-```
+The repo ships `config_all.json` (about 60 companies). Which file is used:
+
+- `--config <file>` (or the `JOB_MONITOR_CONFIG` environment variable) always wins. A relative
+  path is relative to the folder containing `job_monitor.py`. If the file doesn't exist, the
+  monitor stops with an error and changes nothing.
+- Without `--config`: `config_all.json` if it exists, otherwise `config.json`. If you have both,
+  `config.json` is ignored (a warning says so) — pass `--config config.json` to use it.
+- If neither exists, the first run writes a starter `config.json` and exits so you can edit it.
 
 Run periodically from the same process:
 
@@ -26,15 +31,13 @@ Run periodically from the same process:
 python job_monitor.py --config config_all.json --interval-minutes 15
 ```
 
-Windows helper script:
+or, on Linux/HPC (uses `.venv` from `./setup.sh` if present):
 
-```powershell
-.\run_periodic_monitor.ps1 -Config config_all.json -IntervalMinutes 15
+```bash
+./run_periodic_monitor.sh config_all.json 15
 ```
 
-This creates `config.json`. It comes pre-configured with the Microsoft careers page for US remote entry-level jobs.
-
-### 3. Edit config.json
+### 3. Edit your config
 
 Adjust the URL, add more targets, and set up email:
 
@@ -74,7 +77,8 @@ Adjust the URL, add more targets, and set up email:
 python job_monitor.py
 ```
 
-First run = baseline snapshot (silent). Second run onwards = detects new postings.
+The first check of each target is a silent baseline: it records the jobs already listed.
+From the next run on, only postings that weren't there before are alerted.
 
 ---
 
@@ -222,7 +226,8 @@ jobs:
 
 | File | Purpose |
 |---|---|
-| `config.json` | Your settings (edit this) |
+| `config_all.json` | Shipped list of companies; used by default (see step 2) |
+| `config.json` | Your own settings; use it with `--config config.json` if `config_all.json` exists |
 | `state.json` | Last-seen jobs (auto-managed, don't edit) |
 | `monitor.log` | Run history and errors |
 
@@ -236,7 +241,7 @@ python -m unittest discover -s tests -v
 
 ## Tips
 
-- **First run is always silent** — it captures the baseline.
+- **The first check of a target is silent** — it captures the baseline. This also applies when you add a target or change its URL, and after an unreadable `state.json` is set aside.
 - **Browser mode is slower** (~15-20 sec per page) but handles any site.
 - **html mode is fast** (~1-2 sec) but only works for static pages.
 - **Don't over-check** — every 4-6 hours is plenty. Career pages don't update faster than that.
