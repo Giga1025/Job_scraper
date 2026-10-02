@@ -255,7 +255,7 @@ class EmailDeliveryTests(MonitorTestCase):
         ok, reported = self.run_monitor([target()])
         self.assertTrue(ok)
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
-        self.assertIn(URL, self.saved_state())
+        self.assertEqual([j["title"] for j in self.saved_state()[URL]], ["Data Analyst"])
 
 
 class SmtpSecurityTests(MonitorTestCase):
@@ -318,6 +318,19 @@ class ConfigFileTests(MonitorTestCase):
                 self.assertTrue(any("confg.json" in line for line in logs.output))
                 self.assertEqual(json.loads((self.tmp / "config.json").read_text()), self.MINE)
                 self.assertEqual(sorted(p.name for p in self.tmp.iterdir()), before)
+
+    def test_asking_for_a_missing_config_json_creates_the_starter(self):
+        self.write("config_all.json", self.ALL)  # a fresh clone always has this
+        for how in ("config.json", "./config.json", str(self.tmp / "config.json"), "environment"):
+            with self.subTest(how=how):
+                (self.tmp / "config.json").unlink(missing_ok=True)
+                if how == "environment":
+                    os.environ["JOB_MONITOR_CONFIG"] = "config.json"
+                with self.assertRaises(SystemExit) as exit_:
+                    jm.ensure_config(None if how == "environment" else how)
+                self.assertEqual(exit_.exception.code, 0)
+                self.assertEqual(json.loads((self.tmp / "config.json").read_text()), jm.DEFAULT_CONFIG)
+                os.environ.pop("JOB_MONITOR_CONFIG", None)
 
     def test_first_run_without_any_config_creates_a_starter(self):
         with self.assertRaises(SystemExit) as exit_:
@@ -392,6 +405,59 @@ class BaselineTests(MonitorTestCase):
         _, reported = self.run_monitor([target()])
         self.assertEqual(reported, {})
         self.assertIn(URL, self.saved_state())
+
+    def test_new_targets_baseline_is_kept_while_email_is_failing(self):
+        other = "https://other.example/careers"
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Data Analyst"))
+        self.pages[other] = page(*jobs_named("Trader"))
+        targets = [target(), target(name="Other", url=other)]
+        FakeSMTP.fail_with = smtplib.SMTPAuthenticationError(535, b"bad password")
+
+        ok, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertFalse(ok)
+        self.assertEqual(reported, {"Acme": ["Data Analyst"]})
+        self.assertEqual(self.saved_state()[URL], [])  # still pending
+        self.assertEqual(len(self.saved_state()[other]), 1)  # baseline kept
+
+        # The new target posts something while email is still down: it's reported and held.
+        self.pages[other] = page(*jobs_named("Trader", "New Grad Trader"))
+        ok, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertFalse(ok)
+        self.assertEqual(reported, {"Acme": ["Data Analyst"], "Other": ["New Grad Trader"]})
+
+        FakeSMTP.fail_with = None
+        ok, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertTrue(ok)
+        self.assertEqual(reported, {"Acme": ["Data Analyst"], "Other": ["New Grad Trader"]})
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+
+    def test_missing_state_file_is_flagged(self):
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            self.assertEqual(jm.load_state(), {})
+        self.assertTrue(any("state.json" in line for line in logs.output))
+        jm.save_state({URL: []})
+        with self.assertNoLogs(jm.log, "WARNING"):
+            jm.load_state()
+
+    def test_baseline_never_overwrites_another_monitors_entry(self):
+        first_seen = {"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst"}
+        self.pages[URL] = page(*jobs_named("Data Analyst", "New Grad Analyst"))
+        real_get = self.fake_get
+
+        def get_after_other_monitor_baselined(url, *args, **kwargs):
+            jm.save_state({URL: [first_seen]})  # another monitor recorded this target first
+            return real_get(url, *args, **kwargs)
+
+        self.patch(jm.requests, "get", get_after_other_monitor_baselined)
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {})
+        self.assertEqual(self.saved_state()[URL], [first_seen])
+
+        self.patch(jm.requests, "get", real_get)
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {"Acme": ["New Grad Analyst"]})
 
     def test_targets_already_in_state_are_not_rebaselined(self):
         jm.STATE_PATH.write_text(json.dumps({
@@ -504,7 +570,7 @@ class DetectionTests(MonitorTestCase):
 
     def test_broken_target_does_not_stop_the_others(self):
         other = "https://other.example/careers"
-        self.mark_known(URL, other)
+        self.mark_known(URL)
         self.pages[URL] = page(*jobs_named("Data Analyst"))
         self.pages[other] = page(*jobs_named("Quant Researcher"))
         targets = [
@@ -515,7 +581,7 @@ class DetectionTests(MonitorTestCase):
             ok, reported = self.run_monitor(targets)
         self.assertTrue(ok)
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
-        self.assertIn(URL, self.saved_state())
+        self.assertEqual(self.saved_state(), {URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst"}]})
         self.assertTrue(any("Broken" in line for line in logs.output))
 
     def test_failed_fetch_leaves_saved_jobs_alone(self):
@@ -860,6 +926,22 @@ class CommandLineTests(unittest.TestCase):
         self.assertIn("confg.json", result.stderr)
         self.assertEqual((self.tmp / "config.json").read_text(), before)
         self.assertFalse((self.tmp / "confg.json").exists())
+
+    @unittest.skipIf(sys.platform == "win32", "bash script")
+    def test_periodic_script_with_missing_config_json_writes_a_starter(self):
+        shutil.copy(REPO_DIR / "run_periodic_monitor.sh", self.tmp)
+        shutil.copy(REPO_DIR / "config_all.json", self.tmp)
+        # The script prefers .venv/bin/python (made by setup.sh); point it at this interpreter.
+        venv_python = self.tmp / ".venv" / "bin" / "python"
+        venv_python.parent.mkdir(parents=True)
+        venv_python.write_text(f'#!/bin/sh\nexec "{sys.executable}" "$@"\n')
+        venv_python.chmod(0o755)
+        result = subprocess.run(
+            ["bash", "run_periodic_monitor.sh", "config.json", "1"],
+            cwd=self.tmp, capture_output=True, text=True, timeout=120,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads((self.tmp / "config.json").read_text()), jm.DEFAULT_CONFIG)
 
     def test_first_run_is_silent_then_new_postings_are_emailed(self):
         closed = socket.socket()

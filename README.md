@@ -20,7 +20,8 @@ The repo ships `config_all.json` (about 60 companies). Which file is used:
 
 - `--config <file>` (or the `JOB_MONITOR_CONFIG` environment variable) always wins. A relative
   path is relative to the folder containing `job_monitor.py`. If the file doesn't exist, the
-  monitor stops with an error and changes nothing.
+  monitor stops with an error and changes nothing — except `--config config.json`, which
+  writes a starter `config.json` for you to edit (it never overwrites an existing one).
 - Without `--config`: `config_all.json` if it exists, otherwise `config.json`. If you have both,
   `config.json` is ignored (a warning says so) — pass `--config config.json` to use it.
 - If neither exists, the first run writes a starter `config.json` and exits so you can edit it.
@@ -194,6 +195,9 @@ on:
   schedule:
     - cron: '0 */6 * * *'
   workflow_dispatch:
+
+permissions:
+  contents: write  # needed to push state.json back; without it every run is a silent baseline
 
 jobs:
   check:

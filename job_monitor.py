@@ -185,8 +185,13 @@ def ensure_config(config_override: str | None = None):
         if not active_config_path.is_absolute():
             active_config_path = BASE_DIR / active_config_path
         if not active_config_path.exists():
-            # Never fall back to writing a default config here: a typo in the
-            # path would otherwise overwrite the user's config.json.
+            if os.path.realpath(active_config_path) == os.path.realpath(CONFIG_PATH):
+                # Asked for config.json and there isn't one yet: write the starter.
+                save_json(CONFIG_PATH, DEFAULT_CONFIG)
+                log.info(f"Created default config at {CONFIG_PATH}")
+                log.info("Edit it with your targets and re-run.")
+                sys.exit(0)
+            # Any other missing path is an error. (A typo used to overwrite config.json.)
             log.error(f"Config file not found: {active_config_path}")
             sys.exit(2)
     else:
@@ -218,6 +223,11 @@ def _read_state() -> dict | None:
 
 
 def load_state() -> dict:
+    if not STATE_PATH.exists():
+        log.warning(
+            f"No {STATE_PATH.name} yet, so every target records a baseline this run. If you see "
+            f"this on every run, {STATE_PATH.name} isn't being kept and nothing will ever be alerted."
+        )
     state = _read_state()
     if state is None:
         # Only save_state() moves the bad file aside, while holding the lock,
@@ -267,8 +277,12 @@ def _remove_stale_temp_files():
             pass
 
 
-def save_state(updates: dict):
-    """Write these targets' entries to state.json, keeping all other targets as they are on disk."""
+def save_state(updates: dict, baselines: dict | None = None):
+    """Write these targets' entries to state.json, keeping all other targets as they are on disk.
+
+    Baselines are only written for targets still missing from the file: if another monitor
+    recorded the target first, its earlier listing is kept, so nothing posted in between
+    is silently absorbed."""
     with _state_lock():
         _remove_stale_temp_files()
         state = _read_state()
@@ -282,6 +296,8 @@ def save_state(updates: dict):
                 log.error(f"Could not move unreadable {STATE_PATH.name} aside ({exc}); overwriting it.")
             state = {}
         state.update(updates)
+        for url, jobs in (baselines or {}).items():
+            state.setdefault(url, jobs)
         save_json(STATE_PATH, state)
 
 
@@ -1311,6 +1327,7 @@ def run(config_override: str | None = None) -> bool:
     loaded_state = copy.deepcopy(state)
     keywords = config.get("keyword_filters", [])
     all_new: dict[str, list[dict]] = {}
+    alerted_urls: set[str] = set()
 
     for target in config["targets"]:
         if not isinstance(target, dict):
@@ -1333,25 +1350,35 @@ def run(config_override: str | None = None) -> bool:
             continue
         if new_jobs:
             all_new[name] = new_jobs
+            alerted_urls.add(url)
 
     # Save only the targets this run changed, so another monitor process
-    # saving its own targets at the same time isn't overwritten.
-    updates = {url: jobs for url, jobs in state.items() if loaded_state.get(url) != jobs}
+    # saving its own targets at the same time isn't overwritten. First-check
+    # baselines are kept apart: they alert nothing, so they're saved even if
+    # the email fails (otherwise a new target would re-baseline every run and
+    # silently absorb whatever it posts while email is down).
+    changed = {url: jobs for url, jobs in state.items() if loaded_state.get(url) != jobs}
+    baselines = {
+        url: jobs for url, jobs in changed.items() if url not in loaded_state and url not in alerted_urls
+    }
+    updates = {url: jobs for url, jobs in changed.items() if url not in baselines}
 
     if not all_new:
-        if updates:
-            save_state(updates)
+        if changed:
+            save_state(updates, baselines)
         log.info("No new postings found across all targets.")
         return True
 
     report = format_plain_report(all_new)
     print_console_safe("\n" + report)
     if not send_email(config, all_new):
-        # Leave state.json as it was so these postings are reported again next run.
-        log.error("State not saved: the new postings above will be reported again on the next run.")
+        # Keep the alerted targets as they were so these postings are reported again next run.
+        if baselines:
+            save_state({}, baselines)
+        log.error("New postings not marked as seen: they'll be reported again on the next run.")
         return False
 
-    save_state(updates)
+    save_state(updates, baselines)
     return True
 
 
