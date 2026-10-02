@@ -433,6 +433,34 @@ class BaselineTests(MonitorTestCase):
         _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
         self.assertEqual(reported, {})
 
+    def test_url_listed_twice_keeps_its_baseline_and_held_alerts_while_email_fails(self):
+        def listing(jobs, interns):
+            return "<html><body>" + "".join(
+                [f'<a href="/jobs/{j}">{j}</a>' for j in jobs]
+                + [f'<a href="/interns/{i}">{i}</a>' for i in interns]
+            ) + "</body></html>"
+
+        # Same careers page, two entries with different selectors.
+        targets = [target(name="Jobs"), target(name="Interns", link_selector="a[href*='/interns/']")]
+        FakeSMTP.fail_with = smtplib.SMTPAuthenticationError(535, b"bad password")
+
+        self.pages[URL] = listing(["j1"], ["i1"])
+        ok, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertFalse(ok)
+        self.assertEqual(reported, {"Interns": ["i1"]})  # alerted against the Jobs baseline
+        self.assertEqual([j["title"] for j in self.saved_state()[URL]], ["j1"])  # baseline only
+
+        self.pages[URL] = listing(["j1", "j2 New Grad"], ["i1"])  # posted while email is down
+        ok, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Jobs": ["j2 New Grad"], "Interns": ["i1"]})
+
+        FakeSMTP.fail_with = None
+        ok, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertTrue(ok)
+        self.assertEqual(reported, {"Jobs": ["j2 New Grad"], "Interns": ["i1"]})
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+
     def test_missing_state_file_is_flagged(self):
         with self.assertLogs(jm.log, "WARNING") as logs:
             self.assertEqual(jm.load_state(), {})

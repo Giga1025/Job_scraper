@@ -1328,6 +1328,7 @@ def run(config_override: str | None = None) -> bool:
     keywords = config.get("keyword_filters", [])
     all_new: dict[str, list[dict]] = {}
     alerted_urls: set[str] = set()
+    first_baselines: dict[str, list[dict]] = {}  # as recorded at each target's first check
 
     for target in config["targets"]:
         if not isinstance(target, dict):
@@ -1343,11 +1344,14 @@ def run(config_override: str | None = None) -> bool:
 
         # One broken target (bad selector, unexpected API response) must not
         # stop the remaining targets from being checked, saved and emailed.
+        first_check = url not in state
         try:
             new_jobs = check_target(target, state, keywords)
         except Exception:
             log.exception(f"  Failed to check {name}, skipping it this run")
             continue
+        if first_check and url in state:
+            first_baselines[url] = list(state[url])
         if new_jobs:
             all_new[name] = new_jobs
             alerted_urls.add(url)
@@ -1358,9 +1362,7 @@ def run(config_override: str | None = None) -> bool:
     # the email fails (otherwise a new target would re-baseline every run and
     # silently absorb whatever it posts while email is down).
     changed = {url: jobs for url, jobs in state.items() if loaded_state.get(url) != jobs}
-    baselines = {
-        url: jobs for url, jobs in changed.items() if url not in loaded_state and url not in alerted_urls
-    }
+    baselines = {url: jobs for url, jobs in changed.items() if url in first_baselines and url not in alerted_urls}
     updates = {url: jobs for url, jobs in changed.items() if url not in baselines}
 
     if not all_new:
@@ -1372,9 +1374,11 @@ def run(config_override: str | None = None) -> bool:
     report = format_plain_report(all_new)
     print_console_safe("\n" + report)
     if not send_email(config, all_new):
-        # Keep the alerted targets as they were so these postings are reported again next run.
-        if baselines:
-            save_state({}, baselines)
+        # Keep the alerted targets as they were so these postings are reported again next
+        # run, but keep new targets' baselines as first recorded (before any alert against
+        # them, e.g. from a second config entry for the same URL).
+        if first_baselines:
+            save_state({}, first_baselines)
         log.error("New postings not marked as seen: they'll be reported again on the next run.")
         return False
 
