@@ -1101,10 +1101,21 @@ def compile_role_filter(role_filter: dict | None) -> dict | None:
     return {key: _phrase_pattern(value) for key, value in role_filter.items() if isinstance(value, list)}
 
 
+_TITLE_TAIL_RE = re.compile(r" : | • | ⋅ | · |, United States\b")
+
+
+def _title_core(title: str) -> str:
+    """The job title without text some sites append after it (a teaser sentence,
+    team, location or salary), which could otherwise trip the role filter."""
+    title = re.sub(r"^\s*icon\s+", "", title, flags=re.IGNORECASE)
+    return _TITLE_TAIL_RE.split(title, 1)[0]
+
+
 def role_exclusion_reason(title: str, patterns: dict | None) -> str | None:
     """Why the role filter leaves this title out, or None if it's kept."""
     if not patterns:
         return None
+    title = _title_core(title)
 
     def hit(key, text=title):
         match = patterns.get(key) and patterns[key].search(text)

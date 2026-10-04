@@ -650,6 +650,15 @@ MUST_KEEP = [
     "Software Engineer Intern / New Grad", "Software Engineer, Data Platform", "Security Engineer", "iOS Engineer",
     "Applied AI Engineer", "Privacy & Civil Liberties Engineer - New Grad", "Web/App Test Engineer",
     "Software Engineer, Fleet Management",
+    # Found by auditing every left-out title from the live scan:
+    "Software Engineer - Mission Manager", "Site Reliability Operations Analyst",
+    "Full Stack Staff & Software Engineer, Consumer Monetization",
+    "Software Engineer II - React Native - Krak Frontend • Brazil; Argentina",
+    "icon Infrastructure Software Engineer: Application Engineering : The D. E. Shaw group seeks a lead software engineer",
+    "Infrastructure Engineer III - Amazon Connect : Lead and grow a team",
+    "Solutions Architect - Manufacturing", "Product Engineer - Manufacturing Operations",
+    "Hardware Tools Engineer", "RTL Tools & Methodology Engineer",
+    "Leadership Development Program, Technology", "Architect - New College Grad 2026",
 ]
 MUST_LEAVE_OUT = [
     "Senior Software Engineer", "Sr. Software Engineer", "Staff ML Engineer", "Principal Engineer",
@@ -658,6 +667,11 @@ MUST_LEAVE_OUT = [
     "Tech Lead, Platform", "Director of Engineering", "Deployment Strategist", "Electrical Engineer, Power",
     "ASIC Design Verification Engineer", "Summer Analyst 2027", "HRIS Manager", "Growth Campaign Manager",
     "Civil Engineer Memphis, TN",
+    # Senior roles that slipped through before the audit:
+    "Software Engineer 6", "Research Engineer 5/6", "AI Research Engineer 6 - TL", "Principle Engineer",
+    "Software Engineer (Technical Leadership) - Machine Learning", "Manufacturing Engineer, Motors",
+    # Text appended after the title must not rescue it:
+    "Data Science Intern (Winter 2027) Early Career • San Francisco • Full time",
 ]
 
 

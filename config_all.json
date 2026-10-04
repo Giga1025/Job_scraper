@@ -26,7 +26,14 @@
       "chief",
       "president",
       "manager",
-      "managing"
+      "managing",
+      "principle",
+      "engineer 5",
+      "engineer 6",
+      "engineer 7",
+      "technical leadership",
+      "tl",
+      "tlm"
     ],
     "senior_ignore": [
       "technical staff",
@@ -39,7 +46,13 @@
       "workload manager",
       "window manager",
       "file manager",
-      "task manager"
+      "task manager",
+      "mission manager",
+      "fleet manager",
+      "password manager",
+      "secrets manager",
+      "device manager",
+      "staff &"
     ],
     "exclude_internships": [
       "intern",
@@ -68,7 +81,9 @@
       "platform",
       "infrastructure",
       "productivity",
-      "tooling"
+      "tooling",
+      "react native",
+      "mobile"
     ],
     "exclude_non_engineering": [
       "sales",
@@ -183,7 +198,10 @@
       "civil engineering",
       "chemical",
       "structural",
-      "manufacturing",
+      "manufacturing engineer",
+      "manufacturing engineering",
+      "manufacturing test",
+      "manufacturing technician",
       "thermal",
       "packaging",
       "materials",
@@ -218,7 +236,9 @@
       "devops",
       "sre",
       "llm",
-      "inference"
+      "inference",
+      "tools",
+      "tooling"
     ],
     "engineering_signals": [
       "engineer",
@@ -277,7 +297,8 @@
       "architect",
       "algorithm",
       "algorithms",
-      "data science"
+      "data science",
+      "site reliability"
     ]
   },
   "show_filtered": true,
