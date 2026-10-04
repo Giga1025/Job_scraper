@@ -395,13 +395,31 @@ class BaselineTests(MonitorTestCase):
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
         self.assertEqual(len(self.saved_state()[other]), 2)
 
-    def test_empty_first_check_still_counts_as_the_baseline(self):
+    def test_empty_first_check_waits_for_a_real_baseline(self):
+        # Seen live: a site that sometimes renders an empty list. If that empty
+        # list became the baseline, the next good check would alert every job.
         self.pages[URL] = page()
         self.run_monitor([target()])
-        self.assertEqual(self.saved_state()[URL], [])
+        self.assertFalse(jm.STATE_PATH.exists() and URL in self.saved_state())
+        self.pages[URL] = page(*jobs_named(*[f"Job {i}" for i in range(30)]))
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {})
+        self.assertEqual(len(self.saved_state()[URL]), 30)
+
+    def test_known_target_that_had_no_jobs_alerts_its_first_opening(self):
+        self.mark_known(URL)  # already monitored, and it listed nothing last time
         self.pages[URL] = page(*jobs_named("First Ever Opening"))
         _, reported = self.run_monitor([target()])
         self.assertEqual(reported, {"Acme": ["First Ever Opening"]})
+
+    def test_empty_result_later_on_keeps_known_jobs(self):
+        self.pages[URL] = page(*jobs_named("Data Analyst", "ML Engineer"))
+        self.run_monitor([target()])
+        self.pages[URL] = page()  # a glitchy empty render
+        self.run_monitor([target()])
+        self.pages[URL] = page(*jobs_named("Data Analyst", "ML Engineer"))
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {})
 
     def test_failed_first_fetch_records_no_baseline(self):
         with self.assertLogs(jm.log, "ERROR"):

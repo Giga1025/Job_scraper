@@ -1411,6 +1411,12 @@ def check_target(
 
     previous_jobs = state.get(url)
     if previous_jobs is None:
+        if not current_jobs:
+            # An empty first check is usually a glitch (some sites render nothing
+            # now and then); recording it would make the next good check alert
+            # every job the target already lists.
+            log.info("  [baseline] First check found no jobs; the baseline waits for a check that lists some.")
+            return [], [], None
         # First check of this target: record what's already listed without
         # alerting, so adding a target doesn't email every job it has.
         state[url] = merge_jobs_new_first([], current_jobs, STATE_RETENTION_PER_TARGET)

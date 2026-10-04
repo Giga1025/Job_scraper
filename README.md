@@ -78,7 +78,8 @@ Adjust the URL, add more targets, and set up email:
 python job_monitor.py
 ```
 
-The first check of each target is a silent baseline: it records the jobs already listed.
+The first check of each target is a silent baseline: it records the jobs already listed
+(a first check that finds no jobs doesn't count, since that's usually a page glitch).
 From the next run on, only postings that weren't there before are alerted.
 
 ---
