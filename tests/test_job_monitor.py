@@ -23,6 +23,7 @@ import threading
 import time
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest import mock
 
@@ -124,6 +125,7 @@ class MonitorTestCase(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.tmp = Path(tmp.name)
         self.pages: dict[str, str] = {}
+        self.page_sequence: dict[str, list[str]] = {}  # served first, one page per fetch
 
         self.patch(jm, "STATE_PATH", self.tmp / "state.json")
         self.patch(jm.requests, "get", self.fake_get)
@@ -147,6 +149,8 @@ class MonitorTestCase(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def fake_get(self, url, *args, **kwargs):
+        if self.page_sequence.get(url):
+            return FakeResponse(self.page_sequence[url].pop(0))
         if url in self.pages:
             return FakeResponse(self.pages[url])
         raise jm.requests.ConnectionError(f"no fake page for {url}")
@@ -395,16 +399,25 @@ class BaselineTests(MonitorTestCase):
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
         self.assertEqual(len(self.saved_state()[other]), 2)
 
-    def test_empty_first_check_waits_for_a_real_baseline(self):
+    def test_glitchy_empty_first_check_is_retried(self):
         # Seen live: a site that sometimes renders an empty list. If that empty
         # list became the baseline, the next good check would alert every job.
-        self.pages[URL] = page()
-        self.run_monitor([target()])
-        self.assertFalse(jm.STATE_PATH.exists() and URL in self.saved_state())
-        self.pages[URL] = page(*jobs_named(*[f"Job {i}" for i in range(30)]))
+        listing = page(*jobs_named(*[f"Job {i}" for i in range(30)]))
+        self.page_sequence[URL] = [page(), listing]
         _, reported = self.run_monitor([target()])
         self.assertEqual(reported, {})
         self.assertEqual(len(self.saved_state()[URL]), 30)
+        self.pages[URL] = listing
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {})
+
+    def test_empty_first_check_still_counts_as_the_baseline(self):
+        self.pages[URL] = page()  # empty on the check and the retry
+        self.run_monitor([target()])
+        self.assertEqual(self.saved_state()[URL], [])
+        self.pages[URL] = page(*jobs_named("First Ever Opening"))
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {"Acme": ["First Ever Opening"]})
 
     def test_known_target_that_had_no_jobs_alerts_its_first_opening(self):
         self.mark_known(URL)  # already monitored, and it listed nothing last time
@@ -699,10 +712,16 @@ class RoleFilterTests(MonitorTestCase):
         self.patterns = jm.compile_role_filter(REPO_ROLE_FILTER)
 
     def recent_email(self, hours_ago=0):
-        marker = jm.STATE_PATH.with_name("state.json.last_email")
-        marker.write_text("x")
-        stamp = time.time() - hours_ago * 3600
-        os.utime(marker, (stamp, stamp))
+        stamp = (datetime.now() - timedelta(hours=hours_ago)).isoformat(timespec="seconds")
+        jm.save_state({}, last_email=stamp)
+
+    def pool_titles(self):
+        return [p["title"] for p in self.saved_state().get(jm.PENDING_LEFT_OUT_KEY, [])]
+
+    def run_filtered(self, targets=None, **kwargs):
+        kwargs.setdefault("email", WORKING_EMAIL)
+        kwargs.setdefault("role_filter", REPO_ROLE_FILTER)
+        return self.run_monitor(targets or [target()], **kwargs)
 
     def test_shipped_filter_keeps_wanted_titles_and_leaves_out_the_rest(self):
         wrongly_left_out = {t: jm.role_exclusion_reason(t, self.patterns) for t in MUST_KEEP
@@ -711,6 +730,12 @@ class RoleFilterTests(MonitorTestCase):
         self.assertEqual(wrongly_left_out, {})
         self.assertEqual(wrongly_kept, [])
 
+    def test_unicode_dashes_and_ampersands(self):
+        keep = ["Full\u2011Stack Engineer (Frontend focus)", "Software Engineer Intern / New\u2011Grad",
+                "Full\u2013Stack Engineer"]
+        self.assertEqual({t: jm.role_exclusion_reason(t, self.patterns) for t in keep}, {t: None for t in keep})
+        self.assertIsNotNone(jm.role_exclusion_reason("FP&A Analyst", self.patterns))
+
     def test_no_role_filter_configured_keeps_everything(self):
         self.assertIsNone(jm.compile_role_filter(None))
         self.assertIsNone(jm.role_exclusion_reason("Senior Staff Principal Recruiter", None))
@@ -718,7 +743,7 @@ class RoleFilterTests(MonitorTestCase):
     def test_matches_are_alerted_and_left_out_postings_listed_in_the_same_email(self):
         self.mark_known(URL)
         self.pages[URL] = page(*jobs_named("Software Engineer, New Grad", "Senior Software Engineer", "Account Executive"))
-        ok, reported = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        ok, reported = self.run_filtered()
         self.assertTrue(ok)
         self.assertEqual(reported, {"Acme": ["Software Engineer, New Grad"]})
         self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer", "Account Executive"]})
@@ -726,82 +751,145 @@ class RoleFilterTests(MonitorTestCase):
         body = msg.get_payload()[0].get_payload(decode=True).decode()
         self.assertIn("Senior Software Engineer  [senior (Senior)]", body)
         self.assertIn("+2 left out by filters", msg["Subject"])
+        self.assertEqual(self.pool_titles(), [])
 
         # Everything was shown, so nothing comes back.
-        _, reported = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        _, reported = self.run_filtered()
         self.assertEqual((reported, self.left_out), ({}, {}))
 
     def test_left_out_postings_wait_for_the_next_email(self):
         self.mark_known(URL)
         self.recent_email(hours_ago=1)
         self.pages[URL] = page(*jobs_named("Senior Software Engineer"))
-        ok, _ = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        ok, _ = self.run_filtered()
         self.assertTrue(ok)
         self.assertEqual(self.emails_attempted, 0)
-        self.assertEqual(self.saved_state().get(URL), [])  # not marked as seen yet
+        self.assertEqual(self.pool_titles(), ["Senior Software Engineer"])
+        self.assertEqual(len(self.saved_state()[URL]), 1)  # seen, so never re-detected
 
         self.pages[URL] = page(*jobs_named("Senior Software Engineer", "Backend Engineer"))
-        _, reported = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        _, reported = self.run_filtered()
         self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
         self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer"]})
-        self.assertEqual(len(self.saved_state()[URL]), 2)
+        self.assertEqual(self.pool_titles(), [])
 
-    def test_digest_goes_out_when_no_match_for_a_day(self):
+    def test_left_out_posting_is_listed_even_after_it_leaves_the_page(self):
+        self.mark_known(URL)
+        self.recent_email(hours_ago=1)
+        self.pages[URL] = page(*jobs_named("Staff Engineer, Developer Tools"))
+        self.run_filtered()
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))  # it scrolled off / closed
+        _, reported = self.run_filtered()
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.assertEqual(self.left_out, {"Acme": ["Staff Engineer, Developer Tools"]})
+
+    def test_digest_goes_out_when_no_email_for_the_configured_hours(self):
         self.mark_known(URL)
         self.recent_email(hours_ago=25)
         self.pages[URL] = page(*jobs_named("Senior Software Engineer"))
-        ok, reported = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        _, reported = self.run_filtered(filtered_digest_hours=48)
+        self.assertEqual(self.emails_attempted, 0)  # 25h < 48h
+
+        ok, reported = self.run_filtered(filtered_digest_hours=24)
         self.assertTrue(ok)
         self.assertEqual(reported, {})
         self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer"]})
         [(_, msg)] = self.emails_sent()
         self.assertIn("Digest: 1 posting left out", msg["Subject"])
-        self.assertEqual(len(self.saved_state()[URL]), 1)
+        self.assertEqual(self.pool_titles(), [])
 
-        # The digest reset the timer, and the posting is now seen.
+        # The digest reset the timer.
         self.pages[URL] = page(*jobs_named("Senior Software Engineer", "Staff Engineer"))
-        self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.run_filtered()
         self.assertEqual(self.emails_attempted, 0)
+        self.assertEqual(self.pool_titles(), ["Staff Engineer"])
 
-    def test_failed_email_keeps_left_out_postings_held(self):
+    def test_digest_is_due_when_no_email_was_ever_recorded(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Senior Software Engineer"))
+        self.run_filtered()
+        self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer"]})
+        self.assertIn(jm.LAST_EMAIL_KEY, self.saved_state())
+
+    def test_bad_digest_hours_falls_back_to_a_day(self):
+        self.mark_known(URL)
+        self.recent_email(hours_ago=1)
+        self.pages[URL] = page(*jobs_named("Backend Engineer", "Senior Software Engineer"))
+        for bad in (None, "", "daily", -5):
+            with self.subTest(bad=bad), self.assertLogs(jm.log, "WARNING"):
+                self.assertEqual(jm._digest_hours({"filtered_digest_hours": bad}), 24.0)
+        ok, reported = self.run_filtered(filtered_digest_hours="daily")
+        self.assertTrue(ok)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_failed_email_keeps_left_out_postings_for_the_retry(self):
         self.mark_known(URL)
         self.pages[URL] = page(*jobs_named("Backend Engineer", "Senior Software Engineer"))
         FakeSMTP.fail_with = smtplib.SMTPAuthenticationError(535, b"bad password")
-        ok, _ = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        ok, _ = self.run_filtered()
         self.assertFalse(ok)
-        self.assertEqual(self.saved_state(), {URL: []})
+        self.assertEqual(self.saved_state()[URL], [])
+        self.assertEqual(self.pool_titles(), ["Senior Software Engineer"])
 
         FakeSMTP.fail_with = None
-        _, reported = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        _, reported = self.run_filtered()
         self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
         self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer"]})
+        self.assertEqual(self.pool_titles(), [])
+
+    def test_configs_sharing_state_share_the_pool(self):
+        other = "https://other.example/careers"
+        self.mark_known(URL, other)
+        self.recent_email(hours_ago=1)
+        self.pages[other] = page(*jobs_named("Senior Engineer"))
+        self.run_filtered([target(name="Other", url=other)])  # batch 2: left-outs only
+        self.assertEqual(self.emails_attempted, 0)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_filtered([target()])  # batch 1: a match
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.assertEqual(self.left_out, {"Other": ["Senior Engineer"]})
 
     def test_show_filtered_off_restores_quiet_filtering(self):
         self.mark_known(URL)
         self.pages[URL] = page(*jobs_named("Senior Software Engineer"))
-        ok, _ = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, show_filtered=False)
+        ok, _ = self.run_filtered(show_filtered=False)
         self.assertTrue(ok)
         self.assertEqual(self.emails_attempted, 0)
-        self.assertEqual(len(self.saved_state()[URL]), 1)  # seen at once, never listed
+        self.assertEqual(len(self.saved_state()[URL]), 1)
+        self.assertNotIn(jm.PENDING_LEFT_OUT_KEY, self.saved_state())
 
-    def test_keyword_filter_leftovers_are_listed_too(self):
+    def test_keyword_only_configs_stay_quiet_by_default(self):
         self.mark_known(URL)
         self.pages[URL] = page(*jobs_named("Software Engineer", "Quant Trader"))
         _, reported = self.run_monitor([target()], keyword_filters=["engineer"])
         self.assertEqual(reported, {"Acme": ["Software Engineer"]})
+        self.assertEqual(self.left_out, {})
+        self.assertEqual(set(self.saved_state()), {URL})
+
+    def test_keyword_leftovers_listed_when_asked(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Software Engineer", "Quant Trader"))
+        _, reported = self.run_monitor([target()], keyword_filters=["engineer"], show_filtered=True)
+        self.assertEqual(reported, {"Acme": ["Software Engineer"]})
         self.assertEqual(self.left_out, {"Acme": ["Quant Trader"]})
 
-    def test_holding_left_out_postings_never_evicts_listed_jobs(self):
-        with mock.patch.object(jm, "STATE_RETENTION_PER_TARGET", 3):
-            self.mark_known(URL)
-            self.recent_email(hours_ago=1)
-            listed = ["Backend Engineer", "Data Engineer", "ML Engineer"]
-            self.pages[URL] = page(*jobs_named(*listed, "Senior Engineer", "Staff Engineer"))
-            _, reported = self.run_monitor([target()], role_filter=REPO_ROLE_FILTER)
-            self.assertEqual(reported, {"Acme": listed})
-            self.assertEqual(self.left_out, {"Acme": ["Senior Engineer", "Staff Engineer"]})
-            _, reported = self.run_monitor([target()], role_filter=REPO_ROLE_FILTER)
-            self.assertEqual((reported, self.left_out), ({}, {}))
+    def test_two_targets_with_the_same_name_both_alert(self):
+        other = "https://other.example/careers"
+        self.mark_known(URL, other)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[other] = page(*jobs_named("Data Engineer"))
+        _, reported = self.run_monitor([target(), target(url=other)])
+        self.assertEqual(reported, {"Acme": ["Backend Engineer", "Data Engineer"]})
+
+    def test_email_parts_are_utf8_encoded_without_long_lines(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer", *[f"Senior Engineer {i}" for i in range(200)]))
+        self.run_filtered()
+        [(_, msg)] = self.emails_sent()
+        for part in msg.get_payload():
+            self.assertEqual(part.get_content_charset(), "utf-8")
+        raw = msg.as_string()
+        self.assertLessEqual(max(len(line) for line in raw.splitlines()), 998)
 
     def test_html_email_escapes_scraped_text(self):
         html = jm.format_html_report(

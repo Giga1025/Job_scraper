@@ -79,7 +79,7 @@ python job_monitor.py
 ```
 
 The first check of each target is a silent baseline: it records the jobs already listed
-(a first check that finds no jobs doesn't count, since that's usually a page glitch).
+(if it finds none, it looks once more, since an empty page is often a glitch).
 From the next run on, only postings that weren't there before are alerted.
 
 ---
@@ -96,13 +96,15 @@ non-software engineering (`exclude_other_disciplines`, unless a `software_signal
 present). Matching is whole-word and case-insensitive. Edit the lists to taste; remove
 `role_filter` to turn it off.
 
-Left-out postings are not dropped silently. They're listed in a separate "Left out by your
-filters" section at the bottom of the next alert email (with the reason), or in a digest email
-if there has been no alert for `filtered_digest_hours` (default 24). They're only marked as seen
-once an email has listed them. Set `"show_filtered": false` to drop them quietly instead.
+Left-out postings are not dropped silently. They wait in `state.json` and are listed in a
+separate "Left out by your filters" section at the bottom of the next alert email (with the
+reason), or in a digest email if no email has gone out for `filtered_digest_hours` (default 24),
+even if the posting has left the careers page by then. Monitors sharing a `state.json` (e.g.
+batch configs) share this list, so any alert or digest carries all of it. This is on whenever
+`role_filter` is set; `"show_filtered": false` drops left-out postings quietly instead.
 
-`keyword_filters` (global, or per target) still works as an allow-list; postings it leaves out
-are listed the same way.
+`keyword_filters` (global, or per target) still works as an allow-list. Postings it leaves out
+are dropped quietly as before, unless you set `"show_filtered": true`.
 
 ---
 
@@ -256,7 +258,7 @@ jobs:
 | `config_all.json` | Shipped list of companies; used by default (see step 2) |
 | `config.json` | Your own settings; use it with `--config config.json` if `config_all.json` exists |
 | `state.json` | Last-seen jobs (auto-managed, don't edit) |
-| `state.json.*` | Lock file, last-email time and any set-aside unreadable state (auto-managed) |
+| `state.json.*` | Lock file and any set-aside unreadable state (auto-managed) |
 | `monitor.log` | Run history and errors |
 
 ## Tests
