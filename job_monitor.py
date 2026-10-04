@@ -1079,11 +1079,72 @@ def filter_by_keywords(jobs: list[dict], keywords: list[str]) -> list[dict]:
     return [j for j in jobs if any(p.search(j["title"]) for p in patterns)]
 
 
+# ===================================================================
+# Role filtering (exclusion-based)
+# ===================================================================
+# The role filter keeps every title unless it clearly says the role is senior,
+# an internship, pure frontend, non-engineering or non-software engineering.
+# Unusual titles ("Member of Technical Staff", "Forward Deployed Engineer")
+# therefore pass. The word lists live in the config under "role_filter".
+def _phrase_pattern(phrases) -> re.Pattern | None:
+    """Whole-word, case-insensitive match of any phrase; a space in a phrase also
+    matches a hyphen, a slash or nothing ("front end" matches "front-end" and "frontend")."""
+    parts = [r"[\s\-/]*".join(re.escape(w) for w in str(p).split()) for p in phrases or [] if str(p).split()]
+    if not parts:
+        return None
+    return re.compile(r"(?<!\w)(?:" + "|".join(parts) + r")(?!\w)", re.IGNORECASE)
+
+
+def compile_role_filter(role_filter: dict | None) -> dict | None:
+    if not isinstance(role_filter, dict):
+        return None
+    return {key: _phrase_pattern(value) for key, value in role_filter.items() if isinstance(value, list)}
+
+
+def role_exclusion_reason(title: str, patterns: dict | None) -> str | None:
+    """Why the role filter leaves this title out, or None if it's kept."""
+    if not patterns:
+        return None
+
+    def hit(key, text=title):
+        match = patterns.get(key) and patterns[key].search(text)
+        return match.group(0) if match else None
+
+    senior_text = patterns["senior_ignore"].sub(" ", title) if patterns.get("senior_ignore") else title
+    if (word := hit("exclude_senior", senior_text)):
+        return f"senior ({word})"
+    if (word := hit("exclude_internships")) and not hit("internship_ok_if"):
+        return f"internship ({word})"
+    if (word := hit("exclude_frontend")) and not hit("frontend_ok_if"):
+        return f"frontend ({word})"
+    if (word := hit("exclude_non_engineering")) and not hit("engineering_signals"):
+        return f"not engineering ({word})"
+    if (word := hit("exclude_other_disciplines")) and not hit("software_signals"):
+        return f"not software ({word})"
+    return None
+
+
+def split_new_jobs(jobs: list[dict], keywords: list[str], role_patterns: dict | None) -> tuple[list[dict], list[dict]]:
+    """Split new jobs into (matches, left out). Left-out jobs are copies carrying a "reason"."""
+    keyword_ok = {id(j) for j in filter_by_keywords(jobs, keywords)}
+    matches, left_out = [], []
+    for job in jobs:
+        reason = "no keyword match" if id(job) not in keyword_ok else role_exclusion_reason(job["title"], role_patterns)
+        if reason:
+            left_out.append({**job, "reason": reason})
+        else:
+            matches.append(job)
+    return matches, left_out
+
+
 
 # ===================================================================
 # Notifications
 # ===================================================================
-def format_plain_report(all_new: dict[str, list[dict]]) -> str:
+LEFT_OUT_HEADING = "Left out by your filters (listed so a misnamed role isn't missed)"
+
+
+def format_plain_report(all_new: dict[str, list[dict]], left_out: dict[str, list[dict]] | None = None) -> str:
     lines = [
         "=" * 60,
         f"  JOB MONITOR ALERT — {datetime.now().strftime('%Y-%m-%d %H:%M')}",
@@ -1096,25 +1157,46 @@ def format_plain_report(all_new: dict[str, list[dict]]) -> str:
             lines.append(f"    * {j['title']}")
             lines.append(f"      {j['url']}")
         lines.append("")
+    if left_out:
+        lines.append(f"{LEFT_OUT_HEADING}: {sum(len(v) for v in left_out.values())}")
+        for company, jobs in left_out.items():
+            lines.append(f"- {company}")
+            for j in jobs:
+                lines.append(f"    · {j['title']}  [{j['reason']}]")
+                lines.append(f"      {j['url']}")
+        lines.append("")
     lines.append("Sent by job_monitor.py")
     return "\n".join(lines)
 
 
-def format_html_report(all_new: dict[str, list[dict]]) -> str:
+def format_html_report(all_new: dict[str, list[dict]], left_out: dict[str, list[dict]] | None = None) -> str:
+    esc = html_lib.escape
     rows = ""
     for company, jobs in all_new.items():
-        rows += f'<h3 style="color:#1a73e8;margin-top:24px">{company} ({len(jobs)} new)</h3><ul>'
+        rows += f'<h3 style="color:#1a73e8;margin-top:24px">{esc(company)} ({len(jobs)} new)</h3><ul>'
         for j in jobs:
             rows += (
                 f'<li style="margin-bottom:8px">'
-                f'<a href="{j["url"]}" style="color:#1a73e8;text-decoration:none;font-weight:600">'
-                f'{j["title"]}</a></li>'
+                f'<a href="{esc(j["url"])}" style="color:#1a73e8;text-decoration:none;font-weight:600">'
+                f'{esc(j["title"])}</a></li>'
             )
         rows += "</ul>"
+    if left_out:
+        total = sum(len(v) for v in left_out.values())
+        rows += f'<h4 style="color:#777;margin-top:32px">{esc(LEFT_OUT_HEADING)}: {total}</h4>'
+        for company, jobs in left_out.items():
+            rows += f'<p style="color:#777;font-size:13px;margin:12px 0 4px">{esc(company)}</p><ul style="margin-top:0">'
+            for j in jobs:
+                rows += (
+                    f'<li style="font-size:13px;color:#777"><a href="{esc(j["url"])}" style="color:#777">'
+                    f'{esc(j["title"])}</a> <span style="color:#aaa">[{esc(j["reason"])}]</span></li>'
+                )
+            rows += "</ul>"
+    heading = "New Job Postings Found" if all_new else "Postings left out by your filters"
 
     return f"""
     <div style="font-family:system-ui,sans-serif;max-width:600px;margin:auto;padding:20px">
-      <h2 style="border-bottom:2px solid #1a73e8;padding-bottom:8px">New Job Postings Found</h2>
+      <h2 style="border-bottom:2px solid #1a73e8;padding-bottom:8px">{heading}</h2>
       <p style="color:#555">Detected on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
       {rows}
       <p style="color:#999;font-size:12px;margin-top:32px">Sent by job_monitor.py</p>
@@ -1122,7 +1204,7 @@ def format_html_report(all_new: dict[str, list[dict]]) -> str:
     """
 
 
-def send_email(config: dict, all_new: dict[str, list[dict]]) -> bool:
+def send_email(config: dict, all_new: dict[str, list[dict]], left_out: dict[str, list[dict]] | None = None) -> bool:
     """Email the report. Returns False if email is enabled but sending failed."""
     try:
         email_cfg = config.get("email") or {}
@@ -1146,13 +1228,20 @@ def send_email(config: dict, all_new: dict[str, list[dict]]) -> bool:
             return False
 
         total = sum(len(v) for v in all_new.values())
+        left_out_total = sum(len(v) for v in (left_out or {}).values())
+        if total:
+            subject = f"[Job Monitor] {total} new job posting{'s' if total != 1 else ''} found"
+            if left_out_total:
+                subject += f" (+{left_out_total} left out by filters)"
+        else:
+            subject = f"[Job Monitor] Digest: {left_out_total} posting{'s' if left_out_total != 1 else ''} left out by your filters"
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"[Job Monitor] {total} new job posting{'s' if total != 1 else ''} found"
+        msg["Subject"] = subject
         msg["From"] = sender_email
         msg["To"] = recipients
 
-        msg.attach(MIMEText(format_plain_report(all_new), "plain"))
-        msg.attach(MIMEText(format_html_report(all_new), "html"))
+        msg.attach(MIMEText(format_plain_report(all_new, left_out), "plain"))
+        msg.attach(MIMEText(format_html_report(all_new, left_out), "html"))
 
         # Verify the server's certificate so the password can't be sent to an impostor.
         context = ssl.create_default_context()
@@ -1283,8 +1372,18 @@ def fetch_target_jobs(url: str, mode: str, link_selector: str, wait_for: str) ->
     return current_jobs
 
 
-def check_target(target: dict, state: dict, default_keywords: list[str]) -> list[dict]:
-    """Scrape one target, record what it lists in state, and return its new (keyword-matching) jobs."""
+def check_target(
+    target: dict,
+    state: dict,
+    default_keywords: list[str],
+    role_patterns: dict | None = None,
+    hold_left_out: bool = False,
+) -> tuple[list[dict], list[dict], list[dict] | None]:
+    """Scrape one target and record what it lists in state.
+
+    Returns (matching new jobs, new jobs left out by the filters, held state). With
+    hold_left_out, left-out jobs are not recorded as seen yet: the held state is the
+    entry to save once an email has shown them, or None if nothing was held."""
     name = target["name"]
     url = target["url"]
     mode = target.get("mode", "html")
@@ -1297,7 +1396,7 @@ def check_target(target: dict, state: dict, default_keywords: list[str]) -> list
         url, mode, target.get("link_selector", ""), target.get("wait_for", "")
     )
     if current_jobs is None:
-        return []
+        return [], [], None
 
     previous_jobs = state.get(url)
     if previous_jobs is None:
@@ -1308,19 +1407,30 @@ def check_target(target: dict, state: dict, default_keywords: list[str]) -> list
             f"  [baseline] First check: recorded {len(current_jobs)} job(s). "
             f"New postings will be alerted from the next run."
         )
-        return []
+        return [], [], None
 
     # --- Diff against last run ---
     new_jobs = diff_jobs(previous_jobs, current_jobs)
-    new_jobs = filter_by_keywords(new_jobs, target.get("keyword_filters", default_keywords))
+    new_jobs, left_out = split_new_jobs(new_jobs, target.get("keyword_filters", default_keywords), role_patterns)
 
     if new_jobs:
         log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
     else:
         log.info(f"  No new postings since last check.")
+    if left_out:
+        log.info(f"  [filtered] {len(left_out)} new posting(s) left out by the filters")
 
-    state[url] = merge_jobs_new_first(previous_jobs, current_jobs, STATE_RETENTION_PER_TARGET)
-    return new_jobs
+    full_state = merge_jobs_new_first(previous_jobs, current_jobs, STATE_RETENTION_PER_TARGET)
+    if left_out and hold_left_out:
+        held_ids = {compute_job_id(j) for j in left_out}
+        state[url] = merge_jobs_new_first(
+            previous_jobs,
+            [j for j in current_jobs if compute_job_id(j) not in held_ids],
+            STATE_RETENTION_PER_TARGET,
+        )
+        return new_jobs, left_out, full_state
+    state[url] = full_state
+    return new_jobs, left_out, None
 
 
 def run(config_override: str | None = None) -> bool:
@@ -1329,7 +1439,13 @@ def run(config_override: str | None = None) -> bool:
     state = load_state()
     loaded_state = copy.deepcopy(state)
     keywords = config.get("keyword_filters", [])
+    role_patterns = compile_role_filter(config.get("role_filter"))
+    # Left-out postings stay unseen until an email has listed them, so a role the
+    # filters misjudge still reaches the inbox (in the next alert or a digest).
+    show_left_out = config.get("show_filtered", True)
     all_new: dict[str, list[dict]] = {}
+    all_left_out: dict[str, list[dict]] = {}
+    held_states: dict[str, list[dict]] = {}  # state entries to save once left-out jobs are emailed
     alerted_urls: set[str] = set()
     first_baselines: dict[str, list[dict]] = {}  # as recorded at each target's first check
 
@@ -1349,7 +1465,7 @@ def run(config_override: str | None = None) -> bool:
         # stop the remaining targets from being checked, saved and emailed.
         first_check = url not in state
         try:
-            new_jobs = check_target(target, state, keywords)
+            new_jobs, left_out, held_state = check_target(target, state, keywords, role_patterns, show_left_out)
         except Exception:
             log.exception(f"  Failed to check {name}, skipping it this run")
             continue
@@ -1358,6 +1474,10 @@ def run(config_override: str | None = None) -> bool:
         if new_jobs:
             all_new[name] = new_jobs
             alerted_urls.add(url)
+        if left_out and show_left_out:
+            all_left_out.setdefault(name, []).extend(left_out)
+        if held_state is not None:
+            held_states[url] = held_state
 
     # Save only the targets this run changed, so another monitor process
     # saving its own targets at the same time isn't overwritten. First-check
@@ -1368,15 +1488,19 @@ def run(config_override: str | None = None) -> bool:
     baselines = {url: jobs for url, jobs in changed.items() if url in first_baselines and url not in alerted_urls}
     updates = {url: jobs for url, jobs in changed.items() if url not in baselines}
 
-    if not all_new:
+    digest_due = bool(all_left_out) and _left_out_digest_due(config)
+    if not all_new and not digest_due:
         if changed:
             save_state(updates, baselines)
+        if all_left_out:
+            held = sum(len(v) for v in all_left_out.values())
+            log.info(f"{held} posting(s) left out by the filters are held for the next email or digest.")
         log.info("No new postings found across all targets.")
         return True
 
-    report = format_plain_report(all_new)
+    report = format_plain_report(all_new, all_left_out)
     print_console_safe("\n" + report)
-    if not send_email(config, all_new):
+    if not send_email(config, all_new, left_out=all_left_out):
         # Keep the alerted targets as they were so these postings are reported again next
         # run, but keep new targets' baselines as first recorded (before any alert against
         # them, e.g. from a second config entry for the same URL).
@@ -1385,8 +1509,33 @@ def run(config_override: str | None = None) -> bool:
         log.error("New postings not marked as seen: they'll be reported again on the next run.")
         return False
 
+    # The email listed the left-out postings too, so they count as seen now.
+    for url, held_state in held_states.items():
+        baselines.pop(url, None)
+        updates[url] = held_state
     save_state(updates, baselines)
+    _record_email_sent()
     return True
+
+
+def _last_email_marker() -> Path:
+    return STATE_PATH.with_name(STATE_PATH.name + ".last_email")
+
+
+def _left_out_digest_due(config: dict) -> bool:
+    """Whether postings held back by the filters should go out without a new match."""
+    hours = float(config.get("filtered_digest_hours", 24))
+    try:
+        return time.time() - _last_email_marker().stat().st_mtime >= hours * 3600
+    except FileNotFoundError:
+        return True
+
+
+def _record_email_sent():
+    try:
+        _last_email_marker().write_text(datetime.now().isoformat())
+    except OSError as exc:
+        log.warning(f"Could not record the email time ({exc}); the next digest may come early.")
 
 
 if __name__ == "__main__":

@@ -154,22 +154,28 @@ class MonitorTestCase(unittest.TestCase):
     def fake_post(self, url, *args, **kwargs):
         raise jm.requests.ConnectionError(f"no fake page for {url}")
 
-    def run_monitor(self, targets, email=None, keyword_filters=None):
-        """Run one monitor cycle. Returns (run() result, {target name: [new titles]})."""
+    def run_monitor(self, targets, email=None, keyword_filters=None, **config_extra):
+        """Run one monitor cycle. Returns (run() result, {target name: [new titles]}).
+        Titles listed in the email's left-out section end up in self.left_out."""
         config = {
             "email": email or {"enabled": False},
             "keyword_filters": keyword_filters or [],
             "targets": targets,
+            **config_extra,
         }
         config_path = self.tmp / "config.json"
         config_path.write_text(json.dumps(config))
 
         reported = {}
+        self.left_out = {}
+        self.emails_attempted = 0
         real_send_email = jm.send_email
 
-        def spy(cfg, all_new):
+        def spy(cfg, all_new, left_out=None):
+            self.emails_attempted += 1
             reported.update({name: [j["title"] for j in jobs] for name, jobs in all_new.items()})
-            return real_send_email(cfg, all_new)
+            self.left_out = {name: [j["title"] for j in jobs] for name, jobs in (left_out or {}).items()}
+            return real_send_email(cfg, all_new, left_out=left_out)
 
         with mock.patch.object(jm, "send_email", spy):
             result = jm.run(str(config_path))
@@ -620,6 +626,161 @@ class DetectionTests(MonitorTestCase):
         with self.assertLogs(jm.log, "ERROR"):
             self.run_monitor([target()])
         self.assertEqual(self.saved_state()[URL], before)
+
+
+# ===================================================================
+# Role filter: leave out clearly-irrelevant roles, but still list them
+# ===================================================================
+REPO_ROLE_FILTER = json.loads((REPO_DIR / "config_all.json").read_text())["role_filter"]
+
+# Titles the seeker wants (new grad / early-career software, ML, infra, backend, full stack),
+# including company-specific naming that a keyword allow-list would miss.
+MUST_KEEP = [
+    "Member of Technical Staff", "Member of Technical Staff, Pretraining", "Software Engineer, Ads Manager",
+    "Software Engineer, New Grad", "Software Engineer II", "Software Engineer III",
+    "Research Engineer, Pre-training", "Post-Training Researcher", "Machine Learning Engineer", "AI Engineer",
+    "Forward Deployed Engineer", "Backend Engineer", "Infrastructure Engineer", "Full Stack Engineer",
+    "Full-Stack Engineer (Frontend focus)", "Technology Analyst Program",
+    "2026 | Americas | New York | Engineering | New Analyst", "Associate Software Engineer", "Applied Scientist",
+    "Data Engineer", "Site Reliability Engineer", "Quantitative Developer",
+    "Software Engineer - Frontend Developer Productivity", "Systems Software Engineer - New College Grad 2026",
+    "Software Engineer, Sales Engineering Tools", "Inference Engineer", "Software Engineer, Lead Generation",
+    "Research Scientist, Fundamental Generative AI - New College Grad 2026", "Quantitative Researcher",
+    "Software Engineer, ML Hardware", "Firmware Engineer", "HPC Operations Engineer",
+    "Software Engineer Intern / New Grad", "Software Engineer, Data Platform", "Security Engineer", "iOS Engineer",
+    "Applied AI Engineer", "Privacy & Civil Liberties Engineer - New Grad", "Web/App Test Engineer",
+    "Software Engineer, Fleet Management",
+]
+MUST_LEAVE_OUT = [
+    "Senior Software Engineer", "Sr. Software Engineer", "Staff ML Engineer", "Principal Engineer",
+    "Engineering Manager, Infra", "Product Manager, AI", "Manager, Software Engineering", "Account Executive",
+    "Recruiter", "Frontend Engineer", "Software Engineer Intern", "Mechanical Engineer", "Barista - Memphis",
+    "Tech Lead, Platform", "Director of Engineering", "Deployment Strategist", "Electrical Engineer, Power",
+    "ASIC Design Verification Engineer", "Summer Analyst 2027", "HRIS Manager", "Growth Campaign Manager",
+    "Civil Engineer Memphis, TN",
+]
+
+
+class RoleFilterTests(MonitorTestCase):
+    def setUp(self):
+        super().setUp()
+        self.patterns = jm.compile_role_filter(REPO_ROLE_FILTER)
+
+    def recent_email(self, hours_ago=0):
+        marker = jm.STATE_PATH.with_name("state.json.last_email")
+        marker.write_text("x")
+        stamp = time.time() - hours_ago * 3600
+        os.utime(marker, (stamp, stamp))
+
+    def test_shipped_filter_keeps_wanted_titles_and_leaves_out_the_rest(self):
+        wrongly_left_out = {t: jm.role_exclusion_reason(t, self.patterns) for t in MUST_KEEP
+                            if jm.role_exclusion_reason(t, self.patterns)}
+        wrongly_kept = [t for t in MUST_LEAVE_OUT if not jm.role_exclusion_reason(t, self.patterns)]
+        self.assertEqual(wrongly_left_out, {})
+        self.assertEqual(wrongly_kept, [])
+
+    def test_no_role_filter_configured_keeps_everything(self):
+        self.assertIsNone(jm.compile_role_filter(None))
+        self.assertIsNone(jm.role_exclusion_reason("Senior Staff Principal Recruiter", None))
+
+    def test_matches_are_alerted_and_left_out_postings_listed_in_the_same_email(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Software Engineer, New Grad", "Senior Software Engineer", "Account Executive"))
+        ok, reported = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertTrue(ok)
+        self.assertEqual(reported, {"Acme": ["Software Engineer, New Grad"]})
+        self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer", "Account Executive"]})
+        [(_, msg)] = self.emails_sent()
+        body = msg.get_payload()[0].get_payload(decode=True).decode()
+        self.assertIn("Senior Software Engineer  [senior (Senior)]", body)
+        self.assertIn("+2 left out by filters", msg["Subject"])
+
+        # Everything was shown, so nothing comes back.
+        _, reported = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual((reported, self.left_out), ({}, {}))
+
+    def test_left_out_postings_wait_for_the_next_email(self):
+        self.mark_known(URL)
+        self.recent_email(hours_ago=1)
+        self.pages[URL] = page(*jobs_named("Senior Software Engineer"))
+        ok, _ = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertTrue(ok)
+        self.assertEqual(self.emails_attempted, 0)
+        self.assertEqual(self.saved_state().get(URL), [])  # not marked as seen yet
+
+        self.pages[URL] = page(*jobs_named("Senior Software Engineer", "Backend Engineer"))
+        _, reported = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer"]})
+        self.assertEqual(len(self.saved_state()[URL]), 2)
+
+    def test_digest_goes_out_when_no_match_for_a_day(self):
+        self.mark_known(URL)
+        self.recent_email(hours_ago=25)
+        self.pages[URL] = page(*jobs_named("Senior Software Engineer"))
+        ok, reported = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertTrue(ok)
+        self.assertEqual(reported, {})
+        self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer"]})
+        [(_, msg)] = self.emails_sent()
+        self.assertIn("Digest: 1 posting left out", msg["Subject"])
+        self.assertEqual(len(self.saved_state()[URL]), 1)
+
+        # The digest reset the timer, and the posting is now seen.
+        self.pages[URL] = page(*jobs_named("Senior Software Engineer", "Staff Engineer"))
+        self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(self.emails_attempted, 0)
+
+    def test_failed_email_keeps_left_out_postings_held(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer", "Senior Software Engineer"))
+        FakeSMTP.fail_with = smtplib.SMTPAuthenticationError(535, b"bad password")
+        ok, _ = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertFalse(ok)
+        self.assertEqual(self.saved_state(), {URL: []})
+
+        FakeSMTP.fail_with = None
+        _, reported = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer"]})
+
+    def test_show_filtered_off_restores_quiet_filtering(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Senior Software Engineer"))
+        ok, _ = self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, show_filtered=False)
+        self.assertTrue(ok)
+        self.assertEqual(self.emails_attempted, 0)
+        self.assertEqual(len(self.saved_state()[URL]), 1)  # seen at once, never listed
+
+    def test_keyword_filter_leftovers_are_listed_too(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Software Engineer", "Quant Trader"))
+        _, reported = self.run_monitor([target()], keyword_filters=["engineer"])
+        self.assertEqual(reported, {"Acme": ["Software Engineer"]})
+        self.assertEqual(self.left_out, {"Acme": ["Quant Trader"]})
+
+    def test_holding_left_out_postings_never_evicts_listed_jobs(self):
+        with mock.patch.object(jm, "STATE_RETENTION_PER_TARGET", 3):
+            self.mark_known(URL)
+            self.recent_email(hours_ago=1)
+            listed = ["Backend Engineer", "Data Engineer", "ML Engineer"]
+            self.pages[URL] = page(*jobs_named(*listed, "Senior Engineer", "Staff Engineer"))
+            _, reported = self.run_monitor([target()], role_filter=REPO_ROLE_FILTER)
+            self.assertEqual(reported, {"Acme": listed})
+            self.assertEqual(self.left_out, {"Acme": ["Senior Engineer", "Staff Engineer"]})
+            _, reported = self.run_monitor([target()], role_filter=REPO_ROLE_FILTER)
+            self.assertEqual((reported, self.left_out), ({}, {}))
+
+    def test_html_email_escapes_scraped_text(self):
+        html = jm.format_html_report(
+            {"A&B <Co>": [{"title": "Engineer <script>", "url": 'https://x.example/?a=1&b="2"'}]},
+            {"A&B <Co>": [{"title": "Senior <b>", "url": "https://x.example/2", "reason": "senior (Senior)"}]},
+        )
+        self.assertNotIn("<script>", html)
+        self.assertNotIn("<b>", html)
+        self.assertIn("Engineer &lt;script&gt;", html)
+        self.assertIn("A&amp;B &lt;Co&gt;", html)
+        self.assertIn('href="https://x.example/?a=1&amp;b=&quot;2&quot;"', html)
 
 
 # ===================================================================

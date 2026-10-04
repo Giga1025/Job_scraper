@@ -83,6 +83,28 @@ From the next run on, only postings that weren't there before are alerted.
 
 ---
 
+## Choosing which roles you're alerted about
+
+Job titles vary a lot between companies ("Member of Technical Staff", "Technology Analyst",
+"Forward Deployed Engineer"), so a list of titles to *look for* misses roles. Instead,
+`role_filter` in the config lists what to *leave out*: every new posting is kept unless its
+title clearly says it is senior (`exclude_senior`), an internship (`exclude_internships`),
+pure frontend (`exclude_frontend`, unless also full stack/platform), non-engineering
+(`exclude_non_engineering`, unless an `engineering_signals` word is present) or
+non-software engineering (`exclude_other_disciplines`, unless a `software_signals` word is
+present). Matching is whole-word and case-insensitive. Edit the lists to taste; remove
+`role_filter` to turn it off.
+
+Left-out postings are not dropped silently. They're listed in a separate "Left out by your
+filters" section at the bottom of the next alert email (with the reason), or in a digest email
+if there has been no alert for `filtered_digest_hours` (default 24). They're only marked as seen
+once an email has listed them. Set `"show_filtered": false` to drop them quietly instead.
+
+`keyword_filters` (global, or per target) still works as an allow-list; postings it leaves out
+are listed the same way.
+
+---
+
 ## Target Configuration
 
 Each target has these fields:
@@ -233,6 +255,7 @@ jobs:
 | `config_all.json` | Shipped list of companies; used by default (see step 2) |
 | `config.json` | Your own settings; use it with `--config config.json` if `config_all.json` exists |
 | `state.json` | Last-seen jobs (auto-managed, don't edit) |
+| `state.json.*` | Lock file, last-email time and any set-aside unreadable state (auto-managed) |
 | `monitor.log` | Run history and errors |
 
 ## Tests
