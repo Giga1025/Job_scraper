@@ -10,9 +10,9 @@
   },
   "keyword_filters": [],
   "targets": [
-
-    {"_section": "═══════ BIG TECH / FAANG+ ═══════"},
-
+    {
+      "_section": "═══════ BIG TECH / FAANG+ ═══════"
+    },
     {
       "name": "Microsoft — US Entry Level",
       "url": "https://apply.careers.microsoft.com/careers?location=United+States&filter_seniority=Entry&sort_by=timestamp",
@@ -27,9 +27,9 @@
     {
       "name": "Apple",
       "url": "https://jobs.apple.com/en-us/search?location=united-states-USA&sort=newest",
-      "mode": "browser",
-      "wait_for": "a[href*='jobs.apple.com/en-us/details']",
-      "link_selector": "a[href*='/en-us/details/']"
+      "mode": "html",
+      "link_selector": "a[href*='/en-us/details/']:not([href*='locationPicker'])",
+      "wait_for": ""
     },
     {
       "name": "Amazon",
@@ -40,10 +40,10 @@
     },
     {
       "name": "Meta",
-      "url": "https://www.metacareers.com/jobs?offices[0]=United%20States&sort_by_new=true",
+      "url": "https://www.metacareers.com/jobsearch/?offices[0]=Aiken%2C%20SC&offices[1]=Altoona%2C%20IA&offices[2]=Ashburn%2C%20VA&offices[3]=Atlanta%2C%20GA&offices[4]=Aurora%2C%20IL&offices[5]=Austin%2C%20TX&offices[6]=Beaver%20Dam%2C%20WI&offices[7]=Bellevue%2C%20WA&offices[8]=Boston%2C%20MA&offices[9]=Bowling%20Green%2C%20OH&offices[10]=Burlingame%2C%20CA&offices[11]=Cambridge%2C%20MA&offices[12]=Cedar%20Rapids%2C%20IA&offices[13]=Chandler%2C%20AZ&offices[14]=Cheyenne%2C%20WY&offices[15]=Chicago%2C%20IL&offices[16]=Crook%20County%2C%20OR&offices[17]=DeKalb%2C%20IL&offices[18]=Denver%2C%20CO&offices[19]=Detroit%2C%20MI&offices[20]=Eagle%20Mountain%2C%20UT&offices[21]=El%20Paso%2C%20TX&offices[22]=Forest%20City%2C%20NC&offices[23]=Fort%20Worth%2C%20TX&offices[24]=Foster%20City%2C%20CA&offices[25]=Fremont%2C%20CA&offices[26]=Gallatin%2C%20TN&offices[27]=Garland%2C%20TX&offices[28]=Goodyear%2C%20AZ&offices[29]=Henrico%2C%20VA&offices[30]=Hillsboro%2C%20OR&offices[31]=Houston%2C%20TX&offices[32]=Huntsville%2C%20AL&offices[33]=Irvine%2C%20CA&offices[34]=Jeffersonville%2C%20IN&offices[35]=Kansas%20City%2C%20MO&offices[36]=Kuna%2C%20ID&offices[37]=Lebanon%2C%20IN&offices[38]=Los%20Angeles%2C%20CA&offices[39]=Los%20Lunas%2C%20NM&offices[40]=Loudoun%20County%2C%20VA&offices[41]=Louisville%2C%20CO&offices[42]=Menlo%20Park%2C%20CA&offices[43]=Mesa%2C%20AZ&offices[44]=Miami%2C%20Florida&offices[45]=Montgomery%2C%20AL&offices[46]=Mountain%20View%2C%20CA&offices[47]=New%20Albany%2C%20OH&offices[48]=New%20York%2C%20NY&offices[49]=Newark%2C%20CA&offices[50]=Newark%2C%20OH&offices[51]=Newton%20County%2C%20GA&offices[52]=Northridge%2C%20CA&offices[53]=Papillion%2C%20NE&offices[54]=Pasadena%2C%20CA&offices[55]=Pittsburgh%2C%20PA&offices[56]=Polk%20County%2C%20IA&offices[57]=Prineville%2C%20OR&offices[58]=Rayville%2C%20LA&offices[59]=Redmond%2C%20WA&offices[60]=Remote%2C%20US&offices[61]=Reston%2C%20VA&offices[62]=Richmond%2C%20VA&offices[63]=Rosemount%2C%20MN&offices[64]=Salt%20Lake%2C%20UT&offices[65]=San%20Diego%2C%20CA&offices[66]=San%20Francisco%2C%20CA&offices[67]=San%20Mateo%2C%20CA&offices[68]=Sandston%2C%20VA&offices[69]=Santa%20Clara%2C%20CA&offices[70]=Sarpy%20County%2C%20NE&offices[71]=Sausalito%2C%20CA&offices[72]=Seattle%2C%20WA&offices[73]=Stanton%20Springs%2C%20GA&offices[74]=Sterling%2C%20VA&offices[75]=Sunnyvale%2C%20CA&offices[76]=Temple%2C%20TX&offices[77]=Tulsa%2C%20OK&offices[78]=Utah%20County%2C%20UT&offices[79]=Valencia%2C%20NM&offices[80]=Vancouver%2C%20WA&offices[81]=Washington%2C%20DC&sort_by_new=true",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='metacareers.com/jobs/']"
+      "wait_for": "a[href*='/profile/job_details/']",
+      "link_selector": "a[href*='/profile/job_details/']"
     },
     {
       "name": "Netflix",
@@ -67,27 +67,27 @@
     },
     {
       "name": "Salesforce",
-      "url": "https://careers.salesforce.com/en/jobs/?country=United+States&sortBy=DATE_DESCENDING",
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site?CF_-_REC_-_LRV_-_Job_Posting_Anchor_-_Country_from_Job_Posting_Location_Extended=bc33aa3152ec42d4995f4791a106ed09",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='/en/jobs/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "Palantir",
-      "url": "https://www.palantir.com/careers/#open-positions",
-      "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "url": "https://jobs.lever.co/palantir",
+      "mode": "html",
+      "link_selector": "a.posting-title",
+      "wait_for": ""
     },
-
-    {"_section": "═══════ FINTECH / PAYMENTS ═══════"},
-
+    {
+      "_section": "═══════ FINTECH / PAYMENTS ═══════"
+    },
     {
       "name": "Stripe",
-      "url": "https://stripe.com/jobs/search?office_locations=North+America--United+States",
+      "url": "https://boards-api.greenhouse.io/v1/boards/stripe/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/listing/']",
-      "link_selector": "a[href*='/jobs/listing/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "Square / Block",
@@ -110,81 +110,96 @@
     },
     {
       "name": "Robinhood",
-      "url": "https://robinhood.com/us/en/careers/openings/",
+      "url": "https://boards-api.greenhouse.io/v1/boards/robinhood/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/openings/']",
-      "link_selector": "a[href*='/openings/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "SoFi",
-      "url": "https://www.sofi.com/careers/open-positions/",
+      "url": "https://boards-api.greenhouse.io/v1/boards/sofi/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "wait_for": "",
+      "link_selector": ""
     },
-
-    {"_section": "═══════ CRYPTO / WEB3 ═══════"},
-
+    {
+      "_section": "═══════ CRYPTO / WEB3 ═══════"
+    },
     {
       "name": "Coinbase",
-      "url": "https://www.coinbase.com/careers/positions?department=&location=United%20States",
+      "url": "https://www.coinbase.com/careers/positions?location=remote%2520usa%2Cca%2Cny%2Cnc",
       "mode": "browser",
-      "wait_for": "a[href*='/positions/']",
-      "link_selector": "a[href*='/positions/']"
+      "wait_for": "a[href*='/careers/positions/']",
+      "link_selector": "a[href*='/careers/positions/']"
     },
     {
       "name": "Binance",
       "url": "https://www.binance.com/en/careers/job-openings",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='job-openings']"
+      "wait_for": "a[href*='/careers/job?id=']",
+      "link_selector": "a[href*='/careers/job?id=']:not([href*='&name='])"
     },
     {
       "name": "Kraken",
-      "url": "https://jobs.lever.co/kraken",
-      "mode": "html",
-      "link_selector": "a[href*='jobs.lever.co/kraken/']"
+      "url": "https://jobs.ashbyhq.com/kraken.com",
+      "mode": "browser",
+      "wait_for": "a[href*='/kraken.com/']",
+      "link_selector": "a[href*='/kraken.com/']"
     },
     {
       "name": "Chainalysis",
-      "url": "https://www.chainalysis.com/careers/",
+      "url": "https://jobs.ashbyhq.com/chainalysis-careers",
       "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "wait_for": "a[href*='/chainalysis-careers/']",
+      "link_selector": "a[href*='/chainalysis-careers/']"
+    },
+    {
+      "name": "Chainalysis Government Solutions",
+      "url": "https://jobs.ashbyhq.com/chainalysis-government-solutions",
+      "mode": "browser",
+      "wait_for": "a[href*='/chainalysis-government-solutions/']",
+      "link_selector": "a[href*='/chainalysis-government-solutions/']"
     },
     {
       "name": "Ripple",
-      "url": "https://ripple.com/careers/all-jobs/",
+      "url": "https://boards-api.greenhouse.io/v1/boards/ripple/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "link_selector": "",
+      "wait_for": ""
     },
     {
       "name": "Consensys (MetaMask / Infura)",
-      "url": "https://consensys.io/open-roles",
+      "url": "https://jobs.ashbyhq.com/consensys",
       "mode": "browser",
-      "wait_for": "a[href*='open-roles']",
-      "link_selector": "a[href*='open-roles']"
+      "wait_for": "a[href*='/consensys/']",
+      "link_selector": "a[href*='/consensys/']"
+    },
+    {
+      "name": "Consensys (Greenhouse)",
+      "url": "https://job-boards.greenhouse.io/consensys",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a[href*='/consensys/jobs/']"
     },
     {
       "name": "Fireblocks",
-      "url": "https://www.fireblocks.com/careers/",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://job-boards.greenhouse.io/embed/job_board?for=fireblocks",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a[href*='gh_jid=']"
     },
     {
       "name": "Circle (USDC)",
-      "url": "https://www.circle.com/careers#job-listings",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://circle.wd1.myworkdayjobs.com/Circle",
+      "mode": "api",
+      "link_selector": ""
     },
     {
       "name": "Uniswap Labs",
-      "url": "https://boards.greenhouse.io/uniswaplabs",
-      "mode": "html",
-      "link_selector": "a[href*='greenhouse.io/uniswaplabs/']"
+      "url": "https://jobs.ashbyhq.com/uniswap",
+      "mode": "browser",
+      "wait_for": "a[href*='/uniswap/']",
+      "link_selector": "a[href*='/uniswap/']"
     },
     {
       "name": "OpenSea",
@@ -201,15 +216,8 @@
       "link_selector": "a[href*='job']"
     },
     {
-      "name": "Deribit",
-      "url": "https://www.deribit.com/careers",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "_section": "═══════ WALL STREET / QUANT / TRADING ═══════"
     },
-
-    {"_section": "═══════ WALL STREET / QUANT / TRADING ═══════"},
-
     {
       "name": "Citadel",
       "url": "https://www.citadel.com/careers/open-opportunities/",
@@ -219,45 +227,45 @@
     },
     {
       "name": "Jane Street",
-      "url": "https://www.janestreet.com/join-jane-street/open-roles/",
+      "url": "https://boards-api.greenhouse.io/v1/boards/janestreet/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/open-roles/']",
-      "link_selector": "a[href*='/open-roles/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "Two Sigma",
-      "url": "https://careers.twosigma.com/careers/SearchJobs/?sort=posting_date",
-      "mode": "browser",
-      "wait_for": "a[href*='SearchJobs']",
-      "link_selector": "a[href*='SearchJobs']"
+      "url": "https://careers.twosigma.com/careers/OpenRoles/?listFilterMode=1&5086%5B%5D=16718736&5086%5B%5D=16718737",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a[href*='/careers/JobDetail/']"
     },
     {
       "name": "DE Shaw",
-      "url": "https://www.deshaw.com/careers/choose-702",
-      "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "url": "https://www.deshaw.com/careers",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a#job-description-a-tag"
     },
     {
       "name": "Jump Trading",
-      "url": "https://www.jumptrading.com/careers/?locations=All&titlesearch=",
+      "url": "https://boards-api.greenhouse.io/v1/boards/jumptrading/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "Hudson River Trading",
-      "url": "https://www.hudsonrivertrading.com/careers/",
+      "url": "https://boards-api.greenhouse.io/v1/boards/wehrtyou/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "Susquehanna (SIG)",
-      "url": "https://careers.sig.com/us-campus-openings",
+      "url": "https://careers.sig.com/us-campus/jobs?limit=100",
       "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "link_selector": "a.job-title-link",
+      "wait_for": "a.job-title-link"
     },
     {
       "name": "Goldman Sachs",
@@ -268,10 +276,10 @@
     },
     {
       "name": "JPMorgan Chase",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/requisitions?sortBy=POSTING_DATES_DESC&location=United+States",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/jobs?location=United+States&locationId=300000000289738&locationLevel=country&mode=location&sortBy=POSTING_DATES_DESC",
       "mode": "browser",
-      "wait_for": "a[href*='requisitions']",
-      "link_selector": "a[href*='requisitions/']"
+      "link_selector": "div.job-tile",
+      "wait_for": "a.job-grid-item__link"
     },
     {
       "name": "Morgan Stanley",
@@ -280,27 +288,27 @@
     },
     {
       "name": "Bloomberg",
-      "url": "https://careers.bloomberg.com/job/search?lc=New+York",
-      "mode": "browser",
-      "wait_for": "a[href*='/job/detail/']",
-      "link_selector": "a[href*='/job/detail/']"
+      "url": "https://bloomberg.avature.net/careers/SearchJobs/?listFilterMode=1&1845%5B%5D=162508",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a[href*='/careers/JobDetail/']"
     },
-
-    {"_section": "═══════ AI / ML COMPANIES ═══════"},
-
+    {
+      "_section": "═══════ AI / ML COMPANIES ═══════"
+    },
     {
       "name": "Anthropic",
-      "url": "https://www.anthropic.com/careers#open-roles",
+      "url": "https://boards-api.greenhouse.io/v1/boards/anthropic/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "link_selector": "",
+      "wait_for": ""
     },
     {
       "name": "OpenAI",
-      "url": "https://openai.com/careers/search/",
+      "url": "https://jobs.ashbyhq.com/openai",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "wait_for": "a[href*='/openai/']",
+      "link_selector": "a[href*='/openai/']"
     },
     {
       "name": "xAI (Grok)",
@@ -310,21 +318,21 @@
     },
     {
       "name": "Databricks",
-      "url": "https://www.databricks.com/company/careers/open-positions?department=AllDepartments&location=UnitedStates",
+      "url": "https://boards-api.greenhouse.io/v1/boards/databricks/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/open-positions/']",
-      "link_selector": "a[href*='/open-positions/']"
+      "link_selector": "",
+      "wait_for": ""
     },
     {
       "name": "Scale AI",
-      "url": "https://scale.com/careers?department=All+Departments&location=All+Locations",
+      "url": "https://boards-api.greenhouse.io/v1/boards/scaleai/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "link_selector": "",
+      "wait_for": ""
     },
-
-    {"_section": "═══════ DATA / ANALYTICS / INFRA ═══════"},
-
+    {
+      "_section": "═══════ DATA / ANALYTICS / INFRA ═══════"
+    },
     {
       "name": "Snowflake",
       "url": "https://careers.snowflake.com/us/en/search-results?keywords=&sortBy=Most%20recent",
@@ -348,18 +356,17 @@
     },
     {
       "name": "Confluent",
-      "url": "https://careers.confluent.io/search/jobs?q=&location=United%20States",
+      "url": "https://api.ashbyhq.com/posting-api/job-board/confluent",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='/jobs/']"
-    }
-      ,
+      "wait_for": "",
+      "link_selector": ""
+    },
     {
       "name": "IBM",
       "url": "https://www.ibm.com/careers/search?field_keyword_18[0]=Entry%20Level&field_keyword_05[0]=United%20States&sort=dcdate_desc",
       "mode": "browser",
-      "wait_for": "a[href*='/job/']",
-      "link_selector": "a[href*='/job/']"
+      "wait_for": "a[href*='JobDetail?jobId=']",
+      "link_selector": "a[href*='JobDetail?jobId=']"
     },
     {
       "name": "Intel",
@@ -382,31 +389,31 @@
     },
     {
       "name": "Uber",
-      "url": "https://www.uber.com/us/en/careers/list/?location=USA&department=University",
+      "url": "https://jobs.uber.com/en/jobs/?team=University&countries=United+States&pagesize=100",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/list/']",
-      "link_selector": "a[href*='/careers/list/']"
+      "wait_for": "a[href^='/en/jobs/'][href$='/']:not([href='/en/jobs/']):not([href*='saved-jobs'])",
+      "link_selector": "a[href^='/en/jobs/'][href$='/']:not([href='/en/jobs/']):not([href*='saved-jobs'])"
     },
     {
       "name": "DoorDash",
-      "url": "https://careersatdoordash.com/job-search/?department=Engineering&function=&job_ids=&keyword=&location=United%20States&intern=1&spage=1",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://job-boards.greenhouse.io/doordashusa?departments%5B%5D=89007",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a[href*='/doordashusa/jobs/']"
     },
     {
       "name": "Spotify",
-      "url": "https://www.lifeatspotify.com/jobs?c=backend&c=client-c&c=data&c=developer-tools-infrastructure&c=engineering-leadership&c=machine-learning&c=mobile&c=network-engineering-it&c=security&c=tech-research&c=web&c=data-insights-leadership&c=data-science&c=machine-learning-data-research-insights&c=tech-research-data-research-insights&c=user-research&l=new-york&l=boston&l=united-states-of-america-home-mix&l=los-angeles&l=miami",
-      "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='/jobs/']"
+      "url": "https://api.lever.co/v0/postings/spotify?mode=html&location=New%20York%2C%20NY&location=Los%20Angeles%2C%20CA&location=Boston%2C%20MA&location=Miami%2C%20FL&location=United%20States%20of%20America%20(Home%20Mix)&department=Engineering&department=Data%20and%20Analytics",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a[href*='jobs.lever.co/spotify/']"
     },
     {
       "name": "Pinterest",
       "url": "https://www.pinterestcareers.com/jobs/?search=&location=Chicago&location=Los+Angeles&location=New+York&location=New+York+City&location=Palo+Alto&location=San+Francisco&location=Seattle&team=University&pagesize=20#results",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='/jobs/']"
+      "link_selector": "a[href*='gh_jid=']",
+      "wait_for": "a[href*='gh_jid=']"
     },
     {
       "name": "Intuit (TurboTax / QuickBooks)",
@@ -424,22 +431,24 @@
     },
     {
       "name": "Twilio",
-      "url": "https://jobs.twilio.com/careers?start=0&pid=&sort_by=timestamp&filter_custom_department=product+%26+engineering%2Cit&filter_job_location=remote+-+us&filter_seniority=1",
-      "mode": "eightfold"
+      "url": "https://twilio.eightfold.ai/careers?filter_custom_department=engineering&filter_job_location=remote+-+us&filter_seniority=1&sort_by=timestamp",
+      "mode": "eightfold",
+      "link_selector": "",
+      "wait_for": ""
     },
     {
       "name": "Notion",
-      "url": "https://www.notion.com/careers?department=engineering-early-career#open-positions",
+      "url": "https://jobs.ashbyhq.com/notion?departmentId=0cfdffa6-6dca-4e61-908f-beb3cad762b3",
       "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "wait_for": "a[href*='/notion/']",
+      "link_selector": "a[href*='/notion/']"
     },
     {
       "name": "Roblox",
-      "url": "https://careers.roblox.com/jobs?page=1&disciplines=engineering,product,data-science-analytics&groups=early-career-talent",
+      "url": "https://boards-api.greenhouse.io/v1/boards/roblox/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='/jobs/']"
+      "wait_for": "",
+      "link_selector": ""
     }
   ]
 }

@@ -714,6 +714,9 @@ def fetch_browser(url: str, wait_for: str = "", wait_seconds: int = 8) -> tuple[
             context = browser.new_context(
                 user_agent=HEADERS["User-Agent"],
                 viewport={"width": 1280, "height": 900},
+                # Pin the locale: with LANG unset Chromium reports "en-US@posix",
+                # which some careers sites (Oracle HCM, e.g. JPMorgan) choke on.
+                locale="en-US",
             )
             page = context.new_page()
             page.on("response", capture_response)
