@@ -391,8 +391,10 @@ def fetch_microsoft_jobs_via_api(careers_url: str, timeout: int = 30) -> list[di
         log.warning(f"  [ms-api] Failed to query Microsoft API: {exc}")
         return None
 
-    positions = payload.get("data", {}).get("positions", [])
+    data = payload.get("data", {}) if isinstance(payload, dict) else None
+    positions = data.get("positions", []) if isinstance(data, dict) else None
     if not isinstance(positions, list):
+        log.warning("  [ms-api] Unexpected reply from the Microsoft API")
         return None
 
     jobs: list[dict] = []
@@ -469,10 +471,9 @@ def fetch_eightfold_jobs_via_api(careers_url: str, timeout: int = 30) -> list[di
         return None
 
     data = payload.get("data", {}) if isinstance(payload, dict) else None
-    if not isinstance(data, dict):
-        return None
-    positions = data.get("positions", [])
+    positions = data.get("positions", []) if isinstance(data, dict) else None
     if not isinstance(positions, list):
+        log.warning("  [eightfold-api] Unexpected reply from the Eightfold API")
         return None
     first_page_len = len(positions)
     positions = [p for p in positions if isinstance(p, dict)]
@@ -508,8 +509,9 @@ def _eightfold_newest_days(api_url: str, params: dict, positions: list[dict], fi
     """Sorted by "Latest", postings of one day tie when the site stores only the date, and
     Eightfold returns tied postings in an order that changes from minute to minute, at most
     10 per page, so the first page is a different slice each time. Read on until the two
-    newest posting days are complete (a third day has begun, or the list ended) and return
-    those two days in a fixed order: newest day first, then by id."""
+    newest posting days are complete (a third day has begun, or the list ended), and return
+    everything read, newest day first, then by id. (The third day is only partly read, and
+    which part varies; that does no harm, as jobs seen before are remembered.)"""
     def days():
         return sorted({p.get("postedTs") or 0 for p in positions}, reverse=True)
 
@@ -528,9 +530,6 @@ def _eightfold_newest_days(api_url: str, params: dict, positions: list[dict], fi
             break
         offset += len(page)
         positions = positions + [p for p in page if isinstance(p, dict)]
-    newest = days()
-    if len(newest) >= 3:  # the third day is only partly read, and which part varies
-        positions = [p for p in positions if (p.get("postedTs") or 0) >= newest[1]]
     return sorted(positions, key=lambda p: (p.get("postedTs") or 0, _to_text(p.get("id")).zfill(20)), reverse=True)
 
 
@@ -1062,7 +1061,7 @@ def fetch_talentbrew_jobs(url: str) -> list[dict] | None:
     jobs = []
     for link in soup.select("#search-results-list a[href*='/job/']"):
         heading = link.find(["h2", "h3"])
-        location = link.select_one(".job-location")
+        location = (link.find_parent("li") or link).select_one(".job-location, .location")
         jobs.append({
             "title": (heading or link).get_text(" ", strip=True)[:200],
             "url": urljoin(url, link["href"]),

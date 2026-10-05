@@ -1247,10 +1247,36 @@ class EightfoldNewestDaysTests(MonitorTestCase):
         api = FakeEightfold(self.postings())
         first = self.fetch(api)
         self.assertEqual(api.calls, [0, 10, 20, 30])  # until a third day begins
-        self.assertEqual(len(first), 30)
+        self.assertEqual(len(first), 40)  # the third day's first rows are kept too
         self.assertEqual(first[0]["url"], "https://morganstanley.eightfold.ai/careers/job/113")
         api.visit, api.calls = 1, []
-        self.assertEqual(self.fetch(api), first)
+        self.assertEqual(self.fetch(api)[:30], first[:30])  # the two newest days, whole and in order
+
+    def test_a_first_page_spanning_three_days_is_kept_whole(self):
+        # e.g. a weekend: 2 postings on Monday, 1 on Sunday, 21 on Friday.
+        postings = [("101", 20000), ("102", 20000), ("201", 19999)] + [(str(300 + i), 19997) for i in range(21)]
+        api = FakeEightfold(postings)
+        self.assertEqual(len(self.fetch(api)), 10)
+        self.assertEqual(api.calls, [0])
+        # A Friday posting not seen before (say the monitor was off) is alerted once it shows.
+        jm.save_state({MS_URL: [{"title": f"Software Engineer {pid}",
+                                 "url": f"https://morganstanley.eightfold.ai/careers/job/{pid}"}
+                                for pid, _ in postings[:-1]]})
+        tracked = [target(name="Morgan Stanley", url=MS_URL, mode="eightfold", link_selector="")]
+        with mock.patch.object(jm.requests, "get", api.get):
+            alerted = []
+            for visit in range(1, 25):
+                api.visit = visit
+                _, reported = self.run_monitor(tracked)
+                alerted += reported.get("Morgan Stanley", [])
+        self.assertEqual(alerted, ["Software Engineer 320"])
+
+    def test_an_unexpected_reply_falls_back_instead_of_crashing(self):
+        with mock.patch.object(jm.requests, "get", return_value=FakeResponse('{"data": null}')), \
+                self.assertLogs(jm.log, "WARNING"):
+            self.assertIsNone(jm.fetch_eightfold_jobs_via_api(MS_URL))
+            self.assertIsNone(jm.fetch_microsoft_jobs_via_api(
+                "https://apply.careers.microsoft.com/careers?location=United+States"))
 
     def test_a_reshuffled_day_is_not_alerted_again(self):
         api = FakeEightfold(self.postings())
@@ -1321,6 +1347,18 @@ class TalentBrewReaderTests(MonitorTestCase):
             ("Senior Assistant General Counsel - Privacy, Data Innovation & Protection", "Multiple Locations"),
         ])
         self.assertEqual(jobs[1]["url"], "https://jobs.intuit.com/job/mountain-view/senior-software-engineer/27595/101575714864")
+
+    def test_a_location_next_to_the_link_is_read_too(self):
+        # As on other TalentBrew sites (e.g. jobs.boeing.com).
+        html = ('<section id="search-results"><section id="search-results-list"><ul><li>'
+                '<a href="/job/seattle/software-engineer/185/1001"><h2>Software Engineer</h2></a>'
+                '<span class="search-results__job-info location">Seattle, Washington</span>'
+                '</li></ul></section></section>')
+        url = "https://jobs.example.com/search-jobs/results?SearchResultsModuleName=Search+Results&SortCriteria=1"
+        self.pages[url] = json.dumps({"results": html})
+        self.assertEqual(jm.fetch_target_jobs(url, "api", "", ""), [{
+            "title": "Software Engineer", "url": "https://jobs.example.com/job/seattle/software-engineer/185/1001",
+            "location": "Seattle, Washington"}])
 
     def test_a_response_without_the_results_list_skips_the_target(self):
         self.pages[INTUIT_RESULTS] = json.dumps({"filters": "", "results": "", "hasJobs": False})
