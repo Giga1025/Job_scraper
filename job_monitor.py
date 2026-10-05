@@ -468,15 +468,20 @@ def fetch_eightfold_jobs_via_api(careers_url: str, timeout: int = 30) -> list[di
         log.warning(f"  [eightfold-api] Failed to query Eightfold API: {exc}")
         return None
 
-    positions = payload.get("data", {}).get("positions", [])
+    data = payload.get("data", {}) if isinstance(payload, dict) else None
+    if not isinstance(data, dict):
+        return None
+    positions = data.get("positions", [])
     if not isinstance(positions, list):
         return None
+    first_page_len = len(positions)
+    positions = [p for p in positions if isinstance(p, dict)]
+    if params["sort_by"] == "timestamp" and _posted_dates_only(positions):
+        positions = _eightfold_newest_days(api_url, params, positions, first_page_len, data.get("count"), timeout)
 
     jobs: list[dict] = []
     seen: set[str] = set()
     for pos in positions:
-        if not isinstance(pos, dict):
-            continue
         title = _to_text(pos.get("name"))
         purl = _to_text(pos.get("positionUrl"))
         jid = _to_text(pos.get("displayJobId") or pos.get("id") or pos.get("atsJobId"))
@@ -487,6 +492,46 @@ def fetch_eightfold_jobs_via_api(careers_url: str, timeout: int = 30) -> list[di
         jobs.append({"title": title[:200], "url": full_url})
 
     return jobs
+
+
+EIGHTFOLD_MAX_POSITIONS = 100
+
+
+def _posted_dates_only(positions: list[dict]) -> bool:
+    """True when postedTs holds only a date (midnight UTC), as on Morgan Stanley's and PayPal's sites."""
+    stamps = [p.get("postedTs") for p in positions]
+    return bool(stamps) and all(isinstance(t, int) and t > 0 and t % 86400 == 0 for t in stamps)
+
+
+def _eightfold_newest_days(api_url: str, params: dict, positions: list[dict], first_page_len: int,
+                           total, timeout: int) -> list[dict]:
+    """Sorted by "Latest", postings of one day tie when the site stores only the date, and
+    Eightfold returns tied postings in an order that changes from minute to minute, at most
+    10 per page, so the first page is a different slice each time. Read on until the two
+    newest posting days are complete (a third day has begun, or the list ended) and return
+    those two days in a fixed order: newest day first, then by id."""
+    def days():
+        return sorted({p.get("postedTs") or 0 for p in positions}, reverse=True)
+
+    total = int(total) if str(total).isdigit() else 0
+    start = str(params.get("start") or 0)
+    offset = (int(start) if start.isdigit() else 0) + first_page_len
+    while len(days()) < 3 and len(positions) < EIGHTFOLD_MAX_POSITIONS and offset < total:
+        try:
+            resp = requests.get(api_url, params={**params, "start": str(offset)}, headers=HEADERS, timeout=timeout)
+            resp.raise_for_status()
+            page = resp.json()["data"]["positions"]
+        except Exception as exc:
+            log.warning(f"  [eightfold-api] Failed to read more of the newest postings: {exc}")
+            break
+        if not isinstance(page, list) or not page:
+            break
+        offset += len(page)
+        positions = positions + [p for p in page if isinstance(p, dict)]
+    newest = days()
+    if len(newest) >= 3:  # the third day is only partly read, and which part varies
+        positions = [p for p in positions if (p.get("postedTs") or 0) >= newest[1]]
+    return sorted(positions, key=lambda p: (p.get("postedTs") or 0, _to_text(p.get("id")).zfill(20)), reverse=True)
 
 
 def _looks_like_locale(segment: str) -> bool:
@@ -1002,6 +1047,30 @@ def fetch_sitemap_jobs(url: str, url_contains: str) -> list[dict] | None:
     return _dedupe_jobs([_job_from_slug_url(u) for u in locs if not url_contains or url_contains in u])
 
 
+def fetch_talentbrew_jobs(url: str) -> list[dict] | None:
+    """TalentBrew (Radancy) careers sites such as jobs.intuit.com. The search page sorts by
+    relevance and ignores sort parameters, but the results endpoint it calls,
+    <site>/search-jobs/results?...&SearchResultsModuleName=Search+Results&SortCriteria=1&SortDirection=1,
+    sorts by date posted, newest first. It answers JSON whose "results" is the list's HTML."""
+    data = _get_json(url)
+    if not isinstance(data, dict) or not isinstance(data.get("results"), str):
+        return None
+    soup = BeautifulSoup(data["results"], "lxml")
+    if soup.select_one("#search-results") is None:
+        log.warning("  [talentbrew] No result list in the response (is SearchResultsModuleName in the URL?)")
+        return None
+    jobs = []
+    for link in soup.select("#search-results-list a[href*='/job/']"):
+        heading = link.find(["h2", "h3"])
+        location = link.select_one(".job-location")
+        jobs.append({
+            "title": (heading or link).get_text(" ", strip=True)[:200],
+            "url": urljoin(url, link["href"]),
+            "location": location.get_text(" ", strip=True) if location else "",
+        })
+    return _dedupe_jobs(jobs)
+
+
 def job_board_api_reader(url: str):
     """(tag, reader) when the URL is a job-board API with a dedicated reader, else None."""
     parsed = urlparse(url)
@@ -1014,6 +1083,8 @@ def job_board_api_reader(url: str):
         return "lever", fetch_lever_api_jobs
     if host.endswith(".oraclecloud.com") and "/hcmRestApi/resources/" in parsed.path:
         return "oracle", fetch_oracle_hcm_jobs
+    if parsed.path.rstrip("/").lower() == "/search-jobs/results":
+        return "talentbrew", fetch_talentbrew_jobs
     return None
 
 

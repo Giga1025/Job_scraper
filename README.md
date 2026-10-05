@@ -117,6 +117,12 @@ When a target's `url` is one of these public job-board APIs, the monitor reads i
 | Ashby | `https://api.ashbyhq.com/posting-api/job-board/<board>` | `department=<name>`, `team=<name>` |
 | Lever | `https://api.lever.co/v0/postings/<company>` | `location=`, `department=`, `team=`, `commitment=` |
 | Oracle HCM | `https://<host>.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?...finder=findReqs;siteNumber=...` | the finder's own parameters |
+| TalentBrew (e.g. jobs.intuit.com) | `https://<site>/search-jobs/results?...&SearchResultsModuleName=Search+Results&SortCriteria=1&SortDirection=1&RecordsPerPage=50` | the search page's own filters (`FacetFilters[0].ID=...`) |
+
+Eightfold sites (Microsoft, Morgan Stanley, PayPal, ...) are read through their API as before.
+Where a site records only the posting date (Morgan Stanley, PayPal), the newest postings all tie
+and come back in a different order each visit, so the monitor reads the two newest posting days
+in full rather than just the first page.
 
 With `"us_only": true` (the default in `config_all.json`), new postings from these sources
 whose location clearly lies outside the US are skipped. Unknown or "Remote" locations are kept;

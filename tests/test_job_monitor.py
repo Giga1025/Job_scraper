@@ -6,6 +6,7 @@ Run from the repo root:
 """
 
 import email.utils
+import hashlib
 import errno
 import json
 import logging
@@ -1200,6 +1201,134 @@ class TeslaReaderTests(MonitorTestCase):
                 mock.patch.object(jm, "fetch_browser") as browser, self.assertLogs(jm.log, "ERROR"):
             self.assertIsNone(jm.fetch_target_jobs(TESLA_STATE, "api", "", ""))
         browser.assert_not_called()
+
+
+class FakeEightfold:
+    """Eightfold's search API as Morgan Stanley serves it: sorted by posting date, which is
+    only a date, with each day's postings in an order that changes between visits, 10 a page."""
+
+    def __init__(self, postings, date_only=True):
+        self.postings = postings  # (id, day)
+        self.date_only = date_only
+        self.visit = 0
+        self.calls = []
+        self.fail_from = None
+
+    def get(self, url, params=None, **kwargs):
+        start = int(params["start"])
+        self.calls.append(start)
+        if self.fail_from is not None and start >= self.fail_from:
+            raise jm.requests.ConnectionError("reset")
+        def shuffled(p):
+            return int(hashlib.md5(f"{p[0]}/{self.visit}".encode()).hexdigest(), 16)
+
+        order = sorted(self.postings, key=lambda p: (-p[1], shuffled(p)))
+        if not self.date_only:
+            order = sorted(self.postings, key=lambda p: (-p[1], -int(p[0])))
+        rows = [{"id": pid, "name": f"Software Engineer {pid}", "positionUrl": f"/careers/job/{pid}",
+                 "postedTs": day * 86400 + (0 if self.date_only else int(pid))} for pid, day in order]
+        return FakeResponse(json.dumps({"data": {"count": len(rows), "positions": rows[start:start + 10]}}))
+
+
+MS_URL = "https://morganstanley.eightfold.ai/careers?location=United%20States"
+
+
+class EightfoldNewestDaysTests(MonitorTestCase):
+    def postings(self):
+        # 14 postings today, 16 the posting day before, then older days.
+        return ([(str(100 + i), 20000) for i in range(14)] + [(str(200 + i), 19998) for i in range(16)]
+                + [(str(300 + i), 19997 - i // 5) for i in range(40)])
+
+    def fetch(self, api):
+        with mock.patch.object(jm.requests, "get", api.get):
+            return jm.fetch_target_jobs(MS_URL, "eightfold", "", "")
+
+    def test_reads_the_two_newest_posting_days_whole_in_a_fixed_order(self):
+        api = FakeEightfold(self.postings())
+        first = self.fetch(api)
+        self.assertEqual(api.calls, [0, 10, 20, 30])  # until a third day begins
+        self.assertEqual(len(first), 30)
+        self.assertEqual(first[0]["url"], "https://morganstanley.eightfold.ai/careers/job/113")
+        api.visit, api.calls = 1, []
+        self.assertEqual(self.fetch(api), first)
+
+    def test_a_reshuffled_day_is_not_alerted_again(self):
+        api = FakeEightfold(self.postings())
+        with mock.patch.object(jm.requests, "get", api.get):
+            self.run_monitor([target(name="Morgan Stanley", url=MS_URL, mode="eightfold", link_selector="")])
+            for visit in range(1, 4):
+                api.visit = visit
+                _, reported = self.run_monitor([target(name="Morgan Stanley", url=MS_URL, mode="eightfold",
+                                                       link_selector="")])
+                self.assertEqual(reported, {})
+            api.postings.append(("999", 20001))
+            api.visit = 9
+            _, reported = self.run_monitor([target(name="Morgan Stanley", url=MS_URL, mode="eightfold",
+                                                   link_selector="")])
+        self.assertEqual(reported, {"Morgan Stanley": ["Software Engineer 999"]})
+
+    def test_exact_posting_times_keep_the_single_page(self):
+        # Microsoft's postings carry the time too, so the order is already fixed.
+        api = FakeEightfold(self.postings(), date_only=False)
+        jobs = self.fetch(api)
+        self.assertEqual(api.calls, [0])
+        self.assertEqual(len(jobs), 10)
+
+    def test_a_failed_later_page_keeps_what_was_read(self):
+        api = FakeEightfold(self.postings())
+        api.fail_from = 20
+        with self.assertLogs(jm.log, "WARNING"):
+            jobs = self.fetch(api)
+        self.assertEqual(len(jobs), 20)
+
+    def test_reading_stops_at_the_cap(self):
+        api = FakeEightfold([(str(1000 + i), 20000) for i in range(300)])
+        self.assertEqual(len(self.fetch(api)), jm.EIGHTFOLD_MAX_POSITIONS)
+        self.assertEqual(len(api.calls), jm.EIGHTFOLD_MAX_POSITIONS // 10)
+
+
+# Trimmed from https://jobs.intuit.com/search-jobs/results (the "results" HTML of its JSON).
+INTUIT_RESULTS = ("https://jobs.intuit.com/search-jobs/results?OrganizationIds=27595&FacetFilters%5B0%5D.ID=6252001"
+                  "&FacetFilters%5B0%5D.FacetType=2&FacetFilters%5B0%5D.IsApplied=true"
+                  "&SearchResultsModuleName=Search+Results&SortCriteria=1&SortDirection=1&RecordsPerPage=50")
+INTUIT_RESULTS_HTML = """
+    <section id="search-results" data-total-results="521" data-records-per-page="50" data-sort-criteria="1" data-sort-direction="1">
+        <h1>521 Results for </h1>
+            <section id="search-results-list" class="search-results-list-wrapper">
+                <div id="applied-filters" class="search-results-options"> <h2 id="applied-filters-label">Filtered by</h2>
+                <ul aria-labelledby="applied-filters-label"> <li><button class="filter-button" data-id="6252001" data-facet-type="2">Country: United States</button></li> </ul> </div>
+                <ul class="search-list">
+                    <li data-remote="24525"> <a href="/job/mountain-view/senior-staff-product-designer-quickbooks-capital/27595/101575725696" class="sr-item" data-title="Senior Staff Product Designer, QuickBooks Capital"> <h2>Senior Staff Product Designer, QuickBooks Capital</h2> <span class="job-location">Mountain View, California</span> </a> <button type="button" class="js-save-job-btn" data-job-id="101575725696"><span class="wai">Save </span></button> </li>
+                    <li data-remote="23124"> <a href="/job/mountain-view/senior-software-engineer/27595/101575714864" class="sr-item" data-title="Senior Software Engineer"> <h2>Senior Software Engineer</h2> <span class="job-location">Mountain View, California</span> </a> </li>
+                    <li data-remote="24451"> <a href="/job/mountain-view/senior-assistant-general-counsel-privacy-data-innovation-and-protection/27595/101575714832" class="sr-item"> <h2>Senior Assistant General Counsel - Privacy, Data Innovation &amp; Protection</h2> <span class="job-location">Multiple Locations</span> </a> </li>
+                </ul>
+                <nav id="pagination-bottom" class="pagination"> <a class="next" href="/search-jobs/results" rel="nofollow">Next</a> </nav>
+            </section>
+    </section>
+    <section class="related-jobs"><a class="related-jobs" href="/job/mountain-view/old-role/27595/99683387088?orgIds=27595&alp=6252001&alt=2">Old role</a></section>
+"""
+
+
+class TalentBrewReaderTests(MonitorTestCase):
+    def test_reads_the_newest_first_results_list(self):
+        self.pages[INTUIT_RESULTS] = json.dumps({"filters": "", "results": INTUIT_RESULTS_HTML, "hasJobs": True})
+        with mock.patch.object(jm, "fetch_browser") as browser:
+            jobs = jm.fetch_target_jobs(INTUIT_RESULTS, "api", "", "")
+        browser.assert_not_called()
+        self.assertEqual([(j["title"], j["location"]) for j in jobs], [
+            ("Senior Staff Product Designer, QuickBooks Capital", "Mountain View, California"),
+            ("Senior Software Engineer", "Mountain View, California"),
+            ("Senior Assistant General Counsel - Privacy, Data Innovation & Protection", "Multiple Locations"),
+        ])
+        self.assertEqual(jobs[1]["url"], "https://jobs.intuit.com/job/mountain-view/senior-software-engineer/27595/101575714864")
+
+    def test_a_response_without_the_results_list_skips_the_target(self):
+        self.pages[INTUIT_RESULTS] = json.dumps({"filters": "", "results": "", "hasJobs": False})
+        with self.assertLogs(jm.log, "WARNING"):
+            self.assertIsNone(jm.fetch_target_jobs(INTUIT_RESULTS, "api", "", ""))
+
+    def test_the_search_page_itself_keeps_its_old_path(self):
+        self.assertIsNone(jm.job_board_api_reader("https://jobs.intuit.com/search-jobs/United%20States?orgIds=27595"))
 
 
 class UsFilterTests(MonitorTestCase):

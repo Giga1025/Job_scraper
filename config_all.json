@@ -685,10 +685,8 @@
     },
     {
       "name": "Intuit (TurboTax / QuickBooks)",
-      "url": "https://jobs.intuit.com/search-jobs/United%20States?orgIds=27595&alp=6252001&alt=2",
-      "mode": "browser",
-      "wait_for": "a[href*='/job/']",
-      "link_selector": "a[href*='/job/']"
+      "url": "https://jobs.intuit.com/search-jobs/results?OrganizationIds=27595&FacetFilters%5B0%5D.ID=6252001&FacetFilters%5B0%5D.FacetType=2&FacetFilters%5B0%5D.IsApplied=true&SearchResultsModuleName=Search+Results&SortCriteria=1&SortDirection=1&RecordsPerPage=50",
+      "mode": "api"
     },
     {
       "name": "Atlassian",
