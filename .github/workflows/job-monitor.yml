@@ -11,9 +11,6 @@ on:
     - cron: "7,37 * * * *"
   # Adds a "Run workflow" button on the Actions tab, to run it whenever you like.
   workflow_dispatch:
-  # TEMPORARY: test runs from this branch before it is merged. Removed after testing.
-  push:
-    branches: [claude/festive-keller-4wxwop]
 
 # The run commits state.json, so it needs permission to write to the repository.
 permissions:
