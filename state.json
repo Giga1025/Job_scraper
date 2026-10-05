@@ -43124,5 +43124,35 @@
       "url": "https://careers.roblox.com/jobs/8213852?gh_jid=8213852",
       "location": "Seoul, Seoul, South Korea"
     }
+  ],
+  "_left_out_pending": [
+    {
+      "title": "ASIC Design Engineering Lead - SoC IP DMA",
+      "url": "https://jobs.apple.com/en-us/details/200686858-3956/asic-design-engineering-lead-soc-ip-dma?team=HRDWR",
+      "reason": "senior (Lead)",
+      "company": "Apple"
+    },
+    {
+      "title": "Apple Business Commercial Channel Account Executive",
+      "url": "https://jobs.apple.com/en-us/details/200687250-0157/apple-business-commercial-channel-account-executive?team=SLDEV",
+      "reason": "not engineering (Account Executive)",
+      "company": "Apple"
+    },
+    {
+      "title": "Sr Manager, Corporate Strategy",
+      "url": "https://paypal.eightfold.ai/careers/job/274922421796",
+      "reason": "senior (Sr)",
+      "company": "PayPal"
+    },
+    {
+      "title": "Associate Banker, 30 Hours, Philadelphia, PA Area - Multiple Locations",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210781175",
+      "location": "Philadelphia, PA, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Associate Banker)",
+      "company": "JPMorgan Chase"
+    }
   ]
 }
