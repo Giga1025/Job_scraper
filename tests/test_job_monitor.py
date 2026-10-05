@@ -126,6 +126,7 @@ class MonitorTestCase(unittest.TestCase):
         self.tmp = Path(tmp.name)
         self.pages: dict[str, str] = {}
         self.page_sequence: dict[str, list[str]] = {}  # served first, one page per fetch
+        self.requests_made: list = []
 
         self.patch(jm, "STATE_PATH", self.tmp / "state.json")
         self.patch(jm.requests, "get", self.fake_get)
@@ -149,6 +150,7 @@ class MonitorTestCase(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def fake_get(self, url, *args, **kwargs):
+        self.requests_made.append((url, kwargs.get("params")))
         if self.page_sequence.get(url):
             return FakeResponse(self.page_sequence[url].pop(0))
         if url in self.pages:
@@ -901,6 +903,132 @@ class RoleFilterTests(MonitorTestCase):
         self.assertIn("Engineer &lt;script&gt;", html)
         self.assertIn("A&amp;B &lt;Co&gt;", html)
         self.assertIn('href="https://x.example/?a=1&amp;b=&quot;2&quot;"', html)
+
+
+# ===================================================================
+# Job-board API readers and the US filter
+# ===================================================================
+GH_API = "https://boards-api.greenhouse.io/v1/boards/acme/jobs"
+ASHBY_API = "https://api.ashbyhq.com/posting-api/job-board/acme"
+LEVER_API = "https://api.lever.co/v0/postings/acme"
+ORACLE_API = ("https://acme.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
+              "?onlyData=true&finder=findReqs;siteNumber=CX_1001,limit=50,sortBy=POSTING_DATES_DESC")
+
+GREENHOUSE_PAYLOAD = {"jobs": [
+    {"id": 1, "title": "Backend Engineer", "absolute_url": "https://acme.example/careers?gh_jid=1",
+     "location": {"name": "NY - New York"}, "departments": [{"id": 89007, "name": "University"}], "offices": []},
+    {"id": 2, "title": "Data Engineer", "absolute_url": "https://acme.example/careers?gh_jid=2",
+     "location": {"name": "London, UK"}, "departments": [{"id": 5, "name": "Data"}], "offices": []},
+    {"id": 3, "title": "ML Engineer", "absolute_url": "https://acme.example/careers?gh_jid=3",
+     "location": {"name": "Remote"}, "departments": [{"id": 89007, "name": "University"}], "offices": []},
+]}
+ASHBY_PAYLOAD = {"jobs": [
+    {"title": "Infra Engineer", "jobUrl": "https://jobs.ashbyhq.com/acme/a1", "isListed": True,
+     "department": "Engineering", "team": "Infra", "location": "New York", "secondaryLocations": [],
+     "address": {"postalAddress": {"addressCountry": "United States"}}},
+    {"title": "Hidden Role", "jobUrl": "https://jobs.ashbyhq.com/acme/a2", "isListed": False,
+     "department": "Engineering", "location": "New York", "secondaryLocations": []},
+    {"title": "Sales Lead", "jobUrl": "https://jobs.ashbyhq.com/acme/a3", "isListed": True,
+     "department": "Sales", "location": "Toronto", "secondaryLocations": [],
+     "address": {"postalAddress": {"addressCountry": "Canada"}}},
+    {"title": "Platform Engineer", "jobUrl": "https://jobs.ashbyhq.com/acme/a4", "isListed": True,
+     "department": "Engineering", "location": "Remote - US",
+     "secondaryLocations": [{"location": "London", "address": {"postalAddress": {"addressCountry": "United Kingdom"}}}]},
+]}
+LEVER_PAYLOAD = [
+    {"text": "Backend Engineer - Music", "hostedUrl": "https://jobs.lever.co/acme/l1", "country": "US",
+     "categories": {"location": "New York, NY", "allLocations": ["New York, NY"]}},
+    {"text": "Android Engineer", "hostedUrl": "https://jobs.lever.co/acme/l2", "country": "GB",
+     "categories": {"location": "London", "allLocations": ["London", "Stockholm"]}},
+]
+ORACLE_PAYLOAD = {"items": [{"TotalJobsCount": 2, "requisitionList": [
+    {"Id": "210001", "Title": "Software Engineer I", "PrimaryLocation": "Plano, TX, United States", "PrimaryLocationCountry": "US"},
+    {"Id": "210002", "Title": "Software Engineer I", "PrimaryLocation": "Glasgow, United Kingdom", "PrimaryLocationCountry": "GB"},
+]}]}
+
+
+class JobBoardReaderTests(MonitorTestCase):
+    def serve(self, url, payload):
+        self.pages[url] = json.dumps(payload)
+
+    def test_greenhouse_reader(self):
+        self.serve(GH_API, GREENHOUSE_PAYLOAD)
+        jobs = jm.fetch_target_jobs(GH_API, "browser", "", "")
+        self.assertEqual([j["title"] for j in jobs], ["Backend Engineer", "Data Engineer", "ML Engineer"])
+        self.assertEqual(jobs[0], {"title": "Backend Engineer", "url": "https://acme.example/careers?gh_jid=1",
+                                   "location": "NY - New York"})
+
+    def test_greenhouse_department_filter_uses_content(self):
+        self.serve(GH_API, GREENHOUSE_PAYLOAD)
+        jobs = jm.fetch_target_jobs(GH_API + "?departments%5B%5D=89007", "html", "", "")
+        self.assertEqual([j["title"] for j in jobs], ["Backend Engineer", "ML Engineer"])
+        self.assertEqual(self.requests_made[-1], (GH_API, {"content": "true"}))
+
+    def test_ashby_reader_skips_unlisted_and_filters_departments(self):
+        self.serve(ASHBY_API, ASHBY_PAYLOAD)
+        jobs = jm.fetch_target_jobs(ASHBY_API, "browser", "", "")
+        self.assertEqual([j["title"] for j in jobs], ["Infra Engineer", "Sales Lead", "Platform Engineer"])
+        self.assertEqual(jobs[0]["countries"], ["United States"])
+        self.assertEqual(jobs[2]["countries"], [])  # primary has no address: the text decides
+        jobs = jm.fetch_target_jobs(ASHBY_API + "?department=Engineering", "browser", "", "")
+        self.assertEqual([j["title"] for j in jobs], ["Infra Engineer", "Platform Engineer"])
+
+    def test_lever_reader_passes_filters_and_forces_json(self):
+        self.serve(LEVER_API, LEVER_PAYLOAD)
+        jobs = jm.fetch_target_jobs(LEVER_API + "?mode=html&department=Engineering&location=New%20York%2C%20NY", "html", "", "")
+        self.assertEqual([(j["title"], j["countries"]) for j in jobs],
+                         [("Backend Engineer - Music", ["US"]), ("Android Engineer", ["GB"])])
+        _, params = self.requests_made[-1]
+        self.assertIn(("mode", "json"), params)
+        self.assertNotIn(("mode", "html"), params)
+        self.assertIn(("department", "Engineering"), params)
+
+    def test_oracle_reader_builds_detail_urls(self):
+        self.serve(ORACLE_API, ORACLE_PAYLOAD)
+        jobs = jm.fetch_target_jobs(ORACLE_API, "browser", "", "")
+        self.assertEqual(jobs[0]["url"], "https://acme.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210001")
+        self.assertEqual(jobs[1]["countries"], ["GB"])
+
+    def test_failed_api_read_skips_the_target_without_a_browser_fallback(self):
+        with mock.patch.object(jm, "fetch_browser") as browser, self.assertLogs(jm.log, "ERROR"):
+            self.assertIsNone(jm.fetch_target_jobs(GH_API, "browser", "", ""))
+        browser.assert_not_called()
+
+    def test_other_urls_keep_their_old_path(self):
+        self.assertIsNone(jm.job_board_api_reader("https://jobs.ashbyhq.com/acme"))
+        self.assertIsNone(jm.job_board_api_reader("https://job-boards.greenhouse.io/acme"))
+        self.assertIsNone(jm.job_board_api_reader("https://jobs.lever.co/acme"))
+
+
+class UsFilterTests(MonitorTestCase):
+    def test_location_classification(self):
+        outside = ["London, UK", "Singapore", "Bengaluru, India; Mumbai, India", "Dublin OR London",
+                   "Toronto, Remote-Canada", "Poland - Remote OR Romania - Remote"]
+        us_or_unknown = ["NY - New York", "San Francisco, CA | New York City, NY", "United States", "Remote",
+                         "", "London, United Kingdom; New York, NY, United States", "US / Canada",
+                         "Remote - US", "Washington, DC", "Chicago, Toronto", "London OR New York"]
+        self.assertEqual([l for l in outside if not jm.is_outside_us({"location": l})], [])
+        self.assertEqual([l for l in us_or_unknown if jm.is_outside_us({"location": l})], [])
+        self.assertTrue(jm.is_outside_us({"location": "Remote", "countries": ["GB"]}))
+        self.assertFalse(jm.is_outside_us({"location": "London", "countries": ["GB", "US"]}))
+
+    def test_run_skips_postings_outside_the_us(self):
+        self.mark_known(GH_API)
+        self.pages[GH_API] = json.dumps(GREENHOUSE_PAYLOAD)
+        _, reported = self.run_monitor([target(url=GH_API)], us_only=True, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer", "ML Engineer"]})
+        self.assertEqual(self.left_out, {})  # outside-US postings aren't listed
+        self.assertEqual(len(self.saved_state()[GH_API]), 3)  # but they're recorded as seen
+
+    def test_us_only_can_be_turned_off_per_target(self):
+        self.mark_known(GH_API)
+        self.pages[GH_API] = json.dumps(GREENHOUSE_PAYLOAD)
+        _, reported = self.run_monitor([target(url=GH_API, us_only=False)], us_only=True)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer", "Data Engineer", "ML Engineer"]})
+
+    def test_location_is_shown_in_the_email(self):
+        report = jm.format_plain_report({"Acme": [{"title": "Backend Engineer", "url": "u", "location": "NY - New York"}]})
+        self.assertIn("* Backend Engineer (NY - New York)", report)
 
 
 # ===================================================================

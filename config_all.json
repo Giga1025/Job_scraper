@@ -303,6 +303,8 @@
   },
   "show_filtered": true,
   "filtered_digest_hours": 24,
+  "us_only": true,
+  "_us_only_help": "Skip new postings whose location data clearly puts them outside the US (job-board API sources only; unknown or 'Remote' locations are kept). Set \"us_only\": false on a target to keep its non-US postings.",
   "targets": [
     {
       "_section": "═══════ BIG TECH / FAANG+ ═══════"
@@ -368,10 +370,8 @@
     },
     {
       "name": "Palantir",
-      "url": "https://jobs.lever.co/palantir",
-      "mode": "html",
-      "link_selector": "a.posting-title",
-      "wait_for": ""
+      "url": "https://api.lever.co/v0/postings/palantir",
+      "mode": "api"
     },
     {
       "_section": "═══════ FINTECH / PAYMENTS ═══════"
@@ -428,31 +428,23 @@
     },
     {
       "name": "Binance",
-      "url": "https://www.binance.com/en/careers/job-openings",
-      "mode": "browser",
-      "wait_for": "a[href*='/careers/job?id=']",
-      "link_selector": "a[href*='/careers/job?id=']:not([href*='&name='])"
+      "url": "https://api.lever.co/v0/postings/binance",
+      "mode": "api"
     },
     {
       "name": "Kraken",
-      "url": "https://jobs.ashbyhq.com/kraken.com",
-      "mode": "browser",
-      "wait_for": "a[href*='/kraken.com/']",
-      "link_selector": "a[href*='/kraken.com/']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/kraken.com",
+      "mode": "api"
     },
     {
       "name": "Chainalysis",
-      "url": "https://jobs.ashbyhq.com/chainalysis-careers",
-      "mode": "browser",
-      "wait_for": "a[href*='/chainalysis-careers/']",
-      "link_selector": "a[href*='/chainalysis-careers/']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/chainalysis-careers",
+      "mode": "api"
     },
     {
       "name": "Chainalysis Government Solutions",
-      "url": "https://jobs.ashbyhq.com/chainalysis-government-solutions",
-      "mode": "browser",
-      "wait_for": "a[href*='/chainalysis-government-solutions/']",
-      "link_selector": "a[href*='/chainalysis-government-solutions/']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/chainalysis-government-solutions",
+      "mode": "api"
     },
     {
       "name": "Ripple",
@@ -463,24 +455,18 @@
     },
     {
       "name": "Consensys (MetaMask / Infura)",
-      "url": "https://jobs.ashbyhq.com/consensys",
-      "mode": "browser",
-      "wait_for": "a[href*='/consensys/']",
-      "link_selector": "a[href*='/consensys/']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/consensys",
+      "mode": "api"
     },
     {
       "name": "Consensys (Greenhouse)",
-      "url": "https://job-boards.greenhouse.io/consensys",
-      "mode": "html",
-      "wait_for": "",
-      "link_selector": "a[href*='/consensys/jobs/']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/consensys/jobs",
+      "mode": "api"
     },
     {
       "name": "Fireblocks",
-      "url": "https://job-boards.greenhouse.io/embed/job_board?for=fireblocks",
-      "mode": "html",
-      "wait_for": "",
-      "link_selector": "a[href*='gh_jid=']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/fireblocks/jobs",
+      "mode": "api"
     },
     {
       "name": "Circle (USDC)",
@@ -490,24 +476,18 @@
     },
     {
       "name": "Uniswap Labs",
-      "url": "https://jobs.ashbyhq.com/uniswap",
-      "mode": "browser",
-      "wait_for": "a[href*='/uniswap/']",
-      "link_selector": "a[href*='/uniswap/']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/uniswap",
+      "mode": "api"
     },
     {
       "name": "OpenSea",
-      "url": "https://opensea.io/careers",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/opensea",
+      "mode": "api"
     },
     {
       "name": "Alchemy",
-      "url": "https://www.alchemy.com/careers",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/alchemy",
+      "mode": "api"
     },
     {
       "_section": "═══════ WALL STREET / QUANT / TRADING ═══════"
@@ -570,10 +550,8 @@
     },
     {
       "name": "JPMorgan Chase",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/jobs?location=United+States&locationId=300000000289738&locationLevel=country&mode=location&sortBy=POSTING_DATES_DESC",
-      "mode": "browser",
-      "link_selector": "div.job-tile",
-      "wait_for": "a.job-grid-item__link"
+      "url": "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC",
+      "mode": "api"
     },
     {
       "name": "Morgan Stanley",
@@ -599,16 +577,13 @@
     },
     {
       "name": "OpenAI",
-      "url": "https://jobs.ashbyhq.com/openai",
-      "mode": "browser",
-      "wait_for": "a[href*='/openai/']",
-      "link_selector": "a[href*='/openai/']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/openai",
+      "mode": "api"
     },
     {
       "name": "xAI (Grok)",
-      "url": "https://boards.greenhouse.io/xai",
-      "mode": "html",
-      "link_selector": "a[href*='greenhouse.io/xai/']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/xai/jobs",
+      "mode": "api"
     },
     {
       "name": "Databricks",
@@ -636,17 +611,13 @@
     },
     {
       "name": "Datadog",
-      "url": "https://careers.datadoghq.com/all-jobs/",
-      "mode": "browser",
-      "wait_for": "a[href*='/detail/']",
-      "link_selector": "a[href*='/detail/']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/datadog/jobs",
+      "mode": "api"
     },
     {
       "name": "Cloudflare",
-      "url": "https://www.cloudflare.com/careers/jobs/?department=default&location=default",
-      "mode": "browser",
-      "wait_for": "a[href*='/careers/jobs/']",
-      "link_selector": "a[href*='/careers/jobs/']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/cloudflare/jobs",
+      "mode": "api"
     },
     {
       "name": "Confluent",
@@ -690,10 +661,8 @@
     },
     {
       "name": "DoorDash",
-      "url": "https://job-boards.greenhouse.io/doordashusa?departments%5B%5D=89007",
-      "mode": "html",
-      "wait_for": "",
-      "link_selector": "a[href*='/doordashusa/jobs/']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/doordashusa/jobs?departments%5B%5D=89007",
+      "mode": "api"
     },
     {
       "name": "Spotify",
@@ -732,10 +701,8 @@
     },
     {
       "name": "Notion",
-      "url": "https://jobs.ashbyhq.com/notion?departmentId=0cfdffa6-6dca-4e61-908f-beb3cad762b3",
-      "mode": "browser",
-      "wait_for": "a[href*='/notion/']",
-      "link_selector": "a[href*='/notion/']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/notion?department=Early%20Career",
+      "mode": "api"
     },
     {
       "name": "Roblox",

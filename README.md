@@ -106,6 +106,23 @@ batch configs) share this list, so any alert or digest carries all of it. This i
 `keyword_filters` (global, or per target) still works as an allow-list. Postings it leaves out
 are dropped quietly as before, unless you set `"show_filtered": true`.
 
+### Job-board APIs and US-only
+
+When a target's `url` is one of these public job-board APIs, the monitor reads it directly
+(no browser, clean titles, and each job's location):
+
+| Service | URL form | Optional filters in the URL |
+|---|---|---|
+| Greenhouse | `https://boards-api.greenhouse.io/v1/boards/<board>/jobs` | `departments[]=<id or name>`, `offices[]=` |
+| Ashby | `https://api.ashbyhq.com/posting-api/job-board/<board>` | `department=<name>`, `team=<name>` |
+| Lever | `https://api.lever.co/v0/postings/<company>` | `location=`, `department=`, `team=`, `commitment=` |
+| Oracle HCM | `https://<host>.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?...finder=findReqs;siteNumber=...` | the finder's own parameters |
+
+With `"us_only": true` (the default in `config_all.json`), new postings from these sources
+whose location clearly lies outside the US are skipped. Unknown or "Remote" locations are kept;
+set `"us_only": false` on a target to keep its non-US postings. If a job-board API can't be
+read, that target is skipped for the run rather than falling back to another source.
+
 ---
 
 ## Target Configuration

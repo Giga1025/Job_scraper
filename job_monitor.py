@@ -700,6 +700,246 @@ def fetch_google_jobs_from_page(careers_url: str, timeout: int = 30) -> list[dic
 
 
 # ===================================================================
+# Fetching — job-board APIs (Greenhouse, Ashby, Lever, Oracle HCM)
+# ===================================================================
+# A target whose URL is one of these public job-board APIs is read with a
+# dedicated reader: clean titles, location data for the US filter, and no
+# browser. Readers return None when the request fails; the target is then
+# skipped for this run (no fallback that could return differently-shaped
+# URLs and re-alert old jobs).
+def _get_json(url: str, params=None, timeout: int = 60):
+    try:
+        resp = requests.get(url, params=params, headers=HEADERS, timeout=timeout)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as exc:
+        log.warning(f"  [api] Failed to fetch {url}: {exc}")
+        return None
+
+
+def _query_values(query: dict, *names: str) -> list[str]:
+    return [v for name in names for v in query.get(name, []) if v]
+
+
+def fetch_greenhouse_api_jobs(url: str) -> list[dict] | None:
+    """https://boards-api.greenhouse.io/v1/boards/<board>/jobs[?departments[]=<id or name>&offices[]=...]"""
+    parsed = urlparse(url)
+    match = re.match(r"^/v1/boards/([^/]+)/jobs/?$", parsed.path)
+    if not match:
+        log.warning(f"  [greenhouse] Unrecognised board URL: {url}")
+        return None
+    query = parse_qs(parsed.query)
+    want_departments = {v.lower() for v in _query_values(query, "departments[]", "departments", "department")}
+    want_offices = {v.lower() for v in _query_values(query, "offices[]", "offices", "office")}
+    params = {"content": "true"} if (want_departments or want_offices) else None
+    data = _get_json(f"https://boards-api.greenhouse.io/v1/boards/{match.group(1)}/jobs", params)
+    postings = data.get("jobs") if isinstance(data, dict) else None
+    if not isinstance(postings, list):
+        return None
+
+    def matches(post, key, wanted):
+        if not wanted:
+            return True
+        return any(str(d.get("id")).lower() in wanted or str(d.get("name", "")).lower() in wanted
+                   for d in post.get(key) or [] if isinstance(d, dict))
+
+    jobs = []
+    for post in postings:
+        if not isinstance(post, dict) or not post.get("title") or not post.get("absolute_url"):
+            continue
+        if not matches(post, "departments", want_departments) or not matches(post, "offices", want_offices):
+            continue
+        jobs.append({
+            "title": _to_text(post["title"])[:200],
+            "url": _to_text(post["absolute_url"]),
+            "location": _to_text((post.get("location") or {}).get("name")),
+        })
+    return _dedupe_jobs(jobs)
+
+
+def fetch_ashby_api_jobs(url: str) -> list[dict] | None:
+    """https://api.ashbyhq.com/posting-api/job-board/<board>[?department=<name>&team=<name>]"""
+    parsed = urlparse(url)
+    match = re.match(r"^/posting-api/job-board/([^/]+)/?$", parsed.path)
+    if not match:
+        log.warning(f"  [ashby] Unrecognised board URL: {url}")
+        return None
+    query = parse_qs(parsed.query)
+    want_departments = {v.lower() for v in _query_values(query, "department")}
+    want_teams = {v.lower() for v in _query_values(query, "team")}
+    data = _get_json(f"https://api.ashbyhq.com/posting-api/job-board/{match.group(1)}")
+    postings = data.get("jobs") if isinstance(data, dict) else None
+    if not isinstance(postings, list):
+        return None
+    jobs = []
+    for post in postings:
+        if not isinstance(post, dict) or not post.get("title") or not post.get("jobUrl"):
+            continue
+        if post.get("isListed") is False:
+            continue
+        if want_departments and str(post.get("department", "")).lower() not in want_departments:
+            continue
+        if want_teams and str(post.get("team", "")).lower() not in want_teams:
+            continue
+        places = [post.get("location")] + [
+            loc.get("location") for loc in post.get("secondaryLocations") or [] if isinstance(loc, dict)
+        ]
+        countries = [
+            _to_text(((loc.get("address") or {}).get("postalAddress") or {}).get("addressCountry"))
+            for loc in [post] + [l for l in post.get("secondaryLocations") or [] if isinstance(l, dict)]
+        ]
+        jobs.append({
+            "title": _to_text(post["title"])[:200],
+            "url": _to_text(post["jobUrl"]),
+            "location": "; ".join(_to_text(p) for p in places if _to_text(p)),
+            # Only trust countries when every location has one; otherwise the text decides.
+            "countries": countries if all(countries) else [],
+        })
+    return _dedupe_jobs(jobs)
+
+
+def fetch_lever_api_jobs(url: str) -> list[dict] | None:
+    """https://api.lever.co/v0/postings/<company>[?location=...&department=...&team=...&commitment=...]"""
+    parsed = urlparse(url)
+    match = re.match(r"^/v0/postings/([^/]+)/?$", parsed.path)
+    if not match:
+        log.warning(f"  [lever] Unrecognised postings URL: {url}")
+        return None
+    params = [(k, v) for k, vs in parse_qs(parsed.query).items() if k != "mode" for v in vs]
+    params.append(("mode", "json"))
+    data = _get_json(f"https://api.lever.co/v0/postings/{match.group(1)}", params)
+    if not isinstance(data, list):
+        return None
+    jobs = []
+    for post in data:
+        if not isinstance(post, dict) or not post.get("text") or not post.get("hostedUrl"):
+            continue
+        categories = post.get("categories") or {}
+        places = categories.get("allLocations") or [categories.get("location")]
+        jobs.append({
+            "title": _to_text(post["text"])[:200],
+            "url": _to_text(post["hostedUrl"]),
+            "location": "; ".join(_to_text(p) for p in places if _to_text(p)),
+            "countries": [_to_text(post.get("country"))] if _to_text(post.get("country")) else [],
+        })
+    return _dedupe_jobs(jobs)
+
+
+def fetch_oracle_hcm_jobs(url: str) -> list[dict] | None:
+    """https://<host>.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?...finder=findReqs;siteNumber=<site>,..."""
+    parsed = urlparse(url)
+    site = re.search(r"siteNumber=([^,;&]+)", parsed.query)
+    if not site:
+        log.warning(f"  [oracle] No siteNumber in the finder of {url}")
+        return None
+    data = _get_json(url)
+    items = data.get("items") if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        return None
+    jobs = []
+    for item in items:
+        for req in (item.get("requisitionList") or []) if isinstance(item, dict) else []:
+            if not isinstance(req, dict) or not req.get("Title") or not req.get("Id"):
+                continue
+            jobs.append({
+                "title": _to_text(req["Title"])[:200],
+                "url": f"https://{parsed.netloc}/hcmUI/CandidateExperience/en/sites/{site.group(1)}/job/{_to_text(req['Id'])}",
+                "location": _to_text(req.get("PrimaryLocation")),
+                "countries": [_to_text(req.get("PrimaryLocationCountry"))] if req.get("PrimaryLocationCountry") else [],
+            })
+    return _dedupe_jobs(jobs)
+
+
+def job_board_api_reader(url: str):
+    """(tag, reader) when the URL is a job-board API with a dedicated reader, else None."""
+    parsed = urlparse(url)
+    host = parsed.netloc.lower()
+    if host == "boards-api.greenhouse.io":
+        return "greenhouse", fetch_greenhouse_api_jobs
+    if host == "api.ashbyhq.com":
+        return "ashby", fetch_ashby_api_jobs
+    if host in ("api.lever.co", "api.eu.lever.co"):
+        return "lever", fetch_lever_api_jobs
+    if host.endswith(".oraclecloud.com") and "/hcmRestApi/resources/" in parsed.path:
+        return "oracle", fetch_oracle_hcm_jobs
+    return None
+
+
+# ===================================================================
+# US-only filter (for jobs whose location is known)
+# ===================================================================
+_US_STATES = {
+    "alabama", "alaska", "arizona", "arkansas", "california", "colorado", "connecticut", "delaware",
+    "florida", "georgia", "hawaii", "idaho", "illinois", "indiana", "iowa", "kansas", "kentucky",
+    "louisiana", "maine", "maryland", "massachusetts", "michigan", "minnesota", "mississippi",
+    "missouri", "montana", "nebraska", "nevada", "new hampshire", "new jersey", "new mexico",
+    "new york", "north carolina", "north dakota", "ohio", "oklahoma", "oregon", "pennsylvania",
+    "rhode island", "south carolina", "south dakota", "tennessee", "texas", "utah", "vermont",
+    "virginia", "washington", "west virginia", "wisconsin", "wyoming", "district of columbia",
+}
+_US_STATE_CODES = (
+    "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY "
+    "NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC"
+).split()
+_US_CITIES = {
+    "san francisco", "seattle", "austin", "boston", "chicago", "los angeles", "palo alto",
+    "mountain view", "sunnyvale", "menlo park", "redmond", "bellevue", "denver", "atlanta", "miami",
+    "pittsburgh", "philadelphia", "dallas", "houston", "san jose", "san diego", "salt lake city",
+    "raleigh", "durham", "charlotte", "nashville", "portland", "phoenix", "detroit", "minneapolis",
+    "santa clara", "san mateo", "cupertino", "irvine", "brooklyn", "manhattan", "jersey city",
+    "arlington", "reston", "herndon", "washington, d.c.", "washington d.c.", "nyc", "sf bay area",
+    "bay area", "silicon valley", "memphis", "frisco", "plano", "columbus", "boulder", "ann arbor",
+}
+_US_WORDS = re.compile(
+    r"\bunited states\b|\bu\.s\.a?\.?(?!\w)|\busa\b|\bamericas?\b|"
+    r"\b(?:" + "|".join(re.escape(c) for c in sorted(_US_STATES | _US_CITIES, key=len, reverse=True)) + r")\b",
+    re.IGNORECASE,
+)
+_US_CODE = re.compile(r"(?<![A-Za-z])(?:US|" + "|".join(_US_STATE_CODES) + r")(?![A-Za-z])")
+_NON_US_WORDS = re.compile(
+    r"\b(?:" + "|".join(sorted([
+        "canada", "toronto", "vancouver", "montreal", "ontario", "british columbia", "quebec",
+        "united kingdom", "uk", "england", "scotland", "london", "manchester", "edinburgh", "ireland",
+        "dublin", "germany", "berlin", "munich", "hamburg", "frankfurt", "france", "paris",
+        "netherlands", "amsterdam", "spain", "madrid", "barcelona", "portugal", "lisbon", "italy",
+        "milan", "poland", "warsaw", "krakow", "romania", "bucharest", "switzerland", "zurich",
+        "geneva", "sweden", "stockholm", "denmark", "copenhagen", "norway", "oslo", "finland",
+        "helsinki", "israel", "tel aviv", "india", "bangalore", "bengaluru", "hyderabad", "pune",
+        "mumbai", "delhi", "gurgaon", "gurugram", "chennai", "noida", "singapore", "japan", "tokyo",
+        "korea", "seoul", "china", "shanghai", "beijing", "shenzhen", "hong kong", "taiwan", "taipei",
+        "australia", "sydney", "melbourne", "brazil", "são paulo", "sao paulo", "mexico", "mexico city",
+        "argentina", "buenos aires", "chile", "colombia", "bogota", "uae", "dubai", "abu dhabi",
+        "philippines", "manila", "vietnam", "malaysia", "kuala lumpur", "indonesia", "jakarta",
+        "thailand", "bangkok", "south africa", "nigeria", "lagos", "kenya", "nairobi", "egypt",
+        "turkey", "istanbul", "greece", "athens", "czech", "prague", "hungary", "budapest", "austria",
+        "vienna", "belgium", "brussels", "luxembourg", "estonia", "tallinn", "lithuania", "latvia",
+        "ukraine", "kyiv", "serbia", "belgrade", "bulgaria", "sofia", "croatia", "slovenia",
+        "slovakia", "cyprus", "malta", "new zealand", "auckland", "saudi arabia", "riyadh", "qatar",
+        "doha", "bahrain", "kuwait", "pakistan", "bangladesh", "sri lanka", "emea", "apac", "latam",
+        "europe", "asia", "costa rica", "peru", "uruguay", "guatemala",
+    ], key=len, reverse=True)) + r")\b",
+    re.IGNORECASE,
+)
+_US_COUNTRY_NAMES = {"us", "usa", "united states", "united states of america"}
+
+
+def is_outside_us(job: dict) -> bool:
+    """True only when the job's location data clearly places it outside the US.
+    Unknown, empty or ambiguous locations ("Remote") count as possibly US."""
+    countries = [c.strip().lower() for c in job.get("countries") or [] if str(c).strip()]
+    if countries:
+        return not any(c in _US_COUNTRY_NAMES for c in countries)
+    location = str(job.get("location") or "").strip()
+    if not location:
+        return False
+    parts = [p.strip() for p in re.split(r";|\||\bor\b|/", location, flags=re.IGNORECASE) if p.strip()]
+    for part in parts:
+        if _US_WORDS.search(part) or _US_CODE.search(part) or not _NON_US_WORDS.search(part):
+            return False  # this part is (or may be) in the US
+    return True
+
+
+# ===================================================================
 # Fetching — browser (Playwright) for JS-rendered pages
 # ===================================================================
 def fetch_browser(url: str, wait_for: str = "", wait_seconds: int = 8) -> tuple[str | None, list[str]]:
@@ -1186,6 +1426,10 @@ def split_new_jobs(jobs: list[dict], keywords: list[str], role_patterns: dict | 
 LEFT_OUT_HEADING = "Left out by your filters (listed so a misnamed role isn't missed)"
 
 
+def _location_suffix(job: dict) -> str:
+    return f" ({job['location']})" if job.get("location") else ""
+
+
 def format_plain_report(all_new: dict[str, list[dict]], left_out: dict[str, list[dict]] | None = None) -> str:
     lines = [
         "=" * 60,
@@ -1196,7 +1440,7 @@ def format_plain_report(all_new: dict[str, list[dict]], left_out: dict[str, list
     for company, jobs in all_new.items():
         lines.append(f"- {company}  ({len(jobs)} new)")
         for j in jobs:
-            lines.append(f"    * {j['title']}")
+            lines.append(f"    * {j['title']}{_location_suffix(j)}")
             lines.append(f"      {j['url']}")
         lines.append("")
     if left_out:
@@ -1204,7 +1448,7 @@ def format_plain_report(all_new: dict[str, list[dict]], left_out: dict[str, list
         for company, jobs in left_out.items():
             lines.append(f"- {company}")
             for j in jobs:
-                lines.append(f"    · {j['title']}  [{j['reason']}]")
+                lines.append(f"    · {j['title']}{_location_suffix(j)}  [{j['reason']}]")
                 lines.append(f"      {j['url']}")
         lines.append("")
     lines.append("Sent by job_monitor.py")
@@ -1220,7 +1464,7 @@ def format_html_report(all_new: dict[str, list[dict]], left_out: dict[str, list[
             rows += (
                 f'<li style="margin-bottom:8px">'
                 f'<a href="{esc(j["url"])}" style="color:#1a73e8;text-decoration:none;font-weight:600">'
-                f'{esc(j["title"])}</a></li>'
+                f'{esc(j["title"])}</a>{esc(_location_suffix(j))}</li>'
             )
         rows += "</ul>"
     if left_out:
@@ -1231,7 +1475,7 @@ def format_html_report(all_new: dict[str, list[dict]], left_out: dict[str, list[
             for j in jobs:
                 rows += (
                     f'<li style="font-size:13px;color:#777"><a href="{esc(j["url"])}" style="color:#777">'
-                    f'{esc(j["title"])}</a> <span style="color:#aaa">[{esc(j["reason"])}]</span></li>'
+                    f'{esc(j["title"])}</a>{esc(_location_suffix(j))} <span style="color:#aaa">[{esc(j["reason"])}]</span></li>'
                 )
             rows += "</ul>"
     heading = "New Job Postings Found" if all_new else "Postings left out by your filters"
@@ -1332,6 +1576,16 @@ def print_console_safe(text: str):
 # ===================================================================
 def fetch_target_jobs(url: str, mode: str, link_selector: str, wait_for: str) -> list[dict] | None:
     """Return every job currently listed for a target, or None if the page could not be fetched."""
+    reader = job_board_api_reader(url)
+    if reader:
+        tag, read = reader
+        jobs = read(url)
+        if jobs is None:
+            log.error(f"  [{tag}] Could not read the job board, skipping.")
+            return None
+        log.info(f"  [{tag}] Found {len(jobs)} jobs from the job board API")
+        return jobs
+
     google_jobs = fetch_google_jobs_from_page(url)
     if google_jobs is not None:
         log.info(f"  [google] Found {len(google_jobs)} job links from results page")
@@ -1420,6 +1674,7 @@ def check_target(
     state: dict,
     default_keywords: list[str],
     role_patterns: dict | None = None,
+    us_only: bool = False,
 ) -> tuple[list[dict], list[dict]]:
     """Scrape one target, record what it lists in state (as seen), and return its new
     jobs split into (matches, left out by the filters; copies carrying a "reason")."""
@@ -1458,6 +1713,11 @@ def check_target(
 
     # --- Diff against last run ---
     new_jobs = diff_jobs(previous_jobs, current_jobs)
+    if target.get("us_only", us_only):
+        outside = [j for j in new_jobs if is_outside_us(j)]
+        if outside:
+            log.info(f"  [location] Skipped {len(outside)} new posting(s) outside the US")
+            new_jobs = [j for j in new_jobs if not is_outside_us(j)]
     new_jobs, left_out = split_new_jobs(new_jobs, target.get("keyword_filters", default_keywords), role_patterns)
 
     if new_jobs:
@@ -1484,6 +1744,9 @@ def run(config_override: str | None = None) -> bool:
     # left the careers page by then.
     show_left_out = bool(config.get("show_filtered", role_patterns is not None))
     digest_hours = _digest_hours(config)
+    # Postings whose location data clearly puts them outside the US are skipped
+    # (recorded as seen, not emailed). Unknown locations are kept.
+    us_only = bool(config.get("us_only", False))
     all_new: dict[str, list[dict]] = {}
     new_left_out: list[dict] = []
     alerted_urls: set[str] = set()
@@ -1505,7 +1768,7 @@ def run(config_override: str | None = None) -> bool:
         # stop the remaining targets from being checked, saved and emailed.
         first_check = url not in state
         try:
-            new_jobs, left_out = check_target(target, state, keywords, role_patterns)
+            new_jobs, left_out = check_target(target, state, keywords, role_patterns, us_only)
         except Exception:
             log.exception(f"  Failed to check {name}, skipping it this run")
             continue
