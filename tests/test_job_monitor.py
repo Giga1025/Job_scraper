@@ -1076,6 +1076,24 @@ class SitemapReaderTests(MonitorTestCase):
         job = jm._job_from_slug_url("https://www.citadel.com/careers/details/software-engineer-us-equities/")
         self.assertEqual((job["title"], job["location"]), ("Software Engineer US Equities", ""))
 
+    def test_a_job_in_the_us_and_elsewhere_is_never_skipped(self):
+        for slug, location in (("software-engineer-new-york-london", "New York / London"),
+                               ("software-engineer-us-europe", "US / Europe"),
+                               ("software-engineer-us-salt-lake-city", "Salt Lake City, US")):
+            job = jm._job_from_slug_url(f"https://www.citadel.com/careers/details/{slug}/")
+            self.assertEqual((job["title"], job["location"]), ("Software Engineer", location))
+            self.assertFalse(jm.is_outside_us(job), slug)
+
+    def test_xml_that_is_not_a_list_of_pages_skips_the_target(self):
+        # e.g. a sitemap index: reading it as "no jobs" would record an empty first check.
+        self.pages[CITADEL_SITEMAP] = ('<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/'
+                                       'sitemap/0.9"><sitemap><loc>https://www.citadel.com/career-sitemap.xml</loc>'
+                                       '</sitemap></sitemapindex>')
+        with self.assertLogs(jm.log, "WARNING"):
+            self.run_monitor([target(name="Citadel", url=CITADEL_SITEMAP, mode="sitemap",
+                                     link_selector="/careers/details/")])
+        self.assertFalse(jm.STATE_PATH.exists())
+
     def test_run_alerts_new_us_job_pages_and_skips_other_regions(self):
         self.mark_known(CITADEL_SITEMAP)
         self.pages[CITADEL_SITEMAP] = CITADEL_SITEMAP_XML
@@ -1114,7 +1132,42 @@ class TeslaReaderTests(MonitorTestCase):
         self.assertEqual((jobs[0]["location"], jobs[0]["countries"]), ("Palo Alto, California", ["US"]))
         self.assertEqual(jobs[3]["countries"], [])
 
+    def test_an_empty_record_from_a_blocked_check_is_a_silent_baseline(self):
+        # Before blocked checks were skipped, a blocked first check recorded no jobs.
+        jm.save_state({TESLA_PAGE: []})
+        tesla = target(name="Tesla", url=TESLA_PAGE, mode="browser", link_selector="a[href*='/careers/search/job/']")
+        _, reported = self.run_monitor([tesla])
+        self.assertEqual(reported, {})
+        self.assertEqual(len(self.saved_state()[TESLA_PAGE]), 4)
+
+    def test_a_retitled_posting_is_not_new(self):
+        tesla = target(name="Tesla", url=TESLA_PAGE, mode="browser", link_selector="a[href*='/careers/search/job/']")
+        self.run_monitor([tesla])
+        payload = json.loads(self.pages[TESLA_STATE])
+        payload["listings"][3]["t"] = "Software Engineer, Vehicle Firmware (Autopilot)"
+        self.pages[TESLA_STATE] = json.dumps(payload)
+        _, reported = self.run_monitor([tesla])
+        self.assertEqual(reported, {})
+        # A link without the title (or with another one) is the same posting too.
+        same = [{"url": "https://www.tesla.com/careers/search/job/250001"},
+                {"url": "https://www.tesla.com/careers/search/job/software-engineer-vehicle-firmware-250001/"}]
+        self.assertEqual(jm.compute_job_id(same[0]), jm.compute_job_id(same[1]))
+        self.assertNotEqual(jm.compute_job_id(same[0]),
+                            jm.compute_job_id({"url": "https://www.tesla.com/careers/search/job/250002"}))
+
+    def test_unexpected_or_empty_jobs_data_falls_back_to_the_page(self):
+        for broken in ({**TESLA_PAYLOAD, "geo": 5}, {**TESLA_PAYLOAD, "geo": [{"id": "5", "sites": [["1001"]]}]},
+                       {**TESLA_PAYLOAD, "listings": []}):
+            self.pages[TESLA_STATE] = json.dumps(broken)
+            with self.assertLogs(jm.log, "WARNING"):
+                self.assertIsNone(jm.fetch_tesla_jobs(TESLA_PAGE))
+
     def test_site_and_type_parameters(self):
+        everywhere = jm.fetch_tesla_jobs("https://www.tesla.com/careers/search/")
+        self.assertEqual(len(everywhere), len(TESLA_PAYLOAD["listings"]))
+        with self.assertLogs(jm.log, "INFO") as logs:
+            jm.fetch_tesla_jobs(TESLA_PAGE + "&department=1")
+        self.assertIn("ignoring department", "\n".join(logs.output))
         cn = jm.fetch_tesla_jobs("https://www.tesla.com/careers/search/?country=CN")
         self.assertEqual([j["url"] for j in cn], [
             "https://www.tesla.com/careers/search/job/146570",  # no latin letters: id only

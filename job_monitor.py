@@ -852,11 +852,12 @@ def fetch_oracle_hcm_jobs(url: str) -> list[dict] | None:
 
 
 _TESLA_STATE_PATH = "/cua-api/apps/careers/state"
+_TESLA_HOSTS = ("www.tesla.com", "tesla.com", "www.tesla.cn")
 
 
 def is_tesla_careers_url(url: str) -> bool:
     parsed = urlparse(url)
-    return parsed.netloc.lower() in ("www.tesla.com", "tesla.com", "www.tesla.cn") and (
+    return parsed.netloc.lower() in _TESLA_HOSTS and (
         parsed.path.rstrip("/") in ("/careers/search", _TESLA_STATE_PATH)
     )
 
@@ -868,8 +869,11 @@ def fetch_tesla_jobs(url: str) -> list[dict] | None:
     logged and the caller falls back to the page itself."""
     parsed = urlparse(url)
     query = parse_qs(parsed.query)
-    want_site = (query.get("site") or query.get("country") or ["US"])[0].upper()
+    want_site = (_query_values(query, "site", "country") or [""])[0].upper()  # none: every country
     want_types = {t.lower() for t in _query_values(query, "type")}
+    ignored = sorted(set(query) - {"site", "country", "type", "region", "sort"})
+    if ignored:
+        log.info(f"  [tesla] Only country and type are applied; ignoring {', '.join(ignored)}")
     try:
         resp = requests.get(
             f"https://{parsed.netloc}{_TESLA_STATE_PATH}",
@@ -886,9 +890,17 @@ def fetch_tesla_jobs(url: str) -> list[dict] | None:
     except Exception as exc:
         log.warning(f"  [tesla] Failed to fetch {url}: {exc}")
         return None
-    if not isinstance(state, dict) or not isinstance(state.get("listings"), list):
+    if not isinstance(state, dict) or not isinstance(state.get("listings"), list) or not state["listings"]:
+        log.warning("  [tesla] Tesla's jobs data has no listings")  # it always has thousands
+        return None
+    try:
+        return _tesla_jobs_from_state(state, parsed.netloc, want_site, want_types)
+    except Exception as exc:
+        log.warning(f"  [tesla] Unexpected layout in Tesla's jobs data: {exc!r}")
         return None
 
+
+def _tesla_jobs_from_state(state: dict, host: str, want_site: str, want_types: set[str]) -> list[dict]:
     def leaf_ids(node, out):
         if isinstance(node, dict):
             for key, value in node.items():
@@ -925,7 +937,7 @@ def fetch_tesla_jobs(url: str) -> list[dict] | None:
         slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")  # as in Tesla's own job links
         jobs.append({
             "title": title[:200],
-            "url": f"https://{parsed.netloc}/careers/search/job/{slug + '-' if slug else ''}{job_id}",
+            "url": f"https://{host}/careers/search/job/{slug + '-' if slug else ''}{job_id}",
             "location": _to_text(locations.get(_to_text(row.get("l")))),
             "countries": [site] if site else [],
         })
@@ -953,17 +965,23 @@ def _job_from_slug_url(url: str) -> dict:
     if len(tokens) > 1 and re.fullmatch(r"\d", tokens[-1]):
         tokens = tokens[:-1]  # WordPress suffix for duplicate slugs ("...-engineer-2")
     location, countries = "", []
-    for i in range(len(tokens) - 1, max(len(tokens) - 4, 0), -1):  # "...-us" or "...-us-new-york"
+    for i in range(len(tokens) - 1, max(len(tokens) - 5, 0), -1):  # "...-us" or "...-us-new-york"
         city = " ".join(tokens[i + 1:])
         if tokens[i] == "us" and (not city or city in _US_CITIES | {"new york"}):
             location, countries, tokens = (f"{city.title()}, US" if city else "US"), ["US"], tokens[:i]
             break
     else:
-        if len(tokens) > 2 and "-".join(tokens[-2:]) in _SLUG_REGIONS:
-            location, tokens = _SLUG_REGIONS["-".join(tokens[-2:])], tokens[:-2]
-        elif len(tokens) > 1 and tokens[-1] in _SLUG_REGIONS:
-            location, tokens = _SLUG_REGIONS[tokens[-1]], tokens[:-1]
-    title = " ".join(_SLUG_WORDS.get(t, t.capitalize()) for t in tokens if t)
+        n = next((n for n in (2, 1) if len(tokens) > n and "-".join(tokens[-n:]) in _SLUG_REGIONS), 0)
+        if n:
+            location, tokens = _SLUG_REGIONS["-".join(tokens[-n:])], tokens[:-n]
+            # "...-new-york-london" or "...-us-europe": also in the US, so keep the US part
+            # in the location (a location naming any US place is never skipped).
+            for k in (3, 2, 1):
+                place = " ".join(tokens[-k:])
+                if len(tokens) > k and (place == "us" or place in _US_CITIES | {"new york"}):
+                    location, tokens = f"{'US' if place == 'us' else place.title()} / {location}", tokens[:-k]
+                    break
+    title = " ".join(_SLUG_WORDS.get(t, t.capitalize()) for t in tokens if t) or url
     return {"title": title[:200], "url": url, "location": location, "countries": countries}
 
 
@@ -975,6 +993,10 @@ def fetch_sitemap_jobs(url: str, url_contains: str) -> list[dict] | None:
         root = ET.fromstring(resp.content)
     except Exception as exc:
         log.warning(f"  [sitemap] Failed to read {url}: {exc}")
+        return None
+    if root.tag.rsplit("}", 1)[-1] != "urlset":
+        # e.g. a sitemap index (a list of sitemaps) or a block page that happens to be XML.
+        log.warning(f"  [sitemap] {url} is not a sitemap of pages (<{root.tag.rsplit('}', 1)[-1]}>)")
         return None
     locs = [el.text.strip() for el in root.iter() if el.tag.rsplit("}", 1)[-1] == "loc" and el.text]
     return _dedupe_jobs([_job_from_slug_url(u) for u in locs if not url_contains or url_contains in u])
@@ -1406,7 +1428,11 @@ def _job_identity_url(url: str) -> str:
     """Normalize a job URL for comparison: ignore case, utm_* tracking params and a trailing slash."""
     parsed = urlparse(url.strip().lower())
     query = "&".join(p for p in parsed.query.split("&") if p and not p.startswith("utm_"))
-    return urlunparse(parsed._replace(path=parsed.path.rstrip("/"), query=query))
+    path = parsed.path.rstrip("/")
+    if parsed.netloc in _TESLA_HOSTS:
+        # Tesla job links put the title before the id; a title edit keeps the id.
+        path = re.sub(r"^(.*/careers/search/job/)(?:.*-)?(\d+)$", r"\1\2", path)
+    return urlunparse(parsed._replace(path=path, query=query))
 
 
 def compute_job_id(job: dict) -> str:
@@ -1846,6 +1872,10 @@ def check_target(
         return [], []
 
     previous_jobs = state.get(url)
+    if previous_jobs == [] and is_tesla_careers_url(url):
+        # Tesla always lists jobs: an empty record was made while it was blocked
+        # (before blocked checks were skipped), so this is really its first check.
+        previous_jobs = None
     if previous_jobs is None:
         if not current_jobs:
             # Some sites render an empty list now and then. An empty baseline would
