@@ -2015,6 +2015,9 @@ def run(config_override: str | None = None) -> bool:
         if not name or not url:
             log.warning(f"Skipping target entry missing name/url: {target}")
             continue
+        if target.get("enabled", True) is False:
+            log.info(f"Paused (\"enabled\": false): {name}")
+            continue
 
         # One broken target (bad selector, unexpected API response) must not
         # stop the remaining targets from being checked, saved and emailed.

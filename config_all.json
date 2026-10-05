@@ -356,6 +356,8 @@
     },
     {
       "name": "Tesla",
+      "enabled": false,
+      "_paused": "Paused for now (Tesla: HTTP 403 from its bot protection; Atlassian: page often loads empty). Delete \"enabled\": false to resume.",
       "url": "https://www.tesla.com/careers/search/?region=5&country=US&sort=created_desc",
       "mode": "browser",
       "wait_for": "a[href*='/careers/search/job/']",
@@ -690,6 +692,8 @@
     },
     {
       "name": "Atlassian",
+      "enabled": false,
+      "_paused": "Paused for now (Tesla: HTTP 403 from its bot protection; Atlassian: page often loads empty). Delete \"enabled\": false to resume.",
       "url": "https://www.atlassian.com/company/careers/all-jobs?team=Graduates&location=United%20States&search=",
       "mode": "browser",
       "wait_for": "a[href*='/all-jobs/']",

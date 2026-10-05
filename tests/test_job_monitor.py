@@ -542,6 +542,29 @@ class BaselineTests(MonitorTestCase):
 # ===================================================================
 # Detecting new jobs
 # ===================================================================
+class PausedTargetTests(MonitorTestCase):
+    def test_a_paused_target_is_not_checked_and_keeps_its_saved_jobs(self):
+        other = "https://other.example/careers"
+        jm.save_state({URL: [{"title": "Old Role", "url": "https://acme.example/jobs/old"}]})
+        self.mark_known(other)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[other] = page(*jobs_named("Data Engineer"))
+        with self.assertLogs(jm.log, "INFO") as logs:
+            _, reported = self.run_monitor([target(enabled=False), target(name="Other", url=other)])
+        self.assertEqual(reported, {"Other": ["Data Engineer"]})
+        self.assertNotIn(URL, [u for u, _ in self.requests_made])
+        self.assertEqual(self.saved_state()[URL], [{"title": "Old Role", "url": "https://acme.example/jobs/old"}])
+        self.assertIn('Paused ("enabled": false): Acme', "\n".join(logs.output))
+        # Resuming picks up where it left off: what it lists now that wasn't there is new.
+        _, reported = self.run_monitor([target()])
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_the_shipped_config_pauses_tesla_and_atlassian_only(self):
+        targets = json.loads((REPO_DIR / "config_all.json").read_text())["targets"]
+        paused = [t["name"] for t in targets if t.get("name") and t.get("enabled", True) is False]
+        self.assertEqual(paused, ["Tesla", "Atlassian"])
+
+
 class DetectionTests(MonitorTestCase):
     def test_jobs_beyond_the_tenth_link_are_detected(self):
         self.mark_known(URL)

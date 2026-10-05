@@ -160,6 +160,7 @@ Each target has these fields:
 | `mode` | Yes | `"html"` for static pages, `"browser"` for JS-heavy pages, `"sitemap"` for a sitemap of job pages |
 | `wait_for` | No | CSS selector to wait for before scraping (browser mode only) |
 | `link_selector` | No | CSS selector for job links. If empty, uses heuristics |
+| `enabled` | No | `false` pauses the target: it isn't checked, and its saved postings are kept |
 
 ### How to figure out `link_selector` and `wait_for`
 
@@ -253,42 +254,74 @@ Common schedules:
 
 ### GitHub Actions (free, runs in the cloud)
 
-Create `.github/workflows/monitor.yml`:
+See [Running on GitHub Actions](#running-on-github-actions) below.
 
-```yaml
-name: Job Monitor
-on:
-  schedule:
-    - cron: '0 */6 * * *'
-  workflow_dispatch:
+---
 
-permissions:
-  contents: write  # needed to push state.json back; without it every run is a silent baseline
+## Running on GitHub Actions
 
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: |
-          pip install requests beautifulsoup4 lxml playwright
-          playwright install chromium
-      - run: python job_monitor.py
-        env:
-          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
-          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
-      - name: Save state
-        run: |
-          git config user.name "Job Monitor"
-          git config user.email "bot@noreply.com"
-          git add -f state.json  # -f: state.json is in .gitignore
-          git diff --cached --quiet || git commit -m "Update state"
-          git push
-```
+GitHub Actions runs programs on GitHub's computers when something happens in your
+repository, such as on a schedule or when you push. This repository has two **workflows**
+(the files in `.github/workflows/`):
+
+| Workflow | When it runs | What it does |
+|---|---|---|
+| **Job monitor** (`job-monitor.yml`) | every 30 minutes, or when you click *Run workflow* | checks every company, emails new postings, saves `state.json` |
+| **Tests** (`tests.yml`) | on every push | runs the test suite; a red ❌ on a commit means a change broke something |
+
+Each run starts on a fresh, empty computer, so the job monitor workflow installs Python,
+the packages and a browser, runs `job_monitor.py`, and then **commits `state.json` back to
+the repository**. That file is how the next run knows which postings you've already seen.
+Commits by "github-actions[bot]" titled "Update job monitor state" are these saves.
+
+### One-time setup
+
+1. **Get the workflows onto `main`.** Scheduled workflows only run from the default branch,
+   so merge the branch that adds them (open a pull request on GitHub and merge it).
+2. **Create a Gmail app password** (see [Email Setup](#email-setup-gmail)), a 16-character
+   code that lets the monitor send mail as you without your real password.
+3. **Add three secrets.** On GitHub, go to the repository's **Settings → Secrets and variables
+   → Actions → New repository secret** and add:
+
+   | Name | Value |
+   |---|---|
+   | `SENDER_EMAIL` | the Gmail address that sends the alerts |
+   | `SENDER_PASSWORD` | the app password from step 2 |
+   | `RECIPIENT_EMAIL` | where alerts go (can be the same address; separate several with commas) |
+
+   Secrets are encrypted and are never shown in logs (they appear as `***`), which matters
+   because this repository is public and so are its run logs.
+4. **Run it once by hand.** Open the **Actions** tab, pick **Job monitor** on the left, click
+   **Run workflow**, then **Run workflow** again. The first run only records what each company
+   lists today (no email); from the next run on, new postings are emailed.
+
+### Reading a run
+
+- On the **Actions** tab, each run shows ✅ (worked), ❌ (failed) or a spinner (running).
+- Click a run, then **check**, to see each step. Open **Check every company for new postings**
+  to read the monitor's log: every company, how many jobs it found, and what's new.
+- A run fails (❌) if the email couldn't be sent, for example a wrong app password. Nothing
+  is lost: postings that weren't emailed are sent by the next run. GitHub emails you when a
+  scheduled run fails.
+- A company that can't be read is logged and skipped; the run still succeeds.
+
+### Changing things
+
+- **How often:** edit the `cron` line in `.github/workflows/job-monitor.yml`. It has five fields
+  (minute, hour, day of month, month, day of week), in UTC: `"7,37 * * * *"` means minutes 7 and
+  37 of every hour; `"7 */3 * * *"` would mean every 3 hours. GitHub may start a run a few
+  minutes late.
+- **Pause everything:** Actions tab → **Job monitor** → **⋯** → **Disable workflow** (and
+  **Enable workflow** to resume). GitHub also disables scheduled workflows in public
+  repositories after 60 days without any activity; the same button turns it back on.
+- **Pause one company:** add `"enabled": false` to its entry in `config_all.json` (Tesla and
+  Atlassian are paused this way for now). Its saved postings are kept, so when you remove the
+  line, only what it posted in the meantime is new.
+
+### Working on the code from your computer
+
+Because the workflow commits `state.json` to `main`, your copy falls behind after each run.
+Run `git pull` before you make changes, and again if a `git push` is rejected.
 
 ---
 
@@ -298,7 +331,8 @@ jobs:
 |---|---|
 | `config_all.json` | Shipped list of companies; used by default (see step 2) |
 | `config.json` | Your own settings; use it with `--config config.json` if `config_all.json` exists |
-| `state.json` | Last-seen jobs (auto-managed, don't edit) |
+| `state.json` | Last-seen jobs (auto-managed, don't edit; committed by the GitHub Actions workflow) |
+| `.github/workflows/` | The GitHub Actions workflows (job monitor and tests) |
 | `state.json.*` | Lock file and any set-aside unreadable state (auto-managed) |
 | `monitor.log` | Run history and errors |
 
