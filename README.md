@@ -123,6 +123,24 @@ whose location clearly lies outside the US are skipped. Unknown or "Remote" loca
 set `"us_only": false` on a target to keep its non-US postings. If a job-board API can't be
 read, that target is skipped for the run rather than falling back to another source.
 
+**Sitemaps (Citadel).** Some careers sites block scripted visits to the jobs page but publish a
+sitemap. With `"mode": "sitemap"`, the target's `url` is the sitemap and `link_selector` is
+text every job page URL contains (e.g. `"/careers/details/"`). The title and region come from
+the page address (`...-intern-us-new-york/` becomes "Intern", New York, US).
+
+**Tesla.** For a `https://www.tesla.com/careers/search/?country=US` target, the monitor reads
+the jobs data behind that page (`/cua-api/apps/careers/state`), keeping the page's `country`
+(and `type`, e.g. `intern`). Tesla's bot protection refuses scripted requests from many
+networks (including cloud servers); the monitor then tries the page in the browser, and if that
+shows nothing either it skips Tesla for the run without recording anything. It doesn't try to
+get around the protection. To see whether your network gets through:
+
+```bash
+python -c "import requests;r=requests.get('https://www.tesla.com/cua-api/apps/careers/state',headers={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36','Accept':'application/json','Referer':'https://www.tesla.com/careers/search/'},timeout=60);print('HTTP',r.status_code,len(r.content),'bytes')"
+```
+
+`HTTP 200` with a large size means Tesla works from that machine; `HTTP 403` means it is blocked there.
+
 ---
 
 ## Target Configuration
@@ -133,7 +151,7 @@ Each target has these fields:
 |---|---|---|
 | `name` | Yes | Friendly label (used in alerts) |
 | `url` | Yes | Career page URL with your filters applied |
-| `mode` | Yes | `"html"` for static pages, `"browser"` for JS-heavy pages |
+| `mode` | Yes | `"html"` for static pages, `"browser"` for JS-heavy pages, `"sitemap"` for a sitemap of job pages |
 | `wait_for` | No | CSS selector to wait for before scraping (browser mode only) |
 | `link_selector` | No | CSS selector for job links. If empty, uses heuristics |
 

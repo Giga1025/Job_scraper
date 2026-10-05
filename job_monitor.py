@@ -30,6 +30,7 @@ import logging
 import tempfile
 import time
 import html as html_lib
+import xml.etree.ElementTree as ET
 from contextlib import contextmanager
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -850,6 +851,135 @@ def fetch_oracle_hcm_jobs(url: str) -> list[dict] | None:
     return _dedupe_jobs(jobs)
 
 
+_TESLA_STATE_PATH = "/cua-api/apps/careers/state"
+
+
+def is_tesla_careers_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.netloc.lower() in ("www.tesla.com", "tesla.com", "www.tesla.cn") and (
+        parsed.path.rstrip("/") in ("/careers/search", _TESLA_STATE_PATH)
+    )
+
+
+def fetch_tesla_jobs(url: str) -> list[dict] | None:
+    """Every Tesla listing comes from one JSON document behind the careers search page
+    (https://www.tesla.com/careers/search/?country=US). The page's country (or site) and
+    type parameters are applied here. Tesla's bot protection blocks some networks; that is
+    logged and the caller falls back to the page itself."""
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query)
+    want_site = (query.get("site") or query.get("country") or ["US"])[0].upper()
+    want_types = {t.lower() for t in _query_values(query, "type")}
+    try:
+        resp = requests.get(
+            f"https://{parsed.netloc}{_TESLA_STATE_PATH}",
+            headers={**HEADERS, "Accept": "application/json", "Referer": f"https://{parsed.netloc}/careers/search/"},
+            timeout=60,
+        )
+        if resp.status_code != 200 or "json" not in resp.headers.get("content-type", ""):
+            log.warning(
+                f"  [tesla] Tesla's jobs data refused the request (HTTP {resp.status_code}); its bot "
+                f"protection blocks some networks."
+            )
+            return None
+        state = resp.json()
+    except Exception as exc:
+        log.warning(f"  [tesla] Failed to fetch {url}: {exc}")
+        return None
+    if not isinstance(state, dict) or not isinstance(state.get("listings"), list):
+        return None
+
+    def leaf_ids(node, out):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key not in ("id", "name"):
+                    leaf_ids(value, out)
+        elif isinstance(node, list):
+            for value in node:
+                if isinstance(value, (str, int)):
+                    out.add(str(value))
+                else:
+                    leaf_ids(value, out)
+
+    site_of_location = {}
+    for region in state.get("geo") or []:
+        for site in (region.get("sites") or []) if isinstance(region, dict) else []:
+            ids = set()
+            leaf_ids(site, ids)
+            for loc_id in ids:
+                site_of_location[loc_id] = site.get("id")
+    lookup = state.get("lookup") or {}
+    locations, types = lookup.get("locations") or {}, lookup.get("types") or {}
+
+    jobs = []
+    for row in state["listings"]:
+        if not isinstance(row, dict):
+            continue
+        job_id, title = _to_text(row.get("id")), _to_text(row.get("t"))
+        site = site_of_location.get(_to_text(row.get("l")))
+        if not job_id or not title or (want_site and site and site != want_site):
+            continue  # a location missing from geo is kept; its text decides (us_only)
+        type_id = _to_text(row.get("y"))
+        if want_types and not want_types & {type_id, str(types.get(type_id, "")).lower()}:
+            continue
+        slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")  # as in Tesla's own job links
+        jobs.append({
+            "title": title[:200],
+            "url": f"https://{parsed.netloc}/careers/search/job/{slug + '-' if slug else ''}{job_id}",
+            "location": _to_text(locations.get(_to_text(row.get("l")))),
+            "countries": [site] if site else [],
+        })
+    return _dedupe_jobs(jobs)
+
+
+# Sitemap mode: some careers sites (e.g. Citadel) block everything except their
+# sitemap. Each job page URL becomes a job; its title and region come from the slug.
+_SLUG_WORDS = {
+    "c": "C++", "ai": "AI", "ml": "ML", "phd": "PhD", "hpc": "HPC", "sre": "SRE", "ui": "UI", "ux": "UX",
+    "api": "API", "gpu": "GPU", "fpga": "FPGA", "asic": "ASIC", "it": "IT", "qa": "QA", "llm": "LLM",
+    "etf": "ETF", "fx": "FX", "cto": "CTO", "us": "US", "uk": "UK", "emea": "EMEA", "apac": "APAC",
+    "hr": "HR", "bs": "BS", "ms": "MS", "sdet": "SDET", "dmm": "DMM", "cpp": "C++", "ios": "iOS",
+}
+_SLUG_REGIONS = {
+    "europe": "Europe", "asia": "Asia", "emea": "EMEA", "apac": "APAC", "australia": "Australia",
+    "uk": "UK", "london": "London", "singapore": "Singapore", "canada": "Canada", "india": "India",
+    "hong-kong": "Hong Kong", "dublin": "Dublin", "paris": "Paris", "sydney": "Sydney", "tokyo": "Tokyo",
+}
+
+
+def _job_from_slug_url(url: str) -> dict:
+    """Title and region from a job page's slug, e.g. .../quantitative-trader-intern-us-new-york/."""
+    tokens = [t for t in urlparse(url).path.rstrip("/").rsplit("/", 1)[-1].lower().split("-") if t]
+    if len(tokens) > 1 and re.fullmatch(r"\d", tokens[-1]):
+        tokens = tokens[:-1]  # WordPress suffix for duplicate slugs ("...-engineer-2")
+    location, countries = "", []
+    for i in range(len(tokens) - 1, max(len(tokens) - 4, 0), -1):  # "...-us" or "...-us-new-york"
+        city = " ".join(tokens[i + 1:])
+        if tokens[i] == "us" and (not city or city in _US_CITIES | {"new york"}):
+            location, countries, tokens = (f"{city.title()}, US" if city else "US"), ["US"], tokens[:i]
+            break
+    else:
+        if len(tokens) > 2 and "-".join(tokens[-2:]) in _SLUG_REGIONS:
+            location, tokens = _SLUG_REGIONS["-".join(tokens[-2:])], tokens[:-2]
+        elif len(tokens) > 1 and tokens[-1] in _SLUG_REGIONS:
+            location, tokens = _SLUG_REGIONS[tokens[-1]], tokens[:-1]
+    title = " ".join(_SLUG_WORDS.get(t, t.capitalize()) for t in tokens if t)
+    return {"title": title[:200], "url": url, "location": location, "countries": countries}
+
+
+def fetch_sitemap_jobs(url: str, url_contains: str) -> list[dict] | None:
+    """Jobs from a sitemap: every <loc> whose URL contains url_contains (the target's link_selector)."""
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=30)
+        resp.raise_for_status()
+        root = ET.fromstring(resp.content)
+    except Exception as exc:
+        log.warning(f"  [sitemap] Failed to read {url}: {exc}")
+        return None
+    locs = [el.text.strip() for el in root.iter() if el.tag.rsplit("}", 1)[-1] == "loc" and el.text]
+    return _dedupe_jobs([_job_from_slug_url(u) for u in locs if not url_contains or url_contains in u])
+
+
 def job_board_api_reader(url: str):
     """(tag, reader) when the URL is a job-board API with a dedicated reader, else None."""
     parsed = urlparse(url)
@@ -1585,6 +1715,22 @@ def fetch_target_jobs(url: str, mode: str, link_selector: str, wait_for: str) ->
             return None
         log.info(f"  [{tag}] Found {len(jobs)} jobs from the job board API")
         return jobs
+    if mode == "sitemap":
+        jobs = fetch_sitemap_jobs(url, link_selector)
+        if jobs is None:
+            log.error("  [sitemap] Could not read the sitemap, skipping.")
+            return None
+        log.info(f"  [sitemap] Found {len(jobs)} job pages in the sitemap")
+        return jobs
+    if is_tesla_careers_url(url):
+        jobs = fetch_tesla_jobs(url)
+        if jobs is not None:
+            log.info(f"  [tesla] Found {len(jobs)} jobs from Tesla's jobs data")
+            return jobs
+        if urlparse(url).path.rstrip("/") == _TESLA_STATE_PATH:
+            log.error("  [tesla] Could not read Tesla's jobs data, skipping.")
+            return None
+        log.info("  [tesla] Falling back to the careers page")
 
     google_jobs = fetch_google_jobs_from_page(url)
     if google_jobs is not None:
@@ -1657,6 +1803,12 @@ def fetch_target_jobs(url: str, mode: str, link_selector: str, wait_for: str) ->
         current_jobs = filtered_jobs
 
     log.info(f"  Found {len(current_jobs)} job links on page")
+
+    if not current_jobs and is_tesla_careers_url(url):
+        # Tesla always lists jobs, so none means the page was blocked too. Skipping
+        # (instead of recording an empty first check) avoids a flood once it isn't.
+        log.error("  [tesla] Tesla blocked both its jobs data and its careers page, skipping.")
+        return None
 
     if len(current_jobs) == 0:
         log.warning(

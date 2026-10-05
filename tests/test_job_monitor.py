@@ -68,9 +68,12 @@ def jobs_named(*names):
 
 
 class FakeResponse:
-    def __init__(self, text="", status_code=200):
+    def __init__(self, text="", status_code=200, content_type=None):
         self.text = text
+        self.content = text.encode("utf-8")
         self.status_code = status_code
+        is_json = text.lstrip()[:1] in ("{", "[")
+        self.headers = {"content-type": content_type or ("application/json" if is_json else "text/html")}
 
     def raise_for_status(self):
         if self.status_code >= 400:
@@ -998,6 +1001,152 @@ class JobBoardReaderTests(MonitorTestCase):
         self.assertIsNone(jm.job_board_api_reader("https://jobs.ashbyhq.com/acme"))
         self.assertIsNone(jm.job_board_api_reader("https://job-boards.greenhouse.io/acme"))
         self.assertIsNone(jm.job_board_api_reader("https://jobs.lever.co/acme"))
+
+
+# Trimmed from https://www.citadel.com/career-sitemap.xml (Yoast SEO layout).
+CITADEL_SITEMAP = "https://www.citadel.com/career-sitemap.xml"
+CITADEL_SITEMAP_XML = """<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="//www.citadel.com/wp-content/plugins/wordpress-seo/css/main-sitemap.xsl"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+\t<url>
+\t\t<loc>https://www.citadel.com/careers/</loc>
+\t\t<lastmod>2026-10-05T18:14:18+00:00</lastmod>
+\t</url>
+\t<url>
+\t\t<loc>https://www.citadel.com/careers/details/software-engineer-university-graduate-us/</loc>
+\t\t<xhtml:link rel="alternate" hreflang="en" href="https://www.citadel.com/careers/details/software-engineer-university-graduate-us/" />
+\t\t<lastmod>2026-10-05T18:14:19+00:00</lastmod>
+\t</url>
+\t<url><loc>https://www.citadel.com/careers/details/software-engineer-university-graduate-europe/</loc></url>
+\t<url><loc>https://www.citadel.com/careers/details/global-quantitative-strategies-c-quantitative-research-engineer/</loc></url>
+\t<url><loc>https://www.citadel.com/careers/details/quantitative-trader-university-graduate-us-new-york/</loc></url>
+\t<url><loc>https://www.citadel.com/careers/details/c-software-engineer-2/</loc></url>
+\t<url><loc>https://www.citadel.com/careers/details/machine-learning-researcher-phd-graduate-asia/</loc></url>
+\t<url><loc>https://www.citadel.com/careers/details/us-physical-gas-specialist/</loc></url>
+</urlset>"""
+
+# Real rows and lookups from www.tesla.cn's careers state (same app as www.tesla.com),
+# plus a US site laid out as the geo data nests it there (site -> states -> cities).
+TESLA_PAGE = "https://www.tesla.com/careers/search/?region=5&country=US&sort=created_desc"
+TESLA_STATE = "https://www.tesla.com/cua-api/apps/careers/state"
+TESLA_PAYLOAD = {
+    "lookup": {
+        "regions": {"2": "Asia Pacific", "5": "North America"},
+        "sites": {"CN": "China Mainland", "US": "United States"},
+        "locations": {"27665": "上海, Shanghai", "35341": "金华, Zhejiang", "1001": "Palo Alto, California",
+                      "1002": "Austin, Texas", "1003": "Fremont, California"},
+        "departments": {"1": "Engineering & Information Technology", "2": "Vehicle Service"},
+        "types": {"1": "fulltime", "2": "parttime", "3": "intern"},
+    },
+    "departments": {"1": ["1"], "2": ["74"]},
+    "geo": [
+        {"id": "2", "sites": [{"id": "CN", "cities": {"上海": ["27665"], "金华": ["35341"]}}]},
+        {"id": "5", "sites": [{"id": "US", "states": [
+            {"id": "CA", "name": "California", "cities": {"Palo Alto": ["1001"], "Fremont": ["1003"]}},
+            {"id": "TX", "name": "Texas", "cities": {"Austin": ["1002"]}},
+        ]}]},
+    ],
+    "listings": [
+        {"id": "146570", "t": "服务顾问-浙江金华金东钣喷", "dp": "2", "f": "74", "l": "35341", "y": 1, "sp": 51, "pu": None},
+        {"id": "146211", "t": "Senior Site Reliability Engineer, Fleetnet", "dp": "1", "f": "1", "l": "27665", "y": 1, "sp": 60, "pu": None},
+        {"id": "249435", "t": "Sr. Software QA Engineer, Mobile Apps, Service & Roadside Assistance",
+         "dp": "1", "f": "1", "l": "1001", "y": 1, "sp": 1, "pu": None},
+        {"id": "250001", "t": "Software Engineer, Vehicle Firmware", "dp": "1", "f": "1", "l": "1002", "y": 1, "sp": 2, "pu": None},
+        {"id": "250002", "t": "Internship, Software Engineer (Winter 2027)", "dp": "1", "f": "1", "l": "1003", "y": 3, "sp": 3, "pu": None},
+        {"id": "250003", "t": "Backend Engineer, Energy", "dp": "1", "f": "1", "l": "9999", "y": 1, "sp": 4, "pu": None},
+    ],
+}
+
+
+class SitemapReaderTests(MonitorTestCase):
+    def test_job_pages_titles_and_regions_come_from_the_sitemap(self):
+        self.pages[CITADEL_SITEMAP] = CITADEL_SITEMAP_XML
+        jobs = jm.fetch_target_jobs(CITADEL_SITEMAP, "sitemap", "/careers/details/", "")
+        self.assertEqual([(j["title"], j["location"], j["countries"]) for j in jobs], [
+            ("Software Engineer University Graduate", "US", ["US"]),
+            ("Software Engineer University Graduate", "Europe", []),
+            ("Global Quantitative Strategies C++ Quantitative Research Engineer", "", []),
+            ("Quantitative Trader University Graduate", "New York, US", ["US"]),
+            ("C++ Software Engineer", "", []),
+            ("Machine Learning Researcher PhD Graduate", "Asia", []),
+            ("US Physical Gas Specialist", "", []),
+        ])
+        self.assertEqual(jobs[0]["url"], "https://www.citadel.com/careers/details/software-engineer-university-graduate-us/")
+
+    def test_us_in_a_title_is_not_read_as_a_region(self):
+        job = jm._job_from_slug_url("https://www.citadel.com/careers/details/software-engineer-us-equities/")
+        self.assertEqual((job["title"], job["location"]), ("Software Engineer US Equities", ""))
+
+    def test_run_alerts_new_us_job_pages_and_skips_other_regions(self):
+        self.mark_known(CITADEL_SITEMAP)
+        self.pages[CITADEL_SITEMAP] = CITADEL_SITEMAP_XML
+        _, reported = self.run_monitor(
+            [target(name="Citadel", url=CITADEL_SITEMAP, mode="sitemap", link_selector="/careers/details/")],
+            us_only=True)
+        self.assertEqual(reported["Citadel"], [
+            "Software Engineer University Graduate", "Global Quantitative Strategies C++ Quantitative Research Engineer",
+            "Quantitative Trader University Graduate", "C++ Software Engineer", "US Physical Gas Specialist"])
+
+    def test_unreadable_sitemap_skips_the_target(self):
+        self.pages[CITADEL_SITEMAP] = "<html><body>Access denied</body>"
+        with mock.patch.object(jm, "fetch_browser") as browser, self.assertLogs(jm.log, "ERROR"):
+            self.assertIsNone(jm.fetch_target_jobs(CITADEL_SITEMAP, "sitemap", "/careers/details/", ""))
+        browser.assert_not_called()
+
+
+class TeslaReaderTests(MonitorTestCase):
+    def setUp(self):
+        super().setUp()
+        self.pages[TESLA_STATE] = json.dumps(TESLA_PAYLOAD)
+
+    def test_careers_page_url_reads_the_jobs_data_for_its_country(self):
+        with mock.patch.object(jm, "fetch_browser") as browser:
+            jobs = jm.fetch_target_jobs(TESLA_PAGE, "browser", "a[href*='/careers/search/job/']", "")
+        browser.assert_not_called()
+        self.assertEqual([j["title"] for j in jobs], [
+            "Sr. Software QA Engineer, Mobile Apps, Service & Roadside Assistance",
+            "Software Engineer, Vehicle Firmware",
+            "Internship, Software Engineer (Winter 2027)",
+            "Backend Engineer, Energy",  # location missing from geo: kept, its text decides
+        ])
+        # Same form as the job links on tesla.com (e.g. an indexed posting).
+        self.assertEqual(jobs[0]["url"], "https://www.tesla.com/careers/search/job/"
+                                         "sr-software-qa-engineer-mobile-apps-service-roadside-assistance-249435")
+        self.assertEqual((jobs[0]["location"], jobs[0]["countries"]), ("Palo Alto, California", ["US"]))
+        self.assertEqual(jobs[3]["countries"], [])
+
+    def test_site_and_type_parameters(self):
+        cn = jm.fetch_tesla_jobs("https://www.tesla.com/careers/search/?country=CN")
+        self.assertEqual([j["url"] for j in cn], [
+            "https://www.tesla.com/careers/search/job/146570",  # no latin letters: id only
+            "https://www.tesla.com/careers/search/job/senior-site-reliability-engineer-fleetnet-146211",
+            "https://www.tesla.com/careers/search/job/backend-engineer-energy-250003",  # site unknown: kept
+        ])
+        interns = jm.fetch_tesla_jobs(TESLA_STATE + "?site=US&type=intern")
+        self.assertEqual([j["title"] for j in interns], ["Internship, Software Engineer (Winter 2027)"])
+        self.assertEqual(jm.fetch_tesla_jobs(TESLA_STATE + "?site=US&type=3"), interns)
+
+    def test_blocked_jobs_data_falls_back_to_the_careers_page(self):
+        self.pages[TESLA_STATE] = "<html>Access Denied</html>"
+        page_html = '<a href="/careers/search/job/software-engineer-vehicle-firmware-250001">Software Engineer</a>'
+        with mock.patch.object(jm, "fetch_browser", return_value=(page_html, [])) as browser, \
+                self.assertLogs(jm.log, "WARNING"):
+            jobs = jm.fetch_target_jobs(TESLA_PAGE, "browser", "a[href*='/careers/search/job/']", "")
+        browser.assert_called_once()
+        self.assertEqual([j["url"] for j in jobs],
+                         ["https://www.tesla.com/careers/search/job/software-engineer-vehicle-firmware-250001"])
+
+    def test_blocked_everywhere_skips_without_recording_a_baseline(self):
+        self.pages[TESLA_STATE] = "<html>Access Denied</html>"
+        with mock.patch.object(jm, "fetch_browser", return_value=("<html>Access Denied</html>", [])):
+            self.run_monitor([target(name="Tesla", url=TESLA_PAGE, mode="browser",
+                                     link_selector="a[href*='/careers/search/job/']")])
+        self.assertNotIn(TESLA_PAGE, self.saved_state() if jm.STATE_PATH.exists() else {})
+
+    def test_blocked_state_url_is_skipped(self):
+        with mock.patch.object(jm.requests, "get", return_value=FakeResponse("Forbidden", 403, "text/html")), \
+                mock.patch.object(jm, "fetch_browser") as browser, self.assertLogs(jm.log, "ERROR"):
+            self.assertIsNone(jm.fetch_target_jobs(TESLA_STATE, "api", "", ""))
+        browser.assert_not_called()
 
 
 class UsFilterTests(MonitorTestCase):

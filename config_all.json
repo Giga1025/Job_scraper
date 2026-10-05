@@ -494,10 +494,15 @@
     },
     {
       "name": "Citadel",
-      "url": "https://www.citadel.com/careers/open-opportunities/",
-      "mode": "browser",
-      "wait_for": "a[href*='/details/']",
-      "link_selector": "a[href*='/details/']"
+      "url": "https://www.citadel.com/career-sitemap.xml",
+      "mode": "sitemap",
+      "link_selector": "/careers/details/"
+    },
+    {
+      "name": "Citadel Securities",
+      "url": "https://www.citadelsecurities.com/career-sitemap.xml",
+      "mode": "sitemap",
+      "link_selector": "/careers/details/"
     },
     {
       "name": "Jane Street",
