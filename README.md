@@ -125,11 +125,13 @@ company ("Clay (via SimplifyJobs New Grad)"). `config_all.json` uses three:
 | [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions) | `simplify` | its `listings.json`: active rows in the given `categories` |
 | [speedyapply 2027 SWE](https://github.com/speedyapply/2027-SWE-College-Jobs) and [AI](https://github.com/speedyapply/2027-AI-College-Jobs) | `speedyapply` | the tables in `NEW_GRAD_USA.md` |
 
-Only postings from the last `max_age_days` (7) are read. Postings from a company that has its
-own entry in the config are skipped (the company's entry already covers them), and a posting
-listed by two feeds, or already found elsewhere, is emailed once. Your role filter and US-only
-setting apply as usual. Like any new target, a feed's first check records what it lists
-without emailing.
+Only postings from the last `max_age_days` (7) are read. A posting that was already found,
+by a company's own entry or another feed, isn't emailed again, even under a different link:
+the job number in the link (Greenhouse, Ashby, Lever, Workday) is compared, and feeds are also
+compared by company and title. A company's own entry may be filtered (a team, a level, the
+newest page), so its postings that only a feed lists are still emailed. Your role filter and
+US-only setting apply as usual. Like any new target, a feed's first check records what it
+lists without emailing.
 
 `keyword_filters` (global, or per target) still works as an allow-list. Postings it leaves out
 are dropped quietly as before, unless you set `"show_filtered": true`.
@@ -328,7 +330,7 @@ changes when you change it. To read the full left-out list, open `left_out.md` o
 
    Ticking **Dry run** in that menu runs everything but sends no email and saves to a separate
    `monitor-state-test` branch, so it can't affect your real alerts. Runs started from any
-   branch other than `main` do the same with their state.
+   branch other than `main` work the same way (no email, test branch).
 
 ### Reading a run
 
@@ -347,8 +349,11 @@ changes when you change it. To read the full left-out list, open `left_out.md` o
   37 of every hour; `"7 */3 * * *"` would mean every 3 hours. GitHub may start a run a few
   minutes late.
 - **Pause everything:** Actions tab → **Job monitor** → **⋯** → **Disable workflow** (and
-  **Enable workflow** to resume). GitHub also disables scheduled workflows in public
-  repositories after 60 days without any activity; the same button turns it back on.
+  **Enable workflow** to resume).
+- **After 60 quiet days:** GitHub turns off scheduled workflows in a public repository when
+  nothing has happened in it for 60 days (it emails you first). The monitor's own saves don't
+  count, so if you go two months without pushing anything, click **Enable workflow** on the
+  Actions tab (or push any commit) to turn it back on.
 - **Pause one company:** add `"enabled": false` to its entry in `config_all.json` (Tesla and
   Atlassian are paused this way for now). Its saved postings are kept, so when you remove the
   line, only what it posted in the meantime is new.

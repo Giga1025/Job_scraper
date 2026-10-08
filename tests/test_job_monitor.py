@@ -1466,6 +1466,26 @@ class EmailBatchTests(MonitorTestCase):
         self.assertTrue(ok)
         self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
 
+    def test_another_config_sharing_state_leaves_this_configs_alerts_alone(self):
+        other = "https://other.example/careers"
+        self.mark_known(URL, other)
+        self.last_email(hours_ago=0.5)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.run_batched()  # held for this config's next email
+        self.pages[other] = page()
+        self.run_monitor([target(name="Other", url=other)], email={"enabled": False})  # e.g. the starter config
+        self.assertEqual([j["title"] for j in self.saved_state()[jm.ALERT_POOL_KEY]], ["Backend Engineer"])
+        self.last_email(hours_ago=3)
+        _, reported = self.run_batched()
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_a_last_email_time_in_the_future_doesnt_hold_emails_back(self):
+        self.mark_known(URL)
+        self.last_email(hours_ago=-1)  # e.g. the clock went back an hour
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_batched()
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
     def test_dry_run_prints_instead_of_emailing(self):
         self.mark_known(URL)
         self.pages[URL] = page(*jobs_named("Backend Engineer"))
@@ -1497,9 +1517,30 @@ class LeftOutSummaryTests(MonitorTestCase):
         summary = jm.summarize_left_out(jobs, self.patterns)
         self.assertEqual(summary["total"], 5)
         self.assertEqual(summary["by_reason"], {"not engineering": 2, "senior": 1, "internship": 1, "frontend": 1})
-        # Kind-of-role exclusions before level ones; software/ML words first; non-technical ones only counted.
+        # Kind-of-role exclusions before level ones, engineering words first; non-technical ones only counted.
         self.assertEqual([j["title"] for j in summary["listed"]],
-                         ["Data Analyst", "Frontend Engineer", "Senior Software Engineer", "Software Engineer Intern"])
+                         ["Frontend Engineer", "Data Analyst", "Senior Software Engineer", "Software Engineer Intern"])
+
+    def test_a_title_repeated_at_one_company_is_listed_once(self):
+        jobs = [self.left("Data Center Technician", "not engineering (Technician)") for _ in range(3)]
+        jobs = [{**j, "url": f"{j['url']}/{i}"} for i, j in enumerate(jobs)]
+        summary = jm.summarize_left_out(jobs, self.patterns)
+        self.assertEqual((summary["total"], len(summary["listed"])), (3, 1))
+
+    def test_postings_waiting_before_an_upgrade_reach_the_page(self):
+        # A pool written by the previous version (no left_out.md log yet).
+        self.mark_known(URL)
+        jm.save_state({}, pending_add=[{"title": "Staff Engineer", "url": "https://acme.example/staff",
+                                       "company": "Acme", "reason": "senior (Staff)"}])
+        self.pages[URL] = page()
+        self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)  # digest due: never emailed
+        self.assertEqual(len(self.emails_sent()), 1)
+        self.assertIn("[Staff Engineer](https://acme.example/staff)", jm.left_out_page_path().read_text())
+
+    def test_line_breaks_in_titles_dont_break_the_page(self):
+        page_md = jm.format_left_out_page([{"title": "icon Associate : The group\n\nseeks people", "url": "https://x.example/1",
+                                            "reason": "senior (Associate)", "seen": "2026-10-08T10:00"}])
+        self.assertIn("- [icon Associate : The group seeks people](https://x.example/1)", page_md)
 
     def test_at_most_25_are_listed_and_the_email_points_to_the_full_list(self):
         self.mark_known(URL)
@@ -1584,6 +1625,7 @@ class FeedTests(MonitorTestCase):
     def test_speedyapply_tables_with_and_without_salary(self):
         self.pages[SPEEDY_URL] = SPEEDY_MD
         jobs = jm.fetch_feed_jobs(target(url=SPEEDY_URL, mode="feed", format="speedyapply", max_age_days=7))
+        self.assertEqual({j.pop("first_seen") for j in jobs}, {datetime.now().date().isoformat()})
         self.assertEqual(jobs, [
             {"title": "Software Engineer - Test Frameworks & Tooling", "url": "https://careers.roblox.com/jobs/8229705?gh_jid=8229705",
              "company": "Roblox", "location": "San Mateo, CA"},
@@ -1612,18 +1654,52 @@ class FeedTests(MonitorTestCase):
         self.assertEqual((reported, self.emails_attempted), ({}, 0))
         self.assertEqual(len(self.saved_state()[SIMPLIFY_URL]), 1)
 
-    def test_companies_with_their_own_target_are_skipped(self):
-        self.mark_known(SIMPLIFY_URL, URL)
-        self.pages[URL] = page()
+    def test_a_tracked_companys_posting_is_skipped_only_if_its_own_entry_found_it(self):
+        # Company entries are often filtered (a team, a level, the newest page), so a feed can
+        # list a posting the company's own entry never sees: that one is still emailed.
+        roblox = "https://boards-api.greenhouse.io/v1/boards/roblox/jobs"
+        self.mark_known(SIMPLIFY_URL, roblox)
+        self.pages[roblox] = json.dumps({"jobs": [{"title": "Software Engineer", "location": {"name": "San Mateo, CA"},
+                                                   "absolute_url": "https://careers.roblox.com/jobs/8229705?gh_jid=8229705"}]})
         self.pages[SIMPLIFY_URL] = json.dumps([
-            simplify_row("Block, Inc.", "Software Engineer"),       # "Square / Block" has its own entry
-            simplify_row("Block Renovation", "Software Engineer"),  # a different company
-            simplify_row("Tesla", "Software Engineer"),             # its own entry is paused
+            simplify_row("Roblox", "Software Engineer", url="https://job-boards.greenhouse.io/roblox/jobs/8229705"),
+            simplify_row("Roblox", "ML Engineer, Safety", url="https://job-boards.greenhouse.io/roblox/jobs/8230001"),
         ])
-        targets = [target(name="Square / Block"), target(name="Tesla", url="https://tesla.example/", enabled=False),
-                   self.simplify_target()]
+        targets = [target(name="Roblox", url=roblox, mode="api"), self.simplify_target()]
         _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
-        self.assertEqual(sorted(reported), ["Block Renovation (via SimplifyJobs New Grad)", "Tesla (via SimplifyJobs New Grad)"])
+        self.assertEqual(reported, {"Roblox": ["Software Engineer"],
+                                    "Roblox (via SimplifyJobs New Grad)": ["ML Engineer, Safety"]})
+
+    def test_the_same_job_under_another_link_is_not_new(self):
+        boeing = "https://boeing.wd1.myworkdayjobs.com/en-US/{site}/job/Seattle/Software-Application-Tester_JR2026524037{suffix}"
+        self.mark_known(SIMPLIFY_URL)
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Boeing", "Software Application Tester", url=boeing.format(site="external_careers", suffix="-1")),
+            simplify_row("Boeing", "Software Application Tester", url=boeing.format(site="external_subsidiary", suffix="")),
+        ])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Boeing (via SimplifyJobs New Grad)": ["Software Application Tester"]})  # once
+        # Later the feed links it under yet another site path: still the same job.
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Boeing", "Software Application Tester", url=boeing.format(site="boeing_jobs", suffix=""))])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+
+    def test_title_matches_across_feeds_only_look_back_two_weeks(self):
+        old = (datetime.now() - timedelta(days=30)).date().isoformat()
+        jm.save_state({SPEEDY_URL: [{"title": "Software Engineer - New Grad", "url": "https://ixl.example/old",
+                                     "company": "IXL Learning", "first_seen": old}], SIMPLIFY_URL: []})
+        self.pages[SPEEDY_URL] = ""
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("IXL Learning", "Software Engineer - New Grad",
+                                                            url="https://job-boards.greenhouse.io/ixl/jobs/8862043002")])
+        targets = [self.simplify_target(), target(name="speedyapply New Grad SWE", url=SPEEDY_URL, mode="feed", format="speedyapply")]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"IXL Learning (via SimplifyJobs New Grad)": ["Software Engineer - New Grad"]})
+
+    def test_simplify_rows_added_late_with_an_old_post_date_are_read(self):
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Late Co", "Software Engineer", days_ago=20, date_updated=int(time.time() - 3600))])
+        self.assertEqual([j["company"] for j in jm.fetch_feed_jobs(self.simplify_target())], ["Late Co"])
 
     def test_a_posting_in_two_feeds_or_already_known_is_emailed_once(self):
         self.mark_known(SIMPLIFY_URL, SPEEDY_URL, URL)

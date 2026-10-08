@@ -22,14 +22,16 @@ permissions:
   contents: write
 
 # Never two runs at once: both would read and write the same state. A run that comes
-# due while one is still going waits for it.
+# due while one is still going waits for it. Test runs (dry runs, other branches) queue
+# separately, so they can't hold up or replace a real run.
 concurrency:
-  group: job-monitor
+  group: ${{ (github.ref_name == 'main' && !inputs.dry_run) && 'job-monitor' || 'job-monitor-test' }}
   cancel-in-progress: false
 
 env:
   # Where state.json and left_out.md are kept: a branch holding a single commit that each
-  # run replaces. Runs from other branches, and dry runs, use a separate test branch.
+  # run replaces. Runs from other branches, and dry runs, use a separate test branch and
+  # send no email.
   STATE_BRANCH: ${{ (github.ref_name == 'main' && !inputs.dry_run) && 'monitor-state' || 'monitor-state-test' }}
 
 jobs:
@@ -41,6 +43,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Get the saved state
+        id: load
         run: |
           set +e
           git ls-remote --exit-code --heads origin "$STATE_BRANCH" > /dev/null
@@ -48,12 +51,19 @@ jobs:
           set -e
           if [ "$found" -eq 0 ]; then
             git fetch --depth=1 origin "$STATE_BRANCH"
-            git show FETCH_HEAD:state.json > state.json
+            git show FETCH_HEAD:state.json > state.json.new
+            mv state.json.new state.json
             git show FETCH_HEAD:left_out.md > left_out.md 2> /dev/null || rm -f left_out.md
             echo "Loaded state.json from the $STATE_BRANCH branch."
           elif [ "$found" -eq 2 ]; then
-            # First run with this branch: start from the state.json in the code (if any),
-            # where earlier versions of this workflow kept it.
+            # First run with this branch: start from the state.json committed on this
+            # branch (earlier versions of this workflow kept it there), as of now rather
+            # than as of when this run was queued.
+            git fetch --depth=1 origin "$GITHUB_REF"
+            if git cat-file -e FETCH_HEAD:state.json 2> /dev/null; then
+              git show FETCH_HEAD:state.json > state.json.new
+              mv state.json.new state.json
+            fi
             echo "No $STATE_BRANCH branch yet; starting from this branch's state.json (if any)."
           else
             echo "Could not reach the repository to load the state; stopping rather than starting over."
@@ -79,14 +89,15 @@ jobs:
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
-          JOB_MONITOR_NO_EMAIL: ${{ inputs.dry_run && '1' || '' }}
+          JOB_MONITOR_NO_EMAIL: ${{ env.STATE_BRANCH != 'monitor-state' && '1' || '' }}
           JOB_MONITOR_STATE_BRANCH: ${{ env.STATE_BRANCH }}
 
       - name: Save the state
         # Also after a failed check (e.g. the email could not be sent), so what was
         # recorded isn't lost. Postings that weren't emailed are kept in state.json and
-        # sent by the next run.
-        if: ${{ !cancelled() }}
+        # sent by the next run. Never when the saved state couldn't be loaded: that would
+        # replace it with an old or empty one.
+        if: ${{ !cancelled() && steps.load.outcome == 'success' }}
         run: |
           if [ ! -f state.json ]; then
             echo "No state.json was written."

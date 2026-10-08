@@ -721,7 +721,7 @@
       "link_selector": ""
     },
     {
-      "_section": "New-grad lists maintained on GitHub by others (many startups and mid-size companies). Postings from companies that have their own entry above are skipped, so nothing is emailed twice."
+      "_section": "New-grad lists maintained on GitHub by others (many startups and mid-size companies). A posting already found by a company's own entry above, or by another list, isn't emailed again."
     },
     {
       "name": "SimplifyJobs New Grad",

@@ -351,7 +351,7 @@ def left_out_page_path() -> Path:
 
 
 def _md_escape(text: str) -> str:
-    return re.sub(r"([\\`*_\[\]<>|])", r"\\\1", str(text or ""))
+    return re.sub(r"([\\`*_\[\]<>|])", r"\\\1", " ".join(str(text or "").split()))
 
 
 def format_left_out_page(entries: list[dict]) -> str:
@@ -1178,8 +1178,9 @@ def _read_simplify_feed(resp, target: dict, max_age_days: float) -> list[dict]:
             continue
         if categories and str(row.get("category", "")).lower() not in categories:
             continue
-        posted = row.get("date_posted")
-        if not isinstance(posted, (int, float)) or posted < cutoff:
+        # Simplify sometimes adds a row days after its date_posted; date_updated catches those.
+        stamps = [v for v in (row.get("date_posted"), row.get("date_updated")) if isinstance(v, (int, float))]
+        if not stamps or max(stamps) < cutoff:
             continue
         title, url = _to_text(row.get("title")), _to_text(row.get("url"))
         if not title or not url.startswith(("http://", "https://")):
@@ -1250,12 +1251,10 @@ def fetch_feed_jobs(target: dict) -> list[dict] | None:
         log.warning(f"  [feed] Failed to read {target['url']}: {exc}")
         return None
     log.info(f"  [feed] Found {len(jobs)} postings from the last {max_age_days:g} days")
-    return _dedupe_jobs(jobs)
+    today = datetime.now().date().isoformat()
+    return [{**job, "first_seen": today} for job in _dedupe_jobs(jobs)]
 
 
-# Feed rows from companies that already have their own target are skipped, so the same
-# posting isn't alerted twice (once per source). Names are compared whole, after dropping
-# words like "Inc" and anything in parentheses: "Square / Block" covers "Block, Inc.".
 _COMPANY_SUFFIXES = {"inc", "llc", "ltd", "corp", "corporation", "co", "company", "plc", "pbc", "lp", "llp", "gmbh", "and"}
 
 
@@ -1268,15 +1267,28 @@ def company_key(name) -> str:
     return "".join(words)
 
 
-def tracked_company_keys(targets: list) -> set[str]:
-    """Company names covered by the config's own (non-feed, enabled) targets."""
-    keys = set()
-    for t in targets:
-        if not isinstance(t, dict) or t.get("_section") or t.get("mode") == "feed" or t.get("enabled", True) is False:
-            continue
-        name = re.sub(r"\([^)]*\)", " ", str(t.get("name", "")))
-        name = re.split(r"\s+[—–-]\s+", name)[0]  # "Microsoft — US Entry Level" -> "Microsoft"
-        keys.update(k for k in (company_key(part) for part in name.split("/")) if k)
+_UUID_RE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+
+def job_keys(url: str) -> set[tuple]:
+    """Numbers that identify a job across different links to it: the Greenhouse job id
+    (also in gh_jid=), an Ashby/Lever UUID, a Workday requisition (any site path, "-1"
+    suffix dropped), or otherwise a long number in the path on the same site."""
+    parsed = urlparse(str(url or "").strip().lower())
+    host = parsed.netloc.removeprefix("www.")
+    query = parse_qs(parsed.query)
+    keys: set[tuple] = {("gh", v) for v in query.get("gh_jid", []) if v.isdigit()}
+    if host.endswith("greenhouse.io"):
+        keys |= {("gh", n) for n in re.findall(r"/jobs/(\d{5,})", parsed.path)}
+    keys |= {("uuid", u) for u in _UUID_RE.findall(parsed.path)}
+    if "myworkday" in host:
+        token = parsed.path.rstrip("/").rsplit("_", 1)[-1]
+        trimmed = re.fullmatch(r"(.*\d.*?)-\d{1,2}", token)
+        token = trimmed.group(1) if trimmed else token
+        if re.search(r"\d", token):
+            keys.add(("wd", host, token))
+    elif not keys:
+        keys |= {(host, n) for n in re.findall(r"(?<!\d)\d{7,}(?!\d)", parsed.path)}
     return keys
 
 
@@ -1877,8 +1889,9 @@ def left_out_page_link() -> str:
 def summarize_left_out(jobs: list[dict], patterns: dict | None, limit: int | None = None) -> dict:
     """Counts by reason, and the postings most worth a look: titles that still look like
     engineering roles (an engineering or software/ML word in them), those left out for
-    their kind of role before those left out for their level (senior, internship), and
-    software/ML words first. Order is otherwise kept (oldest first). The rest are counted."""
+    their kind of role before those left out for their level (senior, internship), then
+    those with an engineering word, then a software/ML word. Order is otherwise kept
+    (oldest first); a title repeated at one company is listed once. The rest are counted."""
     limit = LEFT_OUT_EMAIL_LIMIT if limit is None else limit
     by_reason: dict[str, int] = {}
     for job in jobs:
@@ -1895,10 +1908,16 @@ def summarize_left_out(jobs: list[dict], patterns: dict | None, limit: int | Non
         return signal("software_signals", title) or signal("engineering_signals", title)
 
     def worth(job: dict):
+        core = _title_core(str(job.get("title", "")))
         level_based = str(job.get("reason", "")).startswith(("senior", "internship"))
-        return (not level_based, signal("software_signals", _title_core(str(job.get("title", "")))))
+        return (not level_based, signal("engineering_signals", core), signal("software_signals", core))
 
-    listed = sorted((j for j in jobs if technical(j)), key=worth, reverse=True)[:limit]
+    listed, listed_titles = [], set()
+    for job in sorted((j for j in jobs if technical(j)), key=worth, reverse=True):
+        title = (job.get("group") or job.get("company"), _title_key(job.get("title")))
+        if title not in listed_titles and len(listed) < limit:
+            listed_titles.add(title)
+            listed.append(job)
     return {
         "total": len(jobs),
         "by_reason": dict(sorted(by_reason.items(), key=lambda kv: -kv[1])),
@@ -2215,7 +2234,6 @@ def check_target(
     default_keywords: list[str],
     role_patterns: dict | None = None,
     us_only: bool = False,
-    skip_companies: set[str] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """Scrape one target, record what it lists in state (as seen), and return its new
     jobs split into (matches, left out by the filters; copies carrying a "reason")."""
@@ -2229,10 +2247,7 @@ def check_target(
 
     def fetch():
         if mode == "feed":
-            jobs = fetch_feed_jobs(target)
-            if jobs is not None and skip_companies:
-                jobs = [j for j in jobs if company_key(j.get("company")) not in skip_companies]
-            return jobs
+            return fetch_feed_jobs(target)
         return fetch_target_jobs(url, mode, target.get("link_selector", ""), target.get("wait_for", ""))
 
     current_jobs = fetch()
@@ -2300,8 +2315,10 @@ def run(config_override: str | None = None) -> bool:
     # (recorded as seen, not emailed). Unknown locations are kept.
     us_only = bool(config.get("us_only", False))
     targets = [t for t in config["targets"] if isinstance(t, dict) and not t.get("_section")]
-    tracked = tracked_company_keys(targets)
     feed_urls = {t.get("url") for t in targets if t.get("mode") == "feed"}
+    # The postings waiting to be emailed are shared with any other config using the same
+    # state.json; each config takes only those found by its own targets.
+    own_urls = {t.get("url") for t in targets}
     new_matches: list[dict] = []
     new_left_out: list[dict] = []
     first_checks: set[str] = set()
@@ -2321,9 +2338,7 @@ def run(config_override: str | None = None) -> bool:
         first_check = url not in state
         is_feed = target.get("mode") == "feed"
         try:
-            new_jobs, left_out = check_target(
-                target, state, keywords, role_patterns, us_only, skip_companies=tracked if is_feed else None
-            )
+            new_jobs, left_out = check_target(target, state, keywords, role_patterns, us_only)
         except Exception:
             log.exception(f"  Failed to check {name}, skipping it this run")
             continue
@@ -2333,7 +2348,7 @@ def run(config_override: str | None = None) -> bool:
             new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls) for jobs in (new_jobs, left_out))
         # "group" is the heading the posting is listed under in emails.
         for job in new_jobs:
-            new_matches.append({**job, "group": _group_name(job, name, is_feed)})
+            new_matches.append({**job, "group": _group_name(job, name, is_feed), "source": url})
         if show_left_out:
             new_left_out.extend({**job, "group": _group_name(job, name, is_feed)} for job in left_out)
 
@@ -2347,7 +2362,8 @@ def run(config_override: str | None = None) -> bool:
     updates = {url: jobs for url, jobs in changed.items() if url not in baselines}
     record = dict(alerts_add=new_matches, pending_add=new_left_out, left_out_log_add=new_left_out)
 
-    alerts = _dedupe_jobs(list(state.get(ALERT_POOL_KEY) or []) + new_matches)
+    pooled = [p for p in state.get(ALERT_POOL_KEY) or [] if "source" not in p or p["source"] in own_urls]
+    alerts = _dedupe_jobs(pooled + new_matches)
     pending = _dedupe_jobs(list(state.get(PENDING_LEFT_OUT_KEY) or []) + new_left_out)
     hours_since_email = _hours_since(state.get(LAST_EMAIL_KEY))
     alerts_due = bool(alerts) and hours_since_email >= email_every_hours - EMAIL_DUE_TOLERANCE_MINUTES / 60
@@ -2381,7 +2397,7 @@ def run(config_override: str | None = None) -> bool:
         baselines,
         pending_shown={compute_job_id(p) for p in pending},
         alerts_shown={compute_job_id(p) for p in alerts},
-        left_out_log_add=new_left_out,
+        left_out_log_add=pending,  # everything the email summarised is on left_out.md
         # Needed to space out emails and digests; configs using neither don't record it.
         last_email=datetime.now().isoformat(timespec="seconds") if show_left_out or email_every_hours else None,
     )
@@ -2398,22 +2414,41 @@ def _title_key(title) -> str:
     return re.sub(r"[^a-z0-9]+", " ", unicodedata.normalize("NFKC", str(title or "")).lower()).strip()
 
 
+FEED_TITLE_MATCH_DAYS = 14
+
+
 def _drop_repeats(jobs: list[dict], state: dict, current_url: str, feed_urls: set) -> list[dict]:
-    """A feed's postings minus those another target already recorded: the same link
-    anywhere, or the same company and title in another feed."""
+    """A feed's new postings minus those already recorded: by any target (same link, or
+    the same job number under another link, see job_keys), including this feed under an
+    earlier link; or by another feed in the last two weeks with the same company and title
+    (feeds link the same job differently)."""
     if not jobs:
         return jobs
-    known_ids, known_titles = set(), set()
+    batch_ids = {compute_job_id(j) for j in jobs}
+    cutoff = (datetime.now() - timedelta(days=FEED_TITLE_MATCH_DAYS)).date().isoformat()
+    known_ids, known_keys, known_titles = set(), set(), set()
     for url, seen in state.items():
-        if url == current_url or url.startswith("_") or not isinstance(seen, list):
+        if url.startswith("_") or not isinstance(seen, list):
             continue
         for job in seen:
-            if isinstance(job, dict) and job.get("url"):
-                known_ids.add(compute_job_id(job))
-                if url in feed_urls:
-                    known_titles.add((company_key(job.get("company")), _title_key(job.get("title"))))
-    return [j for j in jobs if compute_job_id(j) not in known_ids
-            and (company_key(j.get("company")), _title_key(j.get("title"))) not in known_titles]
+            if not isinstance(job, dict) or not job.get("url"):
+                continue
+            job_id = compute_job_id(job)
+            if url == current_url and job_id in batch_ids:
+                continue  # these new postings themselves (already merged into this feed's list)
+            known_ids.add(job_id)
+            known_keys |= job_keys(job["url"])
+            if url in feed_urls and url != current_url and str(job.get("first_seen", "")) >= cutoff:
+                known_titles.add((company_key(job.get("company")), _title_key(job.get("title"))))
+    fresh = []
+    for job in jobs:
+        keys = job_keys(job["url"])
+        title = (company_key(job.get("company")), _title_key(job.get("title")))
+        if compute_job_id(job) in known_ids or keys & known_keys or title in known_titles:
+            continue
+        fresh.append(job)
+        known_keys |= keys  # the same job twice in this batch (two links) is listed once
+    return fresh
 
 
 def _dedupe_jobs(jobs: list[dict]) -> list[dict]:
@@ -2448,9 +2483,10 @@ def _email_every_hours(config: dict) -> float:
 
 def _hours_since(stamp) -> float:
     try:
-        return (datetime.now() - datetime.fromisoformat(str(stamp))).total_seconds() / 3600
+        hours = (datetime.now() - datetime.fromisoformat(str(stamp))).total_seconds() / 3600
     except (TypeError, ValueError):
         return float("inf")  # never emailed
+    return hours if hours >= 0 else float("inf")  # a stamp in the future (clock change): don't wait on it
 
 
 def _digest_hours(config: dict) -> float:
