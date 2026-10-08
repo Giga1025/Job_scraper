@@ -34,7 +34,7 @@ import xml.etree.ElementTree as ET
 from contextlib import contextmanager
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urljoin
 from urllib.parse import urlparse, urlunparse, parse_qs
@@ -72,6 +72,12 @@ SMTP_TIMEOUT_SECONDS = 30
 # Reserved state.json keys (target keys are URLs, so they never start with "_").
 PENDING_LEFT_OUT_KEY = "_left_out_pending"  # left-out postings not yet listed in an email
 LAST_EMAIL_KEY = "_last_email_at"           # when an email last went out (ISO time)
+ALERT_POOL_KEY = "_alerts_pending"          # matching postings not yet emailed
+LEFT_OUT_LOG_KEY = "_left_out_log"          # left-out postings of the last few days (for left_out.md)
+
+LEFT_OUT_LOG_DAYS = 7         # how far back left_out.md goes
+LEFT_OUT_EMAIL_LIMIT = 25     # left-out postings listed in an email (the rest are counted)
+EMAIL_DUE_TOLERANCE_MINUTES = 10  # a batch due at 2h may go out at 1h50 (runs come every 30 min)
 
 # A state.json temp file older than this was left by a monitor killed mid-save.
 STALE_TEMP_FILE_SECONDS = 600
@@ -184,6 +190,25 @@ def save_json(path: Path, data):
         raise
 
 
+def save_text(path: Path, text: str):
+    """Write a text file atomically (same approach as save_json)."""
+    path = Path(os.path.realpath(path))
+    fd, tmp_path = tempfile.mkstemp(dir=path.parent, prefix=f"{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp_path, _file_mode(path))
+        _replace_file(tmp_path, path)
+    except BaseException:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
+
+
 def ensure_config(config_override: str | None = None):
     override = config_override or os.environ.get("JOB_MONITOR_CONFIG", "").strip()
     if override:
@@ -283,12 +308,84 @@ def _remove_stale_temp_files():
             pass
 
 
+def _update_pool(state: dict, key: str, add: list[dict] | None, shown: set[str] | None):
+    """Drop the pooled postings an email just listed, add new ones (once each)."""
+    if not (add or shown):
+        return
+    pool = [p for p in state.get(key) or [] if compute_job_id(p) not in (shown or set())]
+    in_pool = {compute_job_id(p) for p in pool}
+    for item in add or []:
+        if compute_job_id(item) not in in_pool:
+            pool.append(item)
+            in_pool.add(compute_job_id(item))
+    if pool:
+        state[key] = pool
+    else:
+        state.pop(key, None)
+
+
+def _update_left_out_log(state: dict, add: list[dict] | None) -> bool:
+    """Add left-out postings to the rolling log behind left_out.md and drop entries older
+    than LEFT_OUT_LOG_DAYS. Returns whether the log changed."""
+    old = list(state.get(LEFT_OUT_LOG_KEY) or [])
+    cutoff = (datetime.now() - timedelta(days=LEFT_OUT_LOG_DAYS)).isoformat(timespec="minutes")
+    log_entries = [e for e in old if isinstance(e, dict) and str(e.get("seen", "")) >= cutoff]
+    known = {compute_job_id(e) for e in log_entries}
+    stamp = datetime.now().isoformat(timespec="minutes")
+    for item in add or []:
+        if item.get("url") and compute_job_id(item) not in known:
+            known.add(compute_job_id(item))
+            entry = {k: item[k] for k in ("title", "url", "company", "group", "location", "reason") if item.get(k)}
+            log_entries.append({**entry, "seen": stamp})
+    if log_entries == old:
+        return False
+    if log_entries:
+        state[LEFT_OUT_LOG_KEY] = log_entries
+    else:
+        state.pop(LEFT_OUT_LOG_KEY, None)
+    return True
+
+
+def left_out_page_path() -> Path:
+    return STATE_PATH.with_name("left_out.md")
+
+
+def _md_escape(text: str) -> str:
+    return re.sub(r"([\\`*_\[\]<>|])", r"\\\1", str(text or ""))
+
+
+def format_left_out_page(entries: list[dict]) -> str:
+    """left_out.md: every posting the filters left out in the last few days, newest first."""
+    lines = [
+        "# Left out by your filters",
+        "",
+        f"Postings from the last {LEFT_OUT_LOG_DAYS} days that your role filter left out, newest first, "
+        "so a role with an unusual title isn't missed. Written by the job monitor; to change what is "
+        "left out, edit `role_filter` in config_all.json.",
+    ]
+    day = None
+    for e in sorted(entries, key=lambda e: str(e.get("seen", "")), reverse=True):
+        if str(e.get("seen", ""))[:10] != day:
+            day = str(e.get("seen", ""))[:10]
+            lines += ["", f"## {day}", ""]
+        company = e.get("group") or e.get("company") or ""
+        details = " · ".join(_md_escape(x) for x in (company, e.get("location")) if x)
+        lines.append(f"- [{_md_escape(e.get('title'))}]({str(e.get('url', '')).replace(' ', '%20').replace('(', '%28').replace(')', '%29')})"
+                     f"{' · ' + details if details else ''} · *{_md_escape(e.get('reason'))}*")
+    if not entries:
+        lines += ["", "Nothing left out recently."]
+    return "\n".join(lines) + "\n"
+
+
 def save_state(
     updates: dict,
     baselines: dict | None = None,
     pending_add: list[dict] | None = None,
     pending_shown: set[str] | None = None,
     last_email: str | None = None,
+    alerts_add: list[dict] | None = None,
+    alerts_shown: set[str] | None = None,
+    left_out_log_add: list[dict] | None = None,
 ):
     """Write these targets' entries to state.json, keeping all other targets as they are on disk.
 
@@ -296,9 +393,9 @@ def save_state(
     recorded the target first, its earlier listing is kept, so nothing posted in between
     is silently absorbed.
 
-    The pool of left-out postings waiting to be emailed is updated item by item (add new
-    ones, drop the ones an email just listed), so monitors sharing the file don't lose
-    each other's entries."""
+    The pools of postings waiting to be emailed (matches and left-out ones) are updated item
+    by item (add new ones, drop the ones an email just listed), so monitors sharing the file
+    don't lose each other's entries. left_out.md is rewritten when its log changes."""
     with _state_lock():
         _remove_stale_temp_files()
         state = _read_state()
@@ -314,21 +411,15 @@ def save_state(
         state.update(updates)
         for url, jobs in (baselines or {}).items():
             state.setdefault(url, jobs)
-        if pending_add or pending_shown:
-            shown = pending_shown or set()
-            pool = [p for p in state.get(PENDING_LEFT_OUT_KEY) or [] if compute_job_id(p) not in shown]
-            in_pool = {compute_job_id(p) for p in pool}
-            for item in pending_add or []:
-                if compute_job_id(item) not in in_pool:
-                    pool.append(item)
-                    in_pool.add(compute_job_id(item))
-            if pool:
-                state[PENDING_LEFT_OUT_KEY] = pool
-            else:
-                state.pop(PENDING_LEFT_OUT_KEY, None)
+        _update_pool(state, PENDING_LEFT_OUT_KEY, pending_add, pending_shown)
+        _update_pool(state, ALERT_POOL_KEY, alerts_add, alerts_shown)
+        log_changed = _update_left_out_log(state, left_out_log_add)
         if last_email:
             state[LAST_EMAIL_KEY] = last_email
         save_json(STATE_PATH, state)
+        page = left_out_page_path()
+        if log_changed or (state.get(LEFT_OUT_LOG_KEY) and not page.exists()):
+            save_text(page, format_left_out_page(state.get(LEFT_OUT_LOG_KEY) or []))
 
 
 # ===================================================================
@@ -1070,6 +1161,125 @@ def fetch_talentbrew_jobs(url: str) -> list[dict] | None:
     return _dedupe_jobs(jobs)
 
 
+# Feeds: new-grad lists that others maintain on GitHub. Each row names its company, so
+# a feed covers many startups and mid-size companies in one request.
+def _read_simplify_feed(resp, target: dict, max_age_days: float) -> list[dict]:
+    """SimplifyJobs' listings.json: [{company_name, title, url, locations, date_posted,
+    active, is_visible, category, ...}]. Keeps active rows posted in the last max_age_days,
+    in the target's "categories" (all categories if none are given)."""
+    rows = resp.json()
+    if not isinstance(rows, list):
+        raise ValueError("expected a list of listings")
+    categories = {str(c).lower() for c in target.get("categories") or []}
+    cutoff = time.time() - max_age_days * 86400
+    jobs = []
+    for row in rows:
+        if not isinstance(row, dict) or not row.get("active") or row.get("is_visible") is False:
+            continue
+        if categories and str(row.get("category", "")).lower() not in categories:
+            continue
+        posted = row.get("date_posted")
+        if not isinstance(posted, (int, float)) or posted < cutoff:
+            continue
+        title, url = _to_text(row.get("title")), _to_text(row.get("url"))
+        if not title or not url.startswith(("http://", "https://")):
+            continue
+        locations = [str(loc) for loc in row.get("locations") or [] if loc]
+        jobs.append({
+            "title": title[:200],
+            "url": url,
+            "company": _to_text(row.get("company_name"))[:120],
+            "location": "; ".join(locations)[:300],
+        })
+    return jobs
+
+
+_MD_CELL_SPLIT = re.compile(r"(?<!\\)\|")
+_HTML_TAG = re.compile(r"<[^>]+>")
+
+
+def _md_cell_text(cell: str) -> str:
+    return html_lib.unescape(_HTML_TAG.sub(" ", cell)).replace("\\|", "|").strip()
+
+
+def _read_speedyapply_feed(resp, target: dict, max_age_days: float) -> list[dict]:
+    """speedyapply's NEW_GRAD_USA.md tables: | Company | Position | Location | [Salary |]
+    Posting | Age |, where Posting links to the job and Age reads like "3d"."""
+    jobs = []
+    for line in resp.text.splitlines():
+        if not line.startswith("|") or "href=" not in line:
+            continue
+        cells = [c.strip() for c in _MD_CELL_SPLIT.split(line.strip().strip("|"))]
+        if len(cells) < 5:
+            continue
+        age = re.fullmatch(r"(\d+)\s*d", cells[-1])
+        links = re.findall(r'href="([^"]+)"', cells[-2])
+        if not age or not links or int(age.group(1)) > max_age_days:
+            continue
+        title = _md_cell_text(cells[1])
+        url = html_lib.unescape(links[0]).strip()
+        if not title or not url.startswith(("http://", "https://")):
+            continue
+        jobs.append({
+            "title": title[:200],
+            "url": url,
+            "company": _md_cell_text(cells[0])[:120],
+            "location": _md_cell_text(cells[2])[:300],
+        })
+    return jobs
+
+
+FEED_READERS = {"simplify": _read_simplify_feed, "speedyapply": _read_speedyapply_feed}
+
+
+def fetch_feed_jobs(target: dict) -> list[dict] | None:
+    """Postings from a "feed" target, or None if it couldn't be read."""
+    reader = FEED_READERS.get(str(target.get("format", "")).lower())
+    if reader is None:
+        log.error(f"  [feed] Unknown feed format {target.get('format')!r}; use one of: {', '.join(FEED_READERS)}")
+        return None
+    try:
+        max_age_days = float(target.get("max_age_days", 7))
+    except (TypeError, ValueError):
+        max_age_days = 7.0
+    try:
+        resp = requests.get(target["url"], headers=HEADERS, timeout=60)
+        resp.raise_for_status()
+        jobs = reader(resp, target, max_age_days)
+    except Exception as exc:
+        log.warning(f"  [feed] Failed to read {target['url']}: {exc}")
+        return None
+    log.info(f"  [feed] Found {len(jobs)} postings from the last {max_age_days:g} days")
+    return _dedupe_jobs(jobs)
+
+
+# Feed rows from companies that already have their own target are skipped, so the same
+# posting isn't alerted twice (once per source). Names are compared whole, after dropping
+# words like "Inc" and anything in parentheses: "Square / Block" covers "Block, Inc.".
+_COMPANY_SUFFIXES = {"inc", "llc", "ltd", "corp", "corporation", "co", "company", "plc", "pbc", "lp", "llp", "gmbh", "and"}
+
+
+def company_key(name) -> str:
+    """A company name reduced for comparison: "JPMorgan Chase & Co." -> "jpmorganchase"."""
+    text = unicodedata.normalize("NFKC", str(name or "")).lower().replace("&", " and ")
+    words = re.sub(r"[^a-z0-9]+", " ", text).split()
+    while len(words) > 1 and words[-1] in _COMPANY_SUFFIXES:
+        words.pop()
+    return "".join(words)
+
+
+def tracked_company_keys(targets: list) -> set[str]:
+    """Company names covered by the config's own (non-feed, enabled) targets."""
+    keys = set()
+    for t in targets:
+        if not isinstance(t, dict) or t.get("_section") or t.get("mode") == "feed" or t.get("enabled", True) is False:
+            continue
+        name = re.sub(r"\([^)]*\)", " ", str(t.get("name", "")))
+        name = re.split(r"\s+[—–-]\s+", name)[0]  # "Microsoft — US Entry Level" -> "Microsoft"
+        keys.update(k for k in (company_key(part) for part in name.split("/")) if k)
+    return keys
+
+
 def job_board_api_reader(url: str):
     """(tag, reader) when the URL is a job-board API with a dedicated reader, else None."""
     parsed = urlparse(url)
@@ -1656,7 +1866,69 @@ def _location_suffix(job: dict) -> str:
     return f" ({job['location']})" if job.get("location") else ""
 
 
-def format_plain_report(all_new: dict[str, list[dict]], left_out: dict[str, list[dict]] | None = None) -> str:
+def left_out_page_link() -> str:
+    """Where the full left-out list can be read: on GitHub when run by the workflow."""
+    repo, branch = os.environ.get("GITHUB_REPOSITORY"), os.environ.get("JOB_MONITOR_STATE_BRANCH")
+    if repo and branch:
+        return f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/{repo}/blob/{branch}/left_out.md"
+    return str(left_out_page_path())
+
+
+def summarize_left_out(jobs: list[dict], patterns: dict | None, limit: int | None = None) -> dict:
+    """Counts by reason, and the postings most worth a look: titles that still look like
+    engineering roles (an engineering or software/ML word in them), those left out for
+    their kind of role before those left out for their level (senior, internship), and
+    software/ML words first. Order is otherwise kept (oldest first). The rest are counted."""
+    limit = LEFT_OUT_EMAIL_LIMIT if limit is None else limit
+    by_reason: dict[str, int] = {}
+    for job in jobs:
+        kind = str(job.get("reason") or "other").split(" (", 1)[0]
+        by_reason[kind] = by_reason.get(kind, 0) + 1
+
+    def signal(key: str, title: str) -> bool:
+        return bool(patterns and patterns.get(key) and patterns[key].search(title))
+
+    def technical(job: dict) -> bool:
+        if not (patterns and (patterns.get("software_signals") or patterns.get("engineering_signals"))):
+            return True  # no word lists to judge by (e.g. keyword filters only): list them all
+        title = _title_core(str(job.get("title", "")))
+        return signal("software_signals", title) or signal("engineering_signals", title)
+
+    def worth(job: dict):
+        level_based = str(job.get("reason", "")).startswith(("senior", "internship"))
+        return (not level_based, signal("software_signals", _title_core(str(job.get("title", "")))))
+
+    listed = sorted((j for j in jobs if technical(j)), key=worth, reverse=True)[:limit]
+    return {
+        "total": len(jobs),
+        "by_reason": dict(sorted(by_reason.items(), key=lambda kv: -kv[1])),
+        "listed": listed,
+        "link": left_out_page_link(),
+    }
+
+
+def _left_out_header(left_out: dict[str, list[dict]], summary: dict | None) -> tuple[str, str | None]:
+    """("Left out by your filters: 37 (senior 20, ...)", "Shown: the 25 most likely..." or None)."""
+    if not summary:
+        return f"{LEFT_OUT_HEADING}: {sum(len(v) for v in left_out.values())}", None
+    reasons = ", ".join(f"{kind} {count}" for kind, count in summary["by_reason"].items())
+    header = f"Left out by your filters: {summary['total']} ({reasons})"
+    shown = len(summary["listed"])
+    if not shown:
+        note = f"None of them look like engineering roles. They, and the last {LEFT_OUT_LOG_DAYS} days, are at: "
+    elif shown < summary["total"]:
+        note = (f"Below: the {shown} that look most like engineering roles. All of them, and the last "
+                f"{LEFT_OUT_LOG_DAYS} days, are at: ")
+    else:
+        note = f"All of them are below. The last {LEFT_OUT_LOG_DAYS} days are at: "
+    return header, note + summary["link"]
+
+
+def format_plain_report(
+    all_new: dict[str, list[dict]],
+    left_out: dict[str, list[dict]] | None = None,
+    left_out_summary: dict | None = None,
+) -> str:
     lines = [
         "=" * 60,
         f"  JOB MONITOR ALERT — {datetime.now().strftime('%Y-%m-%d %H:%M')}",
@@ -1669,9 +1941,12 @@ def format_plain_report(all_new: dict[str, list[dict]], left_out: dict[str, list
             lines.append(f"    * {j['title']}{_location_suffix(j)}")
             lines.append(f"      {j['url']}")
         lines.append("")
-    if left_out:
-        lines.append(f"{LEFT_OUT_HEADING}: {sum(len(v) for v in left_out.values())}")
-        for company, jobs in left_out.items():
+    if left_out or left_out_summary:
+        header, note = _left_out_header(left_out or {}, left_out_summary)
+        lines.append(header)
+        if note:
+            lines.append(note)
+        for company, jobs in (left_out or {}).items():
             lines.append(f"- {company}")
             for j in jobs:
                 lines.append(f"    · {j['title']}{_location_suffix(j)}  [{j['reason']}]")
@@ -1681,7 +1956,11 @@ def format_plain_report(all_new: dict[str, list[dict]], left_out: dict[str, list
     return "\n".join(lines)
 
 
-def format_html_report(all_new: dict[str, list[dict]], left_out: dict[str, list[dict]] | None = None) -> str:
+def format_html_report(
+    all_new: dict[str, list[dict]],
+    left_out: dict[str, list[dict]] | None = None,
+    left_out_summary: dict | None = None,
+) -> str:
     esc = html_lib.escape
     rows = ""
     for company, jobs in all_new.items():
@@ -1693,10 +1972,15 @@ def format_html_report(all_new: dict[str, list[dict]], left_out: dict[str, list[
                 f'{esc(j["title"])}</a>{esc(_location_suffix(j))}</li>'
             )
         rows += "</ul>"
-    if left_out:
-        total = sum(len(v) for v in left_out.values())
-        rows += f'<h4 style="color:#777;margin-top:32px">{esc(LEFT_OUT_HEADING)}: {total}</h4>'
-        for company, jobs in left_out.items():
+    if left_out or left_out_summary:
+        header, note = _left_out_header(left_out or {}, left_out_summary)
+        rows += f'<h4 style="color:#777;margin-top:32px;margin-bottom:4px">{esc(header)}</h4>'
+        if note and left_out_summary:
+            link = left_out_summary["link"]
+            text = esc(note[: -len(link)])
+            href = f'<a href="{esc(link)}" style="color:#777">{esc(link)}</a>' if link.startswith("http") else esc(link)
+            rows += f'<p style="color:#999;font-size:12px;margin-top:0">{text}{href}</p>'
+        for company, jobs in (left_out or {}).items():
             rows += f'<p style="color:#777;font-size:13px;margin:12px 0 4px">{esc(company)}</p><ul style="margin-top:0">'
             for j in jobs:
                 rows += (
@@ -1716,12 +2000,20 @@ def format_html_report(all_new: dict[str, list[dict]], left_out: dict[str, list[
     """
 
 
-def send_email(config: dict, all_new: dict[str, list[dict]], left_out: dict[str, list[dict]] | None = None) -> bool:
+def send_email(
+    config: dict,
+    all_new: dict[str, list[dict]],
+    left_out: dict[str, list[dict]] | None = None,
+    left_out_summary: dict | None = None,
+) -> bool:
     """Email the report. Returns False if email is enabled but sending failed."""
     try:
         email_cfg = config.get("email") or {}
         if not email_cfg.get("enabled"):
             log.info("Email disabled — printing report to console only.")
+            return True
+        if os.environ.get("JOB_MONITOR_NO_EMAIL", "").strip():
+            log.info("Dry run (JOB_MONITOR_NO_EMAIL is set): printing the report instead of emailing it.")
             return True
 
         sender_email = email_cfg.get("sender_email") or os.environ.get("SENDER_EMAIL", "")
@@ -1740,7 +2032,7 @@ def send_email(config: dict, all_new: dict[str, list[dict]], left_out: dict[str,
             return False
 
         total = sum(len(v) for v in all_new.values())
-        left_out_total = sum(len(v) for v in (left_out or {}).values())
+        left_out_total = left_out_summary["total"] if left_out_summary else sum(len(v) for v in (left_out or {}).values())
         if total:
             subject = f"[Job Monitor] {total} new job posting{'s' if total != 1 else ''} found"
             if left_out_total:
@@ -1753,8 +2045,8 @@ def send_email(config: dict, all_new: dict[str, list[dict]], left_out: dict[str,
         msg["To"] = recipients
 
         # utf-8 makes MIMEText encode the parts, so long lines are wrapped safely in transit.
-        msg.attach(MIMEText(format_plain_report(all_new, left_out), "plain", "utf-8"))
-        msg.attach(MIMEText(format_html_report(all_new, left_out), "html", "utf-8"))
+        msg.attach(MIMEText(format_plain_report(all_new, left_out, left_out_summary), "plain", "utf-8"))
+        msg.attach(MIMEText(format_html_report(all_new, left_out, left_out_summary), "html", "utf-8"))
 
         # Verify the server's certificate so the password can't be sent to an impostor.
         context = ssl.create_default_context()
@@ -1923,6 +2215,7 @@ def check_target(
     default_keywords: list[str],
     role_patterns: dict | None = None,
     us_only: bool = False,
+    skip_companies: set[str] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """Scrape one target, record what it lists in state (as seen), and return its new
     jobs split into (matches, left out by the filters; copies carrying a "reason")."""
@@ -1935,6 +2228,11 @@ def check_target(
     log.info(f"  Mode: {mode}")
 
     def fetch():
+        if mode == "feed":
+            jobs = fetch_feed_jobs(target)
+            if jobs is not None and skip_companies:
+                jobs = [j for j in jobs if company_key(j.get("company")) not in skip_companies]
+            return jobs
         return fetch_target_jobs(url, mode, target.get("link_selector", ""), target.get("wait_for", ""))
 
     current_jobs = fetch()
@@ -1984,7 +2282,8 @@ def check_target(
 
 
 def run(config_override: str | None = None) -> bool:
-    """Check every target once. Returns False if new jobs were found but the email failed."""
+    """Check every target once, and email what's waiting if an email is due.
+    Returns False if an email was due but couldn't be sent."""
     config = ensure_config(config_override)
     state = load_state()
     loaded_state = copy.deepcopy(state)
@@ -1996,20 +2295,18 @@ def run(config_override: str | None = None) -> bool:
     # left the careers page by then.
     show_left_out = bool(config.get("show_filtered", role_patterns is not None))
     digest_hours = _digest_hours(config)
+    email_every_hours = _email_every_hours(config)
     # Postings whose location data clearly puts them outside the US are skipped
     # (recorded as seen, not emailed). Unknown locations are kept.
     us_only = bool(config.get("us_only", False))
-    all_new: dict[str, list[dict]] = {}
+    targets = [t for t in config["targets"] if isinstance(t, dict) and not t.get("_section")]
+    tracked = tracked_company_keys(targets)
+    feed_urls = {t.get("url") for t in targets if t.get("mode") == "feed"}
+    new_matches: list[dict] = []
     new_left_out: list[dict] = []
-    alerted_urls: set[str] = set()
-    first_baselines: dict[str, list[dict]] = {}  # as recorded at each target's first check
+    first_checks: set[str] = set()
 
-    for target in config["targets"]:
-        if not isinstance(target, dict):
-            continue
-        if target.get("_section"):
-            continue
-
+    for target in targets:
         name = target.get("name")
         url = target.get("url")
         if not name or not url:
@@ -2022,58 +2319,101 @@ def run(config_override: str | None = None) -> bool:
         # One broken target (bad selector, unexpected API response) must not
         # stop the remaining targets from being checked, saved and emailed.
         first_check = url not in state
+        is_feed = target.get("mode") == "feed"
         try:
-            new_jobs, left_out = check_target(target, state, keywords, role_patterns, us_only)
+            new_jobs, left_out = check_target(
+                target, state, keywords, role_patterns, us_only, skip_companies=tracked if is_feed else None
+            )
         except Exception:
             log.exception(f"  Failed to check {name}, skipping it this run")
             continue
         if first_check and url in state:
-            first_baselines[url] = list(state[url])
-        if new_jobs:
-            all_new.setdefault(name, []).extend(new_jobs)
-            alerted_urls.add(url)
-        if left_out and show_left_out:
-            new_left_out.extend({**job, "company": name} for job in left_out)
+            first_checks.add(url)
+        if is_feed:
+            new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls) for jobs in (new_jobs, left_out))
+        # "group" is the heading the posting is listed under in emails.
+        for job in new_jobs:
+            new_matches.append({**job, "group": _group_name(job, name, is_feed)})
+        if show_left_out:
+            new_left_out.extend({**job, "group": _group_name(job, name, is_feed)} for job in left_out)
 
-    # Save only the targets this run changed, so another monitor process
-    # saving its own targets at the same time isn't overwritten. First-check
-    # baselines are kept apart: they alert nothing, so they're saved even if
-    # the email fails (otherwise a new target would re-baseline every run and
-    # silently absorb whatever it posts while email is down).
-    changed = {url: jobs for url, jobs in state.items() if loaded_state.get(url) != jobs}
-    baselines = {url: jobs for url, jobs in changed.items() if url in first_baselines and url not in alerted_urls}
+    # Every posting found is recorded as seen right away; the ones to email wait in pools
+    # in state.json until an email lists them. Save only the targets this run changed,
+    # so another monitor process saving its own targets at the same time isn't
+    # overwritten. A target's first check is saved only if no other process recorded
+    # that target first (its earlier listing is kept, so nothing posted in between is lost).
+    changed = {url: jobs for url, jobs in state.items() if not url.startswith("_") and loaded_state.get(url) != jobs}
+    baselines = {url: jobs for url, jobs in changed.items() if url in first_checks}
     updates = {url: jobs for url, jobs in changed.items() if url not in baselines}
+    record = dict(alerts_add=new_matches, pending_add=new_left_out, left_out_log_add=new_left_out)
 
+    alerts = _dedupe_jobs(list(state.get(ALERT_POOL_KEY) or []) + new_matches)
     pending = _dedupe_jobs(list(state.get(PENDING_LEFT_OUT_KEY) or []) + new_left_out)
-    digest_due = bool(pending) and _digest_due(state.get(LAST_EMAIL_KEY), digest_hours)
-    if not all_new and not digest_due:
-        if changed or new_left_out:
-            save_state(updates, baselines, pending_add=new_left_out)
+    hours_since_email = _hours_since(state.get(LAST_EMAIL_KEY))
+    alerts_due = bool(alerts) and hours_since_email >= email_every_hours - EMAIL_DUE_TOLERANCE_MINUTES / 60
+    digest_due = bool(pending) and hours_since_email >= digest_hours
+    if not alerts_due and not digest_due:
+        if changed or new_matches or new_left_out:
+            save_state(updates, baselines, **record)
+        if alerts:
+            log.info(f"{len(alerts)} matching posting(s) waiting for the next email "
+                     f"(at most one email every {email_every_hours:g} hours).")
         if pending:
-            log.info(f"{len(pending)} posting(s) left out by the filters will be listed in the next email or digest.")
-        log.info("No new postings found across all targets.")
+            log.info(f"{len(pending)} posting(s) left out by the filters will be summarised in the next email.")
+        if not alerts:
+            log.info("No new postings found across all targets.")
         return True
 
-    left_out_report = _group_by_company(pending)
-    report = format_plain_report(all_new, left_out_report)
+    all_new = _group_by_company(alerts)
+    summary = summarize_left_out(pending, role_patterns)
+    left_out_report = _group_by_company(summary["listed"]) if pending else None
+    report = format_plain_report(all_new, left_out_report, left_out_summary=summary if pending else None)
     print_console_safe("\n" + report)
-    if not send_email(config, all_new, left_out=left_out_report):
-        # Keep the alerted targets as they were so these postings are reported again next
-        # run, but keep new targets' baselines as first recorded (before any alert against
-        # them, e.g. from a second config entry for the same URL). Left-out postings go
-        # into the pool so the retry lists them even if they've left the page.
-        if first_baselines or new_left_out:
-            save_state({}, first_baselines, pending_add=new_left_out)
-        log.error("New postings not marked as seen: they'll be reported again on the next run.")
+    if not send_email(config, all_new, left_out=left_out_report, left_out_summary=summary if pending else None):
+        # Everything stays in the pools, so the next run tries again (even if a
+        # posting has left its careers page by then).
+        save_state(updates, baselines, **record)
+        log.error("The email wasn't sent; its postings are kept and the next run will try again.")
         return False
 
     save_state(
         updates,
         baselines,
         pending_shown={compute_job_id(p) for p in pending},
-        last_email=datetime.now().isoformat(timespec="seconds") if show_left_out else None,
+        alerts_shown={compute_job_id(p) for p in alerts},
+        left_out_log_add=new_left_out,
+        # Needed to space out emails and digests; configs using neither don't record it.
+        last_email=datetime.now().isoformat(timespec="seconds") if show_left_out or email_every_hours else None,
     )
     return True
+
+
+def _group_name(job: dict, target_name: str, is_feed: bool) -> str:
+    if is_feed and job.get("company"):
+        return f"{job['company']} (via {target_name})"
+    return target_name
+
+
+def _title_key(title) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", unicodedata.normalize("NFKC", str(title or "")).lower()).strip()
+
+
+def _drop_repeats(jobs: list[dict], state: dict, current_url: str, feed_urls: set) -> list[dict]:
+    """A feed's postings minus those another target already recorded: the same link
+    anywhere, or the same company and title in another feed."""
+    if not jobs:
+        return jobs
+    known_ids, known_titles = set(), set()
+    for url, seen in state.items():
+        if url == current_url or url.startswith("_") or not isinstance(seen, list):
+            continue
+        for job in seen:
+            if isinstance(job, dict) and job.get("url"):
+                known_ids.add(compute_job_id(job))
+                if url in feed_urls:
+                    known_titles.add((company_key(job.get("company")), _title_key(job.get("title"))))
+    return [j for j in jobs if compute_job_id(j) not in known_ids
+            and (company_key(j.get("company")), _title_key(j.get("title"))) not in known_titles]
 
 
 def _dedupe_jobs(jobs: list[dict]) -> list[dict]:
@@ -2089,8 +2429,28 @@ def _dedupe_jobs(jobs: list[dict]) -> list[dict]:
 def _group_by_company(jobs: list[dict]) -> dict[str, list[dict]]:
     grouped: dict[str, list[dict]] = {}
     for job in jobs:
-        grouped.setdefault(job.get("company") or "Other", []).append(job)
+        grouped.setdefault(job.get("group") or job.get("company") or "Other", []).append(job)
     return grouped
+
+
+def _email_every_hours(config: dict) -> float:
+    """Hours between alert emails (0 = email every run that finds something)."""
+    value = config.get("email_every_hours", 0)
+    try:
+        hours = float(value)
+        if hours >= 0:
+            return hours
+    except (TypeError, ValueError):
+        pass
+    log.warning(f"email_every_hours is {value!r}, not a number of hours; emailing every run.")
+    return 0.0
+
+
+def _hours_since(stamp) -> float:
+    try:
+        return (datetime.now() - datetime.fromisoformat(str(stamp))).total_seconds() / 3600
+    except (TypeError, ValueError):
+        return float("inf")  # never emailed
 
 
 def _digest_hours(config: dict) -> float:
@@ -2103,15 +2463,6 @@ def _digest_hours(config: dict) -> float:
         pass
     log.warning(f"filtered_digest_hours is {value!r}, not a number of hours; using 24.")
     return 24.0
-
-
-def _digest_due(last_email_at, hours: float) -> bool:
-    """Whether left-out postings should be emailed without waiting for a new match."""
-    try:
-        last = datetime.fromisoformat(str(last_email_at))
-    except (TypeError, ValueError):
-        return True  # no email recorded yet
-    return (datetime.now() - last).total_seconds() >= hours * 3600
 
 
 if __name__ == "__main__":

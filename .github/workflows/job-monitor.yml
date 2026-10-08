@@ -1,34 +1,64 @@
-# Runs the job monitor on GitHub's computers on a schedule, emails new postings,
-# and saves state.json (the postings already seen) back into the repository so the
-# next run knows what is new. See "Running on GitHub Actions" in README.md.
+# Runs the job monitor on GitHub's computers on a schedule, emails new postings, and
+# saves what it has seen (state.json, plus left_out.md) on the "monitor-state" branch, so
+# the next run knows what is new. See "Running on GitHub Actions" in README.md.
 
 name: Job monitor
 
 on:
   schedule:
-    # Every 30 minutes, at :07 and :37 past the hour (times are UTC). GitHub can
-    # start scheduled runs several minutes late when it is busy, more so on the hour.
+    # Every 30 minutes, at :07 and :37 past the hour (times are UTC). GitHub starts
+    # scheduled runs late, or skips them, when it is busy.
     - cron: "7,37 * * * *"
   # Adds a "Run workflow" button on the Actions tab, to run it whenever you like.
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: check everything but send no email (state goes to monitor-state-test)"
+        type: boolean
+        default: false
 
-# The run commits state.json, so it needs permission to write to the repository.
+# The run saves its state to a branch, so it needs permission to write to the repository.
 permissions:
   contents: write
 
-# Never two runs at once: both would edit state.json. A run that comes due while
-# one is still going waits for it.
+# Never two runs at once: both would read and write the same state. A run that comes
+# due while one is still going waits for it.
 concurrency:
   group: job-monitor
   cancel-in-progress: false
+
+env:
+  # Where state.json and left_out.md are kept: a branch holding a single commit that each
+  # run replaces. Runs from other branches, and dry runs, use a separate test branch.
+  STATE_BRANCH: ${{ (github.ref_name == 'main' && !inputs.dry_run) && 'monitor-state' || 'monitor-state-test' }}
 
 jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Get the code and the saved state.json
+      - name: Get the code
         uses: actions/checkout@v5
+
+      - name: Get the saved state
+        run: |
+          set +e
+          git ls-remote --exit-code --heads origin "$STATE_BRANCH" > /dev/null
+          found=$?
+          set -e
+          if [ "$found" -eq 0 ]; then
+            git fetch --depth=1 origin "$STATE_BRANCH"
+            git show FETCH_HEAD:state.json > state.json
+            git show FETCH_HEAD:left_out.md > left_out.md 2> /dev/null || rm -f left_out.md
+            echo "Loaded state.json from the $STATE_BRANCH branch."
+          elif [ "$found" -eq 2 ]; then
+            # First run with this branch: start from the state.json in the code (if any),
+            # where earlier versions of this workflow kept it.
+            echo "No $STATE_BRANCH branch yet; starting from this branch's state.json (if any)."
+          else
+            echo "Could not reach the repository to load the state; stopping rather than starting over."
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -49,11 +79,13 @@ jobs:
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+          JOB_MONITOR_NO_EMAIL: ${{ inputs.dry_run && '1' || '' }}
+          JOB_MONITOR_STATE_BRANCH: ${{ env.STATE_BRANCH }}
 
-      - name: Save state.json
+      - name: Save the state
         # Also after a failed check (e.g. the email could not be sent), so what was
-        # recorded isn't lost. Postings that weren't emailed aren't in it yet, so
-        # they are sent by the next run.
+        # recorded isn't lost. Postings that weren't emailed are kept in state.json and
+        # sent by the next run.
         if: ${{ !cancelled() }}
         run: |
           if [ ! -f state.json ]; then
@@ -62,19 +94,23 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f state.json  # -f: state.json is listed in .gitignore
-          if git diff --cached --quiet; then
+          # Build a one-commit snapshot (state.json, left_out.md and a short README) and
+          # replace the state branch with it, so its history never grows.
+          readme="Written by the Job monitor workflow on every run; don't edit by hand. state.json holds the postings already seen; left_out.md lists the postings your filters left out in the last 7 days."
+          tree=$(
+            {
+              printf '100644 blob %s\tstate.json\n' "$(git hash-object -w state.json)"
+              if [ -f left_out.md ]; then
+                printf '100644 blob %s\tleft_out.md\n' "$(git hash-object -w left_out.md)"
+              fi
+              printf '100644 blob %s\tREADME.md\n' "$(printf '%s\n' "$readme" | git hash-object -w --stdin)"
+            } | git mktree
+          )
+          if git fetch --depth=1 origin "$STATE_BRANCH" 2> /dev/null \
+              && [ "$(git rev-parse 'FETCH_HEAD^{tree}')" = "$tree" ]; then
             echo "Nothing new to save."
             exit 0
           fi
-          git commit -m "Update job monitor state"
-          # If someone pushed while this ran, put this commit on top of theirs and retry.
-          for attempt in 1 2 3; do
-            if git pull --rebase origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME"; then
-              exit 0
-            fi
-            git rebase --abort 2>/dev/null || true
-            sleep 10
-          done
-          echo "Could not save state.json to the repository."
-          exit 1
+          commit=$(git commit-tree "$tree" -m "Job monitor state")
+          git push --force origin "$commit:refs/heads/$STATE_BRANCH"
+          echo "Saved to the $STATE_BRANCH branch."

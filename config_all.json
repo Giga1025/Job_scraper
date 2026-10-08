@@ -303,6 +303,8 @@
   },
   "show_filtered": true,
   "filtered_digest_hours": 24,
+  "email_every_hours": 2,
+  "_email_help": "Every run (every 30 minutes on GitHub Actions) records new postings at once; they are emailed together at most once every email_every_hours (0 = whenever a run finds something). Postings the filters leave out are summarised in those emails (the ones that still look like engineering roles are listed, up to 25) and all of them are kept for 7 days in left_out.md. If only left-out postings are waiting, a digest goes out after filtered_digest_hours.",
   "us_only": true,
   "_us_only_help": "Skip new postings whose location data clearly puts them outside the US (job-board API sources only; unknown or 'Remote' locations are kept). Set \"us_only\": false on a target to keep its non-US postings.",
   "targets": [
@@ -717,6 +719,31 @@
       "mode": "browser",
       "wait_for": "",
       "link_selector": ""
+    },
+    {
+      "_section": "New-grad lists maintained on GitHub by others (many startups and mid-size companies). Postings from companies that have their own entry above are skipped, so nothing is emailed twice."
+    },
+    {
+      "name": "SimplifyJobs New Grad",
+      "url": "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
+      "mode": "feed",
+      "format": "simplify",
+      "categories": ["Software", "Software Engineering", "AI/ML/Data", "Data Science, AI & Machine Learning"],
+      "max_age_days": 7
+    },
+    {
+      "name": "speedyapply New Grad SWE",
+      "url": "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/NEW_GRAD_USA.md",
+      "mode": "feed",
+      "format": "speedyapply",
+      "max_age_days": 7
+    },
+    {
+      "name": "speedyapply New Grad AI",
+      "url": "https://raw.githubusercontent.com/speedyapply/2027-AI-College-Jobs/main/NEW_GRAD_USA.md",
+      "mode": "feed",
+      "format": "speedyapply",
+      "max_age_days": 7
     }
   ]
 }

@@ -96,12 +96,40 @@ non-software engineering (`exclude_other_disciplines`, unless a `software_signal
 present). Matching is whole-word and case-insensitive. Edit the lists to taste; remove
 `role_filter` to turn it off.
 
-Left-out postings are not dropped silently. They wait in `state.json` and are listed in a
-separate "Left out by your filters" section at the bottom of the next alert email (with the
-reason), or in a digest email if no email has gone out for `filtered_digest_hours` (default 24),
-even if the posting has left the careers page by then. Monitors sharing a `state.json` (e.g.
-batch configs) share this list, so any alert or digest carries all of it. This is on whenever
-`role_filter` is set; `"show_filtered": false` drops left-out postings quietly instead.
+Left-out postings are not dropped silently. They wait in `state.json` and are summarised in a
+"Left out by your filters" section at the bottom of the next email: a count for each reason,
+then up to 25 of them that still look like engineering roles (an engineering or software/ML
+word in the title), the ones left out for their kind of role before those left out for their
+level. If no email has gone out for `filtered_digest_hours` (default 24), a digest email carries
+them. Every left-out posting of the last 7 days, with its reason, is also listed in
+`left_out.md` (next to `state.json`; on GitHub, on the `monitor-state` branch), and the email
+links to it. Monitors sharing a `state.json` (e.g. batch configs) share this list. This is on
+whenever `role_filter` is set; `"show_filtered": false` drops left-out postings quietly instead.
+
+### How often emails come
+
+Each run records new postings straight away, and they wait in `state.json` until an email
+lists them, so nothing is lost if an email fails or a posting is taken down in the meantime.
+With `"email_every_hours": 2` (as in `config_all.json`) at most one email goes out every two
+hours, carrying everything found since the last one; `0` emails after every run that finds
+something.
+
+### New-grad lists maintained by others (startups and mid-size companies)
+
+A target with `"mode": "feed"` reads a list of postings that someone else keeps up to date,
+which covers hundreds of companies in one request. Each posting is emailed under its own
+company ("Clay (via SimplifyJobs New Grad)"). `config_all.json` uses three:
+
+| Feed | `format` | What's read |
+|---|---|---|
+| [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions) | `simplify` | its `listings.json`: active rows in the given `categories` |
+| [speedyapply 2027 SWE](https://github.com/speedyapply/2027-SWE-College-Jobs) and [AI](https://github.com/speedyapply/2027-AI-College-Jobs) | `speedyapply` | the tables in `NEW_GRAD_USA.md` |
+
+Only postings from the last `max_age_days` (7) are read. Postings from a company that has its
+own entry in the config are skipped (the company's entry already covers them), and a posting
+listed by two feeds, or already found elsewhere, is emailed once. Your role filter and US-only
+setting apply as usual. Like any new target, a feed's first check records what it lists
+without emailing.
 
 `keyword_filters` (global, or per target) still works as an allow-list. Postings it leaves out
 are dropped quietly as before, unless you set `"show_filtered": true`.
@@ -157,7 +185,7 @@ Each target has these fields:
 |---|---|---|
 | `name` | Yes | Friendly label (used in alerts) |
 | `url` | Yes | Career page URL with your filters applied |
-| `mode` | Yes | `"html"` for static pages, `"browser"` for JS-heavy pages, `"sitemap"` for a sitemap of job pages |
+| `mode` | Yes | `"html"` for static pages, `"browser"` for JS-heavy pages, `"sitemap"` for a sitemap of job pages, `"feed"` for a maintained list of postings (with `format`, `max_age_days`, and for Simplify `categories`) |
 | `wait_for` | No | CSS selector to wait for before scraping (browser mode only) |
 | `link_selector` | No | CSS selector for job links. If empty, uses heuristics |
 | `enabled` | No | `false` pauses the target: it isn't checked, and its saved postings are kept |
@@ -266,13 +294,16 @@ repository, such as on a schedule or when you push. This repository has two **wo
 
 | Workflow | When it runs | What it does |
 |---|---|---|
-| **Job monitor** (`job-monitor.yml`) | every 30 minutes, or when you click *Run workflow* | checks every company, emails new postings, saves `state.json` |
+| **Job monitor** (`job-monitor.yml`) | every 30 minutes, or when you click *Run workflow* | checks every company, emails new postings (at most every 2 hours), saves what it has seen |
 | **Tests** (`tests.yml`) | on every push | runs the test suite; a red ❌ on a commit means a change broke something |
 
 Each run starts on a fresh, empty computer, so the job monitor workflow installs Python,
-the packages and a browser, runs `job_monitor.py`, and then **commits `state.json` back to
-the repository**. That file is how the next run knows which postings you've already seen.
-Commits by "github-actions[bot]" titled "Update job monitor state" are these saves.
+the packages and a browser, runs `job_monitor.py`, and then **saves `state.json` (and
+`left_out.md`) to the `monitor-state` branch**. That file is how the next run knows which
+postings you've already seen and which are waiting to be emailed. The branch always holds a
+single commit, which each run replaces, so it doesn't fill the history, and `main` only
+changes when you change it. To read the full left-out list, open `left_out.md` on that branch
+(the emails link to it).
 
 ### One-time setup
 
@@ -294,6 +325,10 @@ Commits by "github-actions[bot]" titled "Update job monitor state" are these sav
 4. **Run it once by hand.** Open the **Actions** tab, pick **Job monitor** on the left, click
    **Run workflow**, then **Run workflow** again. The first run only records what each company
    lists today (no email); from the next run on, new postings are emailed.
+
+   Ticking **Dry run** in that menu runs everything but sends no email and saves to a separate
+   `monitor-state-test` branch, so it can't affect your real alerts. Runs started from any
+   branch other than `main` do the same with their state.
 
 ### Reading a run
 
@@ -320,8 +355,9 @@ Commits by "github-actions[bot]" titled "Update job monitor state" are these sav
 
 ### Working on the code from your computer
 
-Because the workflow commits `state.json` to `main`, your copy falls behind after each run.
-Run `git pull` before you make changes, and again if a `git push` is rejected.
+The workflow never commits to `main`, so `main` only changes when you (or a merged pull
+request) change it. The `state.json` still in `main` is the starting point for the very first
+run that uses the `monitor-state` branch; after that it isn't used or updated.
 
 ---
 
@@ -331,7 +367,8 @@ Run `git pull` before you make changes, and again if a `git push` is rejected.
 |---|---|
 | `config_all.json` | Shipped list of companies; used by default (see step 2) |
 | `config.json` | Your own settings; use it with `--config config.json` if `config_all.json` exists |
-| `state.json` | Last-seen jobs (auto-managed, don't edit; committed by the GitHub Actions workflow) |
+| `state.json` | Postings already seen, and those waiting to be emailed (auto-managed, don't edit; on GitHub it lives on the `monitor-state` branch) |
+| `left_out.md` | Every posting the filters left out in the last 7 days (auto-managed; on the `monitor-state` branch) |
 | `.github/workflows/` | The GitHub Actions workflows (job monitor and tests) |
 | `state.json.*` | Lock file and any set-aside unreadable state (auto-managed) |
 | `monitor.log` | Run history and errors |
