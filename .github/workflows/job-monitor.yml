@@ -1,0 +1,80 @@
+# Runs the job monitor on GitHub's computers on a schedule, emails new postings,
+# and saves state.json (the postings already seen) back into the repository so the
+# next run knows what is new. See "Running on GitHub Actions" in README.md.
+
+name: Job monitor
+
+on:
+  schedule:
+    # Every 30 minutes, at :07 and :37 past the hour (times are UTC). GitHub can
+    # start scheduled runs several minutes late when it is busy, more so on the hour.
+    - cron: "7,37 * * * *"
+  # Adds a "Run workflow" button on the Actions tab, to run it whenever you like.
+  workflow_dispatch:
+
+# The run commits state.json, so it needs permission to write to the repository.
+permissions:
+  contents: write
+
+# Never two runs at once: both would edit state.json. A run that comes due while
+# one is still going waits for it.
+concurrency:
+  group: job-monitor
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Get the code and the saved state.json
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python packages
+        run: pip install -r requirements.txt
+
+      - name: Install the browser (for sites that need one)
+        run: python -m playwright install --with-deps chromium
+
+      - name: Check every company for new postings
+        run: python job_monitor.py --config config_all.json
+        env:
+          # Set these under Settings > Secrets and variables > Actions.
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+
+      - name: Save state.json
+        # Also after a failed check (e.g. the email could not be sent), so what was
+        # recorded isn't lost. Postings that weren't emailed aren't in it yet, so
+        # they are sent by the next run.
+        if: ${{ !cancelled() }}
+        run: |
+          if [ ! -f state.json ]; then
+            echo "No state.json was written."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f state.json  # -f: state.json is listed in .gitignore
+          if git diff --cached --quiet; then
+            echo "Nothing new to save."
+            exit 0
+          fi
+          git commit -m "Update job monitor state"
+          # If someone pushed while this ran, put this commit on top of theirs and retry.
+          for attempt in 1 2 3; do
+            if git pull --rebase origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME"; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep 10
+          done
+          echo "Could not save state.json to the repository."
+          exit 1

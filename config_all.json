@@ -9,10 +9,306 @@
     "recipient_email": []
   },
   "keyword_filters": [],
+  "role_filter": {
+    "_help": "Every new posting is kept unless its title clearly says it is senior, an internship, pure frontend, non-engineering, or non-software engineering. Each list is matched as whole words, case-insensitive; a space also matches '-', '/' or no space. A posting is left out by exclude_senior (words in senior_ignore don't count), exclude_internships (unless internship_ok_if matches), exclude_frontend (unless frontend_ok_if), exclude_non_engineering (unless engineering_signals) or exclude_other_disciplines (unless software_signals). Left-out postings are still listed at the bottom of the next email, or in a digest after filtered_digest_hours.",
+    "exclude_senior": [
+      "senior",
+      "sr",
+      "staff",
+      "principal",
+      "distinguished",
+      "lead",
+      "leader",
+      "director",
+      "head of",
+      "vp",
+      "vice president",
+      "chief",
+      "president",
+      "manager",
+      "managing",
+      "principle",
+      "engineer 5",
+      "engineer 6",
+      "engineer 7",
+      "technical leadership",
+      "tl",
+      "tlm"
+    ],
+    "senior_ignore": [
+      "technical staff",
+      "lead generation",
+      "ads manager",
+      "package manager",
+      "resource manager",
+      "memory manager",
+      "cluster manager",
+      "workload manager",
+      "window manager",
+      "file manager",
+      "task manager",
+      "mission manager",
+      "fleet manager",
+      "password manager",
+      "secrets manager",
+      "device manager",
+      "staff &"
+    ],
+    "exclude_internships": [
+      "intern",
+      "interns",
+      "internship",
+      "co op",
+      "apprentice",
+      "apprenticeship",
+      "summer analyst",
+      "summer associate"
+    ],
+    "internship_ok_if": [
+      "new grad",
+      "new graduate",
+      "full time"
+    ],
+    "exclude_frontend": [
+      "front end",
+      "ui engineer",
+      "ui developer",
+      "ux engineer"
+    ],
+    "frontend_ok_if": [
+      "full stack",
+      "back end",
+      "platform",
+      "infrastructure",
+      "productivity",
+      "tooling",
+      "react native",
+      "mobile"
+    ],
+    "exclude_non_engineering": [
+      "sales",
+      "account executive",
+      "account manager",
+      "business development",
+      "partnerships",
+      "recruiter",
+      "recruiting",
+      "recruitment",
+      "sourcer",
+      "talent",
+      "marketing",
+      "communications",
+      "public relations",
+      "brand",
+      "content",
+      "copywriter",
+      "editor",
+      "social media",
+      "legal",
+      "counsel",
+      "attorney",
+      "lawyer",
+      "paralegal",
+      "compliance",
+      "policy",
+      "government affairs",
+      "regulatory",
+      "accountant",
+      "accounting",
+      "finance",
+      "financial",
+      "fp a",
+      "tax",
+      "treasury",
+      "payroll",
+      "audit",
+      "auditor",
+      "controller",
+      "procurement",
+      "purchasing",
+      "hr",
+      "human resources",
+      "people",
+      "benefits",
+      "compensation",
+      "workplace",
+      "facilities",
+      "executive assistant",
+      "administrative",
+      "receptionist",
+      "customer success",
+      "customer support",
+      "customer service",
+      "client service",
+      "wealth",
+      "advisor",
+      "banker",
+      "branch",
+      "loan",
+      "mortgage",
+      "underwriter",
+      "technician",
+      "mechanic",
+      "electrician",
+      "carpenter",
+      "plumber",
+      "barista",
+      "chef",
+      "cook",
+      "driver",
+      "warehouse",
+      "designer",
+      "design",
+      "operations",
+      "consultant",
+      "consulting",
+      "specialist",
+      "coordinator",
+      "representative",
+      "associate banker",
+      "teller",
+      "strategist",
+      "superintendent",
+      "construction",
+      "agent",
+      "affairs",
+      "relations",
+      "pricing",
+      "deal",
+      "assistant",
+      "business partner",
+      "executive",
+      "enforcement",
+      "kyc",
+      "kyb",
+      "aml",
+      "investigations",
+      "trader",
+      "handler",
+      "gtm",
+      "support",
+      "expert",
+      "deputy",
+      "insurance"
+    ],
+    "exclude_other_disciplines": [
+      "mechanical",
+      "electrical",
+      "civil engineer",
+      "civil engineering",
+      "chemical",
+      "structural",
+      "manufacturing engineer",
+      "manufacturing engineering",
+      "manufacturing test",
+      "manufacturing technician",
+      "thermal",
+      "packaging",
+      "materials",
+      "optical",
+      "rf",
+      "analog",
+      "asic",
+      "fpga",
+      "rtl",
+      "design verification",
+      "physical design",
+      "silicon",
+      "process engineer",
+      "quality engineer",
+      "validation engineer",
+      "product development engineer",
+      "hardware"
+    ],
+    "software_signals": [
+      "software",
+      "machine learning",
+      "ml",
+      "ai",
+      "data",
+      "back end",
+      "full stack",
+      "infrastructure",
+      "platform",
+      "cloud",
+      "firmware",
+      "systems software",
+      "devops",
+      "sre",
+      "llm",
+      "inference",
+      "tools",
+      "tooling"
+    ],
+    "engineering_signals": [
+      "engineer",
+      "engineers",
+      "engineering",
+      "developer",
+      "software",
+      "programmer",
+      "programming",
+      "swe",
+      "sde",
+      "sre",
+      "devops",
+      "scientist",
+      "research",
+      "researcher",
+      "technical staff",
+      "mts",
+      "machine learning",
+      "deep learning",
+      "reinforcement learning",
+      "computer vision",
+      "nlp",
+      "llm",
+      "infrastructure",
+      "back end",
+      "full stack",
+      "platform",
+      "systems",
+      "cloud",
+      "quant",
+      "quantitative",
+      "technology",
+      "computer",
+      "computing",
+      "compiler",
+      "kernel",
+      "gpu",
+      "cuda",
+      "firmware",
+      "embedded",
+      "hardware",
+      "silicon",
+      "asic",
+      "fpga",
+      "robotics",
+      "autonomy",
+      "network",
+      "networking",
+      "database",
+      "distributed",
+      "pre training",
+      "post training",
+      "inference",
+      "forward deployed",
+      "architect",
+      "algorithm",
+      "algorithms",
+      "data science",
+      "site reliability"
+    ]
+  },
+  "show_filtered": true,
+  "filtered_digest_hours": 24,
+  "us_only": true,
+  "_us_only_help": "Skip new postings whose location data clearly puts them outside the US (job-board API sources only; unknown or 'Remote' locations are kept). Set \"us_only\": false on a target to keep its non-US postings.",
   "targets": [
-
-    {"_section": "═══════ BIG TECH / FAANG+ ═══════"},
-
+    {
+      "_section": "═══════ BIG TECH / FAANG+ ═══════"
+    },
     {
       "name": "Microsoft — US Entry Level",
       "url": "https://apply.careers.microsoft.com/careers?location=United+States&filter_seniority=Entry&sort_by=timestamp",
@@ -27,9 +323,9 @@
     {
       "name": "Apple",
       "url": "https://jobs.apple.com/en-us/search?location=united-states-USA&sort=newest",
-      "mode": "browser",
-      "wait_for": "a[href*='jobs.apple.com/en-us/details']",
-      "link_selector": "a[href*='/en-us/details/']"
+      "mode": "html",
+      "link_selector": "a[href*='/en-us/details/']:not([href*='locationPicker'])",
+      "wait_for": ""
     },
     {
       "name": "Amazon",
@@ -40,10 +336,10 @@
     },
     {
       "name": "Meta",
-      "url": "https://www.metacareers.com/jobs?offices[0]=United%20States&sort_by_new=true",
+      "url": "https://www.metacareers.com/jobsearch/?offices[0]=Aiken%2C%20SC&offices[1]=Altoona%2C%20IA&offices[2]=Ashburn%2C%20VA&offices[3]=Atlanta%2C%20GA&offices[4]=Aurora%2C%20IL&offices[5]=Austin%2C%20TX&offices[6]=Beaver%20Dam%2C%20WI&offices[7]=Bellevue%2C%20WA&offices[8]=Boston%2C%20MA&offices[9]=Bowling%20Green%2C%20OH&offices[10]=Burlingame%2C%20CA&offices[11]=Cambridge%2C%20MA&offices[12]=Cedar%20Rapids%2C%20IA&offices[13]=Chandler%2C%20AZ&offices[14]=Cheyenne%2C%20WY&offices[15]=Chicago%2C%20IL&offices[16]=Crook%20County%2C%20OR&offices[17]=DeKalb%2C%20IL&offices[18]=Denver%2C%20CO&offices[19]=Detroit%2C%20MI&offices[20]=Eagle%20Mountain%2C%20UT&offices[21]=El%20Paso%2C%20TX&offices[22]=Forest%20City%2C%20NC&offices[23]=Fort%20Worth%2C%20TX&offices[24]=Foster%20City%2C%20CA&offices[25]=Fremont%2C%20CA&offices[26]=Gallatin%2C%20TN&offices[27]=Garland%2C%20TX&offices[28]=Goodyear%2C%20AZ&offices[29]=Henrico%2C%20VA&offices[30]=Hillsboro%2C%20OR&offices[31]=Houston%2C%20TX&offices[32]=Huntsville%2C%20AL&offices[33]=Irvine%2C%20CA&offices[34]=Jeffersonville%2C%20IN&offices[35]=Kansas%20City%2C%20MO&offices[36]=Kuna%2C%20ID&offices[37]=Lebanon%2C%20IN&offices[38]=Los%20Angeles%2C%20CA&offices[39]=Los%20Lunas%2C%20NM&offices[40]=Loudoun%20County%2C%20VA&offices[41]=Louisville%2C%20CO&offices[42]=Menlo%20Park%2C%20CA&offices[43]=Mesa%2C%20AZ&offices[44]=Miami%2C%20Florida&offices[45]=Montgomery%2C%20AL&offices[46]=Mountain%20View%2C%20CA&offices[47]=New%20Albany%2C%20OH&offices[48]=New%20York%2C%20NY&offices[49]=Newark%2C%20CA&offices[50]=Newark%2C%20OH&offices[51]=Newton%20County%2C%20GA&offices[52]=Northridge%2C%20CA&offices[53]=Papillion%2C%20NE&offices[54]=Pasadena%2C%20CA&offices[55]=Pittsburgh%2C%20PA&offices[56]=Polk%20County%2C%20IA&offices[57]=Prineville%2C%20OR&offices[58]=Rayville%2C%20LA&offices[59]=Redmond%2C%20WA&offices[60]=Remote%2C%20US&offices[61]=Reston%2C%20VA&offices[62]=Richmond%2C%20VA&offices[63]=Rosemount%2C%20MN&offices[64]=Salt%20Lake%2C%20UT&offices[65]=San%20Diego%2C%20CA&offices[66]=San%20Francisco%2C%20CA&offices[67]=San%20Mateo%2C%20CA&offices[68]=Sandston%2C%20VA&offices[69]=Santa%20Clara%2C%20CA&offices[70]=Sarpy%20County%2C%20NE&offices[71]=Sausalito%2C%20CA&offices[72]=Seattle%2C%20WA&offices[73]=Stanton%20Springs%2C%20GA&offices[74]=Sterling%2C%20VA&offices[75]=Sunnyvale%2C%20CA&offices[76]=Temple%2C%20TX&offices[77]=Tulsa%2C%20OK&offices[78]=Utah%20County%2C%20UT&offices[79]=Valencia%2C%20NM&offices[80]=Vancouver%2C%20WA&offices[81]=Washington%2C%20DC&sort_by_new=true",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='metacareers.com/jobs/']"
+      "wait_for": "a[href*='/profile/job_details/']",
+      "link_selector": "a[href*='/profile/job_details/']"
     },
     {
       "name": "Netflix",
@@ -60,6 +356,8 @@
     },
     {
       "name": "Tesla",
+      "enabled": false,
+      "_paused": "Paused for now (Tesla: HTTP 403 from its bot protection; Atlassian: page often loads empty). Delete \"enabled\": false to resume.",
       "url": "https://www.tesla.com/careers/search/?region=5&country=US&sort=created_desc",
       "mode": "browser",
       "wait_for": "a[href*='/careers/search/job/']",
@@ -67,27 +365,25 @@
     },
     {
       "name": "Salesforce",
-      "url": "https://careers.salesforce.com/en/jobs/?country=United+States&sortBy=DATE_DESCENDING",
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site?CF_-_REC_-_LRV_-_Job_Posting_Anchor_-_Country_from_Job_Posting_Location_Extended=bc33aa3152ec42d4995f4791a106ed09",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='/en/jobs/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "Palantir",
-      "url": "https://www.palantir.com/careers/#open-positions",
-      "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "url": "https://api.lever.co/v0/postings/palantir",
+      "mode": "api"
     },
-
-    {"_section": "═══════ FINTECH / PAYMENTS ═══════"},
-
+    {
+      "_section": "═══════ FINTECH / PAYMENTS ═══════"
+    },
     {
       "name": "Stripe",
-      "url": "https://stripe.com/jobs/search?office_locations=North+America--United+States",
+      "url": "https://boards-api.greenhouse.io/v1/boards/stripe/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/listing/']",
-      "link_selector": "a[href*='/jobs/listing/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "Square / Block",
@@ -110,154 +406,147 @@
     },
     {
       "name": "Robinhood",
-      "url": "https://robinhood.com/us/en/careers/openings/",
+      "url": "https://boards-api.greenhouse.io/v1/boards/robinhood/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/openings/']",
-      "link_selector": "a[href*='/openings/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "SoFi",
-      "url": "https://www.sofi.com/careers/open-positions/",
+      "url": "https://boards-api.greenhouse.io/v1/boards/sofi/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "wait_for": "",
+      "link_selector": ""
     },
-
-    {"_section": "═══════ CRYPTO / WEB3 ═══════"},
-
+    {
+      "_section": "═══════ CRYPTO / WEB3 ═══════"
+    },
     {
       "name": "Coinbase",
-      "url": "https://www.coinbase.com/careers/positions?department=&location=United%20States",
+      "url": "https://www.coinbase.com/careers/positions?location=remote%2520usa%2Cca%2Cny%2Cnc",
       "mode": "browser",
-      "wait_for": "a[href*='/positions/']",
-      "link_selector": "a[href*='/positions/']"
+      "wait_for": "a[href*='/careers/positions/']",
+      "link_selector": "a[href*='/careers/positions/']"
     },
     {
       "name": "Binance",
-      "url": "https://www.binance.com/en/careers/job-openings",
-      "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='job-openings']"
+      "url": "https://api.lever.co/v0/postings/binance",
+      "mode": "api"
     },
     {
       "name": "Kraken",
-      "url": "https://jobs.lever.co/kraken",
-      "mode": "html",
-      "link_selector": "a[href*='jobs.lever.co/kraken/']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/kraken.com",
+      "mode": "api"
     },
     {
       "name": "Chainalysis",
-      "url": "https://www.chainalysis.com/careers/",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/chainalysis-careers",
+      "mode": "api"
+    },
+    {
+      "name": "Chainalysis Government Solutions",
+      "url": "https://api.ashbyhq.com/posting-api/job-board/chainalysis-government-solutions",
+      "mode": "api"
     },
     {
       "name": "Ripple",
-      "url": "https://ripple.com/careers/all-jobs/",
+      "url": "https://boards-api.greenhouse.io/v1/boards/ripple/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "link_selector": "",
+      "wait_for": ""
     },
     {
       "name": "Consensys (MetaMask / Infura)",
-      "url": "https://consensys.io/open-roles",
-      "mode": "browser",
-      "wait_for": "a[href*='open-roles']",
-      "link_selector": "a[href*='open-roles']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/consensys",
+      "mode": "api"
+    },
+    {
+      "name": "Consensys (Greenhouse)",
+      "url": "https://boards-api.greenhouse.io/v1/boards/consensys/jobs",
+      "mode": "api"
     },
     {
       "name": "Fireblocks",
-      "url": "https://www.fireblocks.com/careers/",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/fireblocks/jobs",
+      "mode": "api"
     },
     {
       "name": "Circle (USDC)",
-      "url": "https://www.circle.com/careers#job-listings",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://circle.wd1.myworkdayjobs.com/Circle",
+      "mode": "api",
+      "link_selector": ""
     },
     {
       "name": "Uniswap Labs",
-      "url": "https://boards.greenhouse.io/uniswaplabs",
-      "mode": "html",
-      "link_selector": "a[href*='greenhouse.io/uniswaplabs/']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/uniswap",
+      "mode": "api"
     },
     {
       "name": "OpenSea",
-      "url": "https://opensea.io/careers",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/opensea",
+      "mode": "api"
     },
     {
       "name": "Alchemy",
-      "url": "https://www.alchemy.com/careers",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/alchemy",
+      "mode": "api"
     },
     {
-      "name": "Deribit",
-      "url": "https://www.deribit.com/careers",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "_section": "═══════ WALL STREET / QUANT / TRADING ═══════"
     },
-
-    {"_section": "═══════ WALL STREET / QUANT / TRADING ═══════"},
-
     {
       "name": "Citadel",
-      "url": "https://www.citadel.com/careers/open-opportunities/",
-      "mode": "browser",
-      "wait_for": "a[href*='/details/']",
-      "link_selector": "a[href*='/details/']"
+      "url": "https://www.citadel.com/career-sitemap.xml",
+      "mode": "sitemap",
+      "link_selector": "/careers/details/"
+    },
+    {
+      "name": "Citadel Securities",
+      "url": "https://www.citadelsecurities.com/career-sitemap.xml",
+      "mode": "sitemap",
+      "link_selector": "/careers/details/"
     },
     {
       "name": "Jane Street",
-      "url": "https://www.janestreet.com/join-jane-street/open-roles/",
+      "url": "https://boards-api.greenhouse.io/v1/boards/janestreet/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/open-roles/']",
-      "link_selector": "a[href*='/open-roles/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "Two Sigma",
-      "url": "https://careers.twosigma.com/careers/SearchJobs/?sort=posting_date",
-      "mode": "browser",
-      "wait_for": "a[href*='SearchJobs']",
-      "link_selector": "a[href*='SearchJobs']"
+      "url": "https://careers.twosigma.com/careers/OpenRoles/?listFilterMode=1&5086%5B%5D=16718736&5086%5B%5D=16718737",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a[href*='/careers/JobDetail/']"
     },
     {
       "name": "DE Shaw",
-      "url": "https://www.deshaw.com/careers/choose-702",
-      "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "url": "https://www.deshaw.com/careers",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a#job-description-a-tag"
     },
     {
       "name": "Jump Trading",
-      "url": "https://www.jumptrading.com/careers/?locations=All&titlesearch=",
+      "url": "https://boards-api.greenhouse.io/v1/boards/jumptrading/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "Hudson River Trading",
-      "url": "https://www.hudsonrivertrading.com/careers/",
+      "url": "https://boards-api.greenhouse.io/v1/boards/wehrtyou/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "wait_for": "",
+      "link_selector": ""
     },
     {
       "name": "Susquehanna (SIG)",
-      "url": "https://careers.sig.com/us-campus-openings",
+      "url": "https://careers.sig.com/us-campus/jobs?limit=100",
       "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "link_selector": "a.job-title-link",
+      "wait_for": "a.job-title-link"
     },
     {
       "name": "Goldman Sachs",
@@ -268,10 +557,8 @@
     },
     {
       "name": "JPMorgan Chase",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/requisitions?sortBy=POSTING_DATES_DESC&location=United+States",
-      "mode": "browser",
-      "wait_for": "a[href*='requisitions']",
-      "link_selector": "a[href*='requisitions/']"
+      "url": "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC",
+      "mode": "api"
     },
     {
       "name": "Morgan Stanley",
@@ -280,51 +567,48 @@
     },
     {
       "name": "Bloomberg",
-      "url": "https://careers.bloomberg.com/job/search?lc=New+York",
-      "mode": "browser",
-      "wait_for": "a[href*='/job/detail/']",
-      "link_selector": "a[href*='/job/detail/']"
+      "url": "https://bloomberg.avature.net/careers/SearchJobs/?listFilterMode=1&1845%5B%5D=162508",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a[href*='/careers/JobDetail/']"
     },
-
-    {"_section": "═══════ AI / ML COMPANIES ═══════"},
-
+    {
+      "_section": "═══════ AI / ML COMPANIES ═══════"
+    },
     {
       "name": "Anthropic",
-      "url": "https://www.anthropic.com/careers#open-roles",
+      "url": "https://boards-api.greenhouse.io/v1/boards/anthropic/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "link_selector": "",
+      "wait_for": ""
     },
     {
       "name": "OpenAI",
-      "url": "https://openai.com/careers/search/",
-      "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/openai",
+      "mode": "api"
     },
     {
       "name": "xAI (Grok)",
-      "url": "https://boards.greenhouse.io/xai",
-      "mode": "html",
-      "link_selector": "a[href*='greenhouse.io/xai/']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/xai/jobs",
+      "mode": "api"
     },
     {
       "name": "Databricks",
-      "url": "https://www.databricks.com/company/careers/open-positions?department=AllDepartments&location=UnitedStates",
+      "url": "https://boards-api.greenhouse.io/v1/boards/databricks/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/open-positions/']",
-      "link_selector": "a[href*='/open-positions/']"
+      "link_selector": "",
+      "wait_for": ""
     },
     {
       "name": "Scale AI",
-      "url": "https://scale.com/careers?department=All+Departments&location=All+Locations",
+      "url": "https://boards-api.greenhouse.io/v1/boards/scaleai/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/']",
-      "link_selector": "a[href*='/careers/']"
+      "link_selector": "",
+      "wait_for": ""
     },
-
-    {"_section": "═══════ DATA / ANALYTICS / INFRA ═══════"},
-
+    {
+      "_section": "═══════ DATA / ANALYTICS / INFRA ═══════"
+    },
     {
       "name": "Snowflake",
       "url": "https://careers.snowflake.com/us/en/search-results?keywords=&sortBy=Most%20recent",
@@ -334,32 +618,27 @@
     },
     {
       "name": "Datadog",
-      "url": "https://careers.datadoghq.com/all-jobs/",
-      "mode": "browser",
-      "wait_for": "a[href*='/detail/']",
-      "link_selector": "a[href*='/detail/']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/datadog/jobs",
+      "mode": "api"
     },
     {
       "name": "Cloudflare",
-      "url": "https://www.cloudflare.com/careers/jobs/?department=default&location=default",
-      "mode": "browser",
-      "wait_for": "a[href*='/careers/jobs/']",
-      "link_selector": "a[href*='/careers/jobs/']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/cloudflare/jobs",
+      "mode": "api"
     },
     {
       "name": "Confluent",
-      "url": "https://careers.confluent.io/search/jobs?q=&location=United%20States",
+      "url": "https://api.ashbyhq.com/posting-api/job-board/confluent",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='/jobs/']"
-    }
-      ,
+      "wait_for": "",
+      "link_selector": ""
+    },
     {
       "name": "IBM",
       "url": "https://www.ibm.com/careers/search?field_keyword_18[0]=Entry%20Level&field_keyword_05[0]=United%20States&sort=dcdate_desc",
       "mode": "browser",
-      "wait_for": "a[href*='/job/']",
-      "link_selector": "a[href*='/job/']"
+      "wait_for": "a[href*='JobDetail?jobId=']",
+      "link_selector": "a[href*='JobDetail?jobId=']"
     },
     {
       "name": "Intel",
@@ -382,41 +661,39 @@
     },
     {
       "name": "Uber",
-      "url": "https://www.uber.com/us/en/careers/list/?location=USA&department=University",
+      "url": "https://jobs.uber.com/en/jobs/?team=University&countries=United+States&pagesize=100",
       "mode": "browser",
-      "wait_for": "a[href*='/careers/list/']",
-      "link_selector": "a[href*='/careers/list/']"
+      "wait_for": "a[href^='/en/jobs/'][href$='/']:not([href='/en/jobs/']):not([href*='saved-jobs'])",
+      "link_selector": "a[href^='/en/jobs/'][href$='/']:not([href='/en/jobs/']):not([href*='saved-jobs'])"
     },
     {
       "name": "DoorDash",
-      "url": "https://careersatdoordash.com/job-search/?department=Engineering&function=&job_ids=&keyword=&location=United%20States&intern=1&spage=1",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://boards-api.greenhouse.io/v1/boards/doordashusa/jobs?departments%5B%5D=89007",
+      "mode": "api"
     },
     {
       "name": "Spotify",
-      "url": "https://www.lifeatspotify.com/jobs?c=backend&c=client-c&c=data&c=developer-tools-infrastructure&c=engineering-leadership&c=machine-learning&c=mobile&c=network-engineering-it&c=security&c=tech-research&c=web&c=data-insights-leadership&c=data-science&c=machine-learning-data-research-insights&c=tech-research-data-research-insights&c=user-research&l=new-york&l=boston&l=united-states-of-america-home-mix&l=los-angeles&l=miami",
-      "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='/jobs/']"
+      "url": "https://api.lever.co/v0/postings/spotify?mode=html&location=New%20York%2C%20NY&location=Los%20Angeles%2C%20CA&location=Boston%2C%20MA&location=Miami%2C%20FL&location=United%20States%20of%20America%20(Home%20Mix)&department=Engineering&department=Data%20and%20Analytics",
+      "mode": "html",
+      "wait_for": "",
+      "link_selector": "a[href*='jobs.lever.co/spotify/']"
     },
     {
       "name": "Pinterest",
       "url": "https://www.pinterestcareers.com/jobs/?search=&location=Chicago&location=Los+Angeles&location=New+York&location=New+York+City&location=Palo+Alto&location=San+Francisco&location=Seattle&team=University&pagesize=20#results",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='/jobs/']"
+      "link_selector": "a[href*='gh_jid=']",
+      "wait_for": "a[href*='gh_jid=']"
     },
     {
       "name": "Intuit (TurboTax / QuickBooks)",
-      "url": "https://jobs.intuit.com/search-jobs/United%20States?orgIds=27595&alp=6252001&alt=2",
-      "mode": "browser",
-      "wait_for": "a[href*='/job/']",
-      "link_selector": "a[href*='/job/']"
+      "url": "https://jobs.intuit.com/search-jobs/results?OrganizationIds=27595&FacetFilters%5B0%5D.ID=6252001&FacetFilters%5B0%5D.FacetType=2&FacetFilters%5B0%5D.IsApplied=true&SearchResultsModuleName=Search+Results&SortCriteria=1&SortDirection=1&RecordsPerPage=50",
+      "mode": "api"
     },
     {
       "name": "Atlassian",
+      "enabled": false,
+      "_paused": "Paused for now (Tesla: HTTP 403 from its bot protection; Atlassian: page often loads empty). Delete \"enabled\": false to resume.",
       "url": "https://www.atlassian.com/company/careers/all-jobs?team=Graduates&location=United%20States&search=",
       "mode": "browser",
       "wait_for": "a[href*='/all-jobs/']",
@@ -424,22 +701,22 @@
     },
     {
       "name": "Twilio",
-      "url": "https://jobs.twilio.com/careers?start=0&pid=&sort_by=timestamp&filter_custom_department=product+%26+engineering%2Cit&filter_job_location=remote+-+us&filter_seniority=1",
-      "mode": "eightfold"
+      "url": "https://twilio.eightfold.ai/careers?filter_custom_department=engineering&filter_job_location=remote+-+us&filter_seniority=1&sort_by=timestamp",
+      "mode": "eightfold",
+      "link_selector": "",
+      "wait_for": ""
     },
     {
       "name": "Notion",
-      "url": "https://www.notion.com/careers?department=engineering-early-career#open-positions",
-      "mode": "browser",
-      "wait_for": "a[href*='job']",
-      "link_selector": "a[href*='job']"
+      "url": "https://api.ashbyhq.com/posting-api/job-board/notion?department=Early%20Career",
+      "mode": "api"
     },
     {
       "name": "Roblox",
-      "url": "https://careers.roblox.com/jobs?page=1&disciplines=engineering,product,data-science-analytics&groups=early-career-talent",
+      "url": "https://boards-api.greenhouse.io/v1/boards/roblox/jobs",
       "mode": "browser",
-      "wait_for": "a[href*='/jobs/']",
-      "link_selector": "a[href*='/jobs/']"
+      "wait_for": "",
+      "link_selector": ""
     }
   ]
 }

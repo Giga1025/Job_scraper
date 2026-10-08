@@ -14,11 +14,17 @@ playwright install chromium
 
 The `playwright install chromium` step downloads a headless Chromium browser (~150MB one-time download).
 
-### 2. First run (generates config)
+### 2. Pick a config file
 
-```bash
-python job_monitor.py
-```
+The repo ships `config_all.json` (about 60 companies). Which file is used:
+
+- `--config <file>` (or the `JOB_MONITOR_CONFIG` environment variable) always wins. A relative
+  path is relative to the folder containing `job_monitor.py`. If the file doesn't exist, the
+  monitor stops with an error and changes nothing — except `--config config.json`, which
+  writes a starter `config.json` for you to edit (it never overwrites an existing one).
+- Without `--config`: `config_all.json` if it exists, otherwise `config.json`. If you have both,
+  `config.json` is ignored (a warning says so) — pass `--config config.json` to use it.
+- If neither exists, the first run writes a starter `config.json` and exits so you can edit it.
 
 Run periodically from the same process:
 
@@ -26,15 +32,13 @@ Run periodically from the same process:
 python job_monitor.py --config config_all.json --interval-minutes 15
 ```
 
-Windows helper script:
+or, on Linux/HPC (uses `.venv` from `./setup.sh` if present):
 
-```powershell
-.\run_periodic_monitor.ps1 -Config config_all.json -IntervalMinutes 15
+```bash
+./run_periodic_monitor.sh config_all.json 15
 ```
 
-This creates `config.json`. It comes pre-configured with the Microsoft careers page for US remote entry-level jobs.
-
-### 3. Edit config.json
+### 3. Edit your config
 
 Adjust the URL, add more targets, and set up email:
 
@@ -48,7 +52,6 @@ Adjust the URL, add more targets, and set up email:
     "sender_password": "abcd efgh ijkl mnop",
     "recipient_email": "you@gmail.com"
   },
-  "max_jobs_per_target": 10,
   "keyword_filters": ["analyst", "engineer", "data", "quant"],
   "targets": [
     {
@@ -75,7 +78,74 @@ Adjust the URL, add more targets, and set up email:
 python job_monitor.py
 ```
 
-First run = baseline snapshot (silent). Second run onwards = detects new postings.
+The first check of each target is a silent baseline: it records the jobs already listed
+(if it finds none, it looks once more, since an empty page is often a glitch).
+From the next run on, only postings that weren't there before are alerted.
+
+---
+
+## Choosing which roles you're alerted about
+
+Job titles vary a lot between companies ("Member of Technical Staff", "Technology Analyst",
+"Forward Deployed Engineer"), so a list of titles to *look for* misses roles. Instead,
+`role_filter` in the config lists what to *leave out*: every new posting is kept unless its
+title clearly says it is senior (`exclude_senior`), an internship (`exclude_internships`),
+pure frontend (`exclude_frontend`, unless also full stack/platform), non-engineering
+(`exclude_non_engineering`, unless an `engineering_signals` word is present) or
+non-software engineering (`exclude_other_disciplines`, unless a `software_signals` word is
+present). Matching is whole-word and case-insensitive. Edit the lists to taste; remove
+`role_filter` to turn it off.
+
+Left-out postings are not dropped silently. They wait in `state.json` and are listed in a
+separate "Left out by your filters" section at the bottom of the next alert email (with the
+reason), or in a digest email if no email has gone out for `filtered_digest_hours` (default 24),
+even if the posting has left the careers page by then. Monitors sharing a `state.json` (e.g.
+batch configs) share this list, so any alert or digest carries all of it. This is on whenever
+`role_filter` is set; `"show_filtered": false` drops left-out postings quietly instead.
+
+`keyword_filters` (global, or per target) still works as an allow-list. Postings it leaves out
+are dropped quietly as before, unless you set `"show_filtered": true`.
+
+### Job-board APIs and US-only
+
+When a target's `url` is one of these public job-board APIs, the monitor reads it directly
+(no browser, clean titles, and each job's location):
+
+| Service | URL form | Optional filters in the URL |
+|---|---|---|
+| Greenhouse | `https://boards-api.greenhouse.io/v1/boards/<board>/jobs` | `departments[]=<id or name>`, `offices[]=` |
+| Ashby | `https://api.ashbyhq.com/posting-api/job-board/<board>` | `department=<name>`, `team=<name>` |
+| Lever | `https://api.lever.co/v0/postings/<company>` | `location=`, `department=`, `team=`, `commitment=` |
+| Oracle HCM | `https://<host>.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?...finder=findReqs;siteNumber=...` | the finder's own parameters |
+| TalentBrew (e.g. jobs.intuit.com) | `https://<site>/search-jobs/results?...&SearchResultsModuleName=Search+Results&SortCriteria=1&SortDirection=1&RecordsPerPage=50` | the search page's own filters (`FacetFilters[0].ID=...`) |
+
+Eightfold sites (Microsoft, Morgan Stanley, PayPal, ...) are read through their API as before.
+Where a site records only the posting date (Morgan Stanley, PayPal), the newest postings all tie
+and come back in a different order each visit, so the monitor reads the two newest posting days
+in full rather than just the first page.
+
+With `"us_only": true` (the default in `config_all.json`), new postings from these sources
+whose location clearly lies outside the US are skipped. Unknown or "Remote" locations are kept;
+set `"us_only": false` on a target to keep its non-US postings. If a job-board API can't be
+read, that target is skipped for the run rather than falling back to another source.
+
+**Sitemaps (Citadel).** Some careers sites block scripted visits to the jobs page but publish a
+sitemap. With `"mode": "sitemap"`, the target's `url` is the sitemap and `link_selector` is
+text every job page URL contains (e.g. `"/careers/details/"`). The title and region come from
+the page address (`...-intern-us-new-york/` becomes "Intern", New York, US).
+
+**Tesla.** For a `https://www.tesla.com/careers/search/?country=US` target, the monitor reads
+the jobs data behind that page (`/cua-api/apps/careers/state`), keeping the page's `country`
+(and `type`, e.g. `intern`). Tesla's bot protection refuses scripted requests from many
+networks (including cloud servers); the monitor then tries the page in the browser, and if that
+shows nothing either it skips Tesla for the run without recording anything. It doesn't try to
+get around the protection. To see whether your network gets through:
+
+```bash
+python -c "import requests;r=requests.get('https://www.tesla.com/cua-api/apps/careers/state',headers={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36','Accept':'application/json','Referer':'https://www.tesla.com/careers/search/'},timeout=60);print('HTTP',r.status_code,len(r.content),'bytes')"
+```
+
+`HTTP 200` with a large size means Tesla works from that machine; `HTTP 403` means it is blocked there.
 
 ---
 
@@ -87,9 +157,10 @@ Each target has these fields:
 |---|---|---|
 | `name` | Yes | Friendly label (used in alerts) |
 | `url` | Yes | Career page URL with your filters applied |
-| `mode` | Yes | `"html"` for static pages, `"browser"` for JS-heavy pages |
+| `mode` | Yes | `"html"` for static pages, `"browser"` for JS-heavy pages, `"sitemap"` for a sitemap of job pages |
 | `wait_for` | No | CSS selector to wait for before scraping (browser mode only) |
 | `link_selector` | No | CSS selector for job links. If empty, uses heuristics |
+| `enabled` | No | `false` pauses the target: it isn't checked, and its saved postings are kept |
 
 ### How to figure out `link_selector` and `wait_for`
 
@@ -139,6 +210,20 @@ Each target has these fields:
 
 For Outlook: use `smtp-mail.outlook.com` port `587`.
 
+### Keeping credentials out of the config file
+
+Any of these environment variables is used when the matching config value is empty,
+so you can leave them blank in a tracked config such as `config_all.json`:
+
+| Variable | Config field | Example |
+|---|---|---|
+| `SENDER_EMAIL` | `sender_email` | `you@gmail.com` |
+| `SENDER_PASSWORD` | `sender_password` | the 16-character app password |
+| `RECIPIENT_EMAIL` | `recipient_email` | `you@gmail.com, friend@example.com` |
+
+If an email can't be sent, the new postings aren't marked as seen: they're printed,
+the error is logged, and they're emailed again on the next run.
+
 ---
 
 ## Scheduling
@@ -169,37 +254,74 @@ Common schedules:
 
 ### GitHub Actions (free, runs in the cloud)
 
-Create `.github/workflows/monitor.yml`:
+See [Running on GitHub Actions](#running-on-github-actions) below.
 
-```yaml
-name: Job Monitor
-on:
-  schedule:
-    - cron: '0 */6 * * *'
-  workflow_dispatch:
+---
 
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: |
-          pip install requests beautifulsoup4 lxml playwright
-          playwright install chromium
-      - run: python job_monitor.py
-        env:
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-      - name: Save state
-        run: |
-          git config user.name "Job Monitor"
-          git config user.email "bot@noreply.com"
-          git add state.json
-          git diff --cached --quiet || git commit -m "Update state"
-          git push
-```
+## Running on GitHub Actions
+
+GitHub Actions runs programs on GitHub's computers when something happens in your
+repository, such as on a schedule or when you push. This repository has two **workflows**
+(the files in `.github/workflows/`):
+
+| Workflow | When it runs | What it does |
+|---|---|---|
+| **Job monitor** (`job-monitor.yml`) | every 30 minutes, or when you click *Run workflow* | checks every company, emails new postings, saves `state.json` |
+| **Tests** (`tests.yml`) | on every push | runs the test suite; a red ❌ on a commit means a change broke something |
+
+Each run starts on a fresh, empty computer, so the job monitor workflow installs Python,
+the packages and a browser, runs `job_monitor.py`, and then **commits `state.json` back to
+the repository**. That file is how the next run knows which postings you've already seen.
+Commits by "github-actions[bot]" titled "Update job monitor state" are these saves.
+
+### One-time setup
+
+1. **Get the workflows onto `main`.** Scheduled workflows only run from the default branch,
+   so merge the branch that adds them (open a pull request on GitHub and merge it).
+2. **Create a Gmail app password** (see [Email Setup](#email-setup-gmail)), a 16-character
+   code that lets the monitor send mail as you without your real password.
+3. **Add three secrets.** On GitHub, go to the repository's **Settings → Secrets and variables
+   → Actions → New repository secret** and add:
+
+   | Name | Value |
+   |---|---|
+   | `SENDER_EMAIL` | the Gmail address that sends the alerts |
+   | `SENDER_PASSWORD` | the app password from step 2 |
+   | `RECIPIENT_EMAIL` | where alerts go (can be the same address; separate several with commas) |
+
+   Secrets are encrypted and are never shown in logs (they appear as `***`), which matters
+   because this repository is public and so are its run logs.
+4. **Run it once by hand.** Open the **Actions** tab, pick **Job monitor** on the left, click
+   **Run workflow**, then **Run workflow** again. The first run only records what each company
+   lists today (no email); from the next run on, new postings are emailed.
+
+### Reading a run
+
+- On the **Actions** tab, each run shows ✅ (worked), ❌ (failed) or a spinner (running).
+- Click a run, then **check**, to see each step. Open **Check every company for new postings**
+  to read the monitor's log: every company, how many jobs it found, and what's new.
+- A run fails (❌) if the email couldn't be sent, for example a wrong app password. Nothing
+  is lost: postings that weren't emailed are sent by the next run. GitHub emails you when a
+  scheduled run fails.
+- A company that can't be read is logged and skipped; the run still succeeds.
+
+### Changing things
+
+- **How often:** edit the `cron` line in `.github/workflows/job-monitor.yml`. It has five fields
+  (minute, hour, day of month, month, day of week), in UTC: `"7,37 * * * *"` means minutes 7 and
+  37 of every hour; `"7 */3 * * *"` would mean every 3 hours. GitHub may start a run a few
+  minutes late.
+- **Pause everything:** Actions tab → **Job monitor** → **⋯** → **Disable workflow** (and
+  **Enable workflow** to resume). GitHub also disables scheduled workflows in public
+  repositories after 60 days without any activity; the same button turns it back on.
+- **Pause one company:** add `"enabled": false` to its entry in `config_all.json` (Tesla and
+  Atlassian are paused this way for now). Its saved postings are kept, so when you remove the
+  line, only what it posted in the meantime is new.
+
+### Working on the code from your computer
+
+Because the workflow commits `state.json` to `main`, your copy falls behind after each run.
+Run `git pull` before you make changes, and again if a `git push` is rejected.
 
 ---
 
@@ -207,13 +329,24 @@ jobs:
 
 | File | Purpose |
 |---|---|
-| `config.json` | Your settings (edit this) |
-| `state.json` | Last-seen jobs (auto-managed, don't edit) |
+| `config_all.json` | Shipped list of companies; used by default (see step 2) |
+| `config.json` | Your own settings; use it with `--config config.json` if `config_all.json` exists |
+| `state.json` | Last-seen jobs (auto-managed, don't edit; committed by the GitHub Actions workflow) |
+| `.github/workflows/` | The GitHub Actions workflows (job monitor and tests) |
+| `state.json.*` | Lock file and any set-aside unreadable state (auto-managed) |
 | `monitor.log` | Run history and errors |
+
+## Tests
+
+The tests run offline (network and email are faked) and need only the packages in `requirements.txt`:
+
+```bash
+python -m unittest discover -s tests -v
+```
 
 ## Tips
 
-- **First run is always silent** — it captures the baseline.
+- **The first check of a target is silent** — it captures the baseline. This also applies when you add a target or change its URL, and after an unreadable `state.json` is set aside.
 - **Browser mode is slower** (~15-20 sec per page) but handles any site.
 - **html mode is fast** (~1-2 sec) but only works for static pages.
 - **Don't over-check** — every 4-6 hours is plenty. Career pages don't update faster than that.

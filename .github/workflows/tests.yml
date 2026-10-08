@@ -1,0 +1,30 @@
+# Runs the test suite on every push, so a change that breaks the monitor shows a
+# red X on the commit (and on its pull request) before it reaches the scheduled runs.
+
+name: Tests
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python packages
+        run: pip install -r requirements.txt
+
+      # The tests are offline (websites and email are faked), so no browser is needed.
+      - name: Run the tests
+        run: python -m unittest discover -s tests -v
