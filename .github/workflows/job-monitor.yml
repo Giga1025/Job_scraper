@@ -7,9 +7,11 @@ name: Job monitor
 on:
   schedule:
     # Every 30 minutes, at :07 and :37 past the hour (times are UTC). GitHub starts
-    # scheduled runs late, or skips them, when it is busy.
+    # scheduled runs late, or skips them, when it is busy, so a free outside scheduler
+    # (cron-job.org) starts the runs instead and this is a backup; see the README.
     - cron: "7,37 * * * *"
-  # Adds a "Run workflow" button on the Actions tab, to run it whenever you like.
+  # Adds a "Run workflow" button on the Actions tab, to run it whenever you like. It is
+  # also what cron-job.org calls (GitHub's "create a workflow dispatch event" API).
   workflow_dispatch:
     inputs:
       dry_run:

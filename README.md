@@ -335,6 +335,71 @@ changes when you change it. To read the full left-out list, open `left_out.md` o
    `monitor-state-test` branch, so it can't affect your real alerts. Runs started from any
    branch other than `main` work the same way (no email, test branch).
 
+### Reliable runs every 30 minutes (cron-job.org)
+
+GitHub starts scheduled runs late, or skips them, when it is busy; on this repository it ran
+the 30-minute schedule only a few times a day. A free scheduler can ask GitHub to start the
+**Job monitor** workflow instead, exactly like clicking **Run workflow**, every 30 minutes.
+The GitHub schedule stays in the workflow as a backup.
+
+**1. Make a GitHub token that can only start this repository's workflows.**
+
+1. GitHub → your profile picture → **Settings** → **Developer settings** (bottom of the left
+   menu) → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
+   GitHub may ask for your password again.
+2. **Token name:** `cron-job.org dispatch`. **Expiration:** a date up to a year away (GitHub
+   emails you before it expires).
+3. **Resource owner:** your account. **Repository access:** **Only select repositories** →
+   pick `Job_scraper`.
+4. **Permissions:** under repository permissions add **Actions** and set it to **Read and
+   write**. (**Metadata: Read-only** is added automatically.) Add nothing else; in
+   particular not **Workflows**, which can edit workflow files.
+5. **Generate token**, and copy the `github_pat_...` value now; GitHub shows it only once.
+   Paste it only into cron-job.org below: never into this repository, an issue or a chat.
+   (GitHub automatically revokes a token that is pushed to a public repository.)
+
+**2. Create the job at [cron-job.org](https://cron-job.org)** (free; sign up, confirm the
+email, then sign in at console.cron-job.org; turning on multi-factor authentication under
+**Settings** is a good idea, because the token is stored there as plain text).
+
+1. **Cronjobs** → **Create cronjob**.
+2. **Common** tab:
+   - **Title:** `Job monitor`
+   - **URL:** replace the `http://` with
+     `https://api.github.com/repos/Giga1025/Job_scraper/actions/workflows/job-monitor.yml/dispatches`
+   - **Save responses in job history:** on (then GitHub's error message is kept if a call fails)
+   - **Execution schedule:** **Every** → **30 minutes** (the default is 15)
+3. **Notifications** tab: turn on **execution of the cronjob fails** and **execution of the
+   cronjob succeeds after it failed before** (both are off by default).
+4. **Advanced** tab:
+   - **Headers** → **Add**, once for each:
+
+     | Key | Value |
+     |---|---|
+     | `Accept` | `application/vnd.github+json` |
+     | `Authorization` | `Bearer ` followed by your token (one space, no quotes) |
+     | `X-GitHub-Api-Version` | `2026-03-10` |
+     | `Content-Type` | `application/json` |
+
+   - **Request method:** **POST** (the body box stays grey until you pick it)
+   - **Request body:** `{"ref":"main"}`
+5. **Test run** → **Start test run**. This really starts a run. It worked if the response is
+   **200** (with a link to the run); then a new **Job monitor** run shows on the Actions tab.
+   Click **Create**.
+
+**If it stops working:** cron-job.org's **History** shows each call's result. **401** means
+the token expired or was mistyped (make a new one and paste it into the `Authorization`
+header); **403** or **404** usually mean the token lacks **Actions: Read and write** or this
+repository; **422** usually means the body isn't exactly `{"ref":"main"}`. After 25 failures
+in a row (about 13 hours) cron-job.org switches the job off and emails you; switch **Enable
+job** back on once it's fixed. A **200** only means GitHub started the run; the run's own
+result is on the Actions tab.
+
+With both cron-job.org and the backup schedule, two runs sometimes come close together; the
+second waits for the first, and a run that was waiting can show as **Cancelled** when a newer
+one replaces it. That's expected and harmless. If you'd rather have only cron-job.org, delete
+the `schedule:` lines from `.github/workflows/job-monitor.yml`.
+
 ### Reading a run
 
 - On the **Actions** tab, each run shows ✅ (worked), ❌ (failed) or a spinner (running).
@@ -347,10 +412,11 @@ changes when you change it. To read the full left-out list, open `left_out.md` o
 
 ### Changing things
 
-- **How often:** edit the `cron` line in `.github/workflows/job-monitor.yml`. It has five fields
-  (minute, hour, day of month, month, day of week), in UTC: `"7,37 * * * *"` means minutes 7 and
-  37 of every hour; `"7 */3 * * *"` would mean every 3 hours. GitHub may start a run a few
-  minutes late.
+- **How often:** change the schedule of the cron-job.org job (see above). The backup schedule
+  is the `cron` line in `.github/workflows/job-monitor.yml`; it has five fields (minute, hour,
+  day of month, month, day of week), in UTC: `"7,37 * * * *"` means minutes 7 and 37 of every
+  hour, and `"7 */3 * * *"` would mean every 3 hours. How often emails go out is
+  `email_every_hours` in `config_all.json`.
 - **Pause everything:** Actions tab → **Job monitor** → **⋯** → **Disable workflow** (and
   **Enable workflow** to resume).
 - **After 60 quiet days:** GitHub turns off scheduled workflows in a public repository when
