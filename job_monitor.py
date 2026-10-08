@@ -1165,8 +1165,9 @@ def fetch_talentbrew_jobs(url: str) -> list[dict] | None:
 # a feed covers many startups and mid-size companies in one request.
 def _read_simplify_feed(resp, target: dict, max_age_days: float) -> list[dict]:
     """SimplifyJobs' listings.json: [{company_name, title, url, locations, date_posted,
-    active, is_visible, category, ...}]. Keeps active rows posted in the last max_age_days,
-    in the target's "categories" (all categories if none are given)."""
+    active, is_visible, category, ...}]. Rows posted in the last max_age_days, in the
+    target's "categories" (all if none are given). Inactive rows are returned too, marked
+    "listed": False, so they're remembered (and not emailed if Simplify re-activates them)."""
     rows = resp.json()
     if not isinstance(rows, list):
         raise ValueError("expected a list of listings")
@@ -1174,24 +1175,28 @@ def _read_simplify_feed(resp, target: dict, max_age_days: float) -> list[dict]:
     cutoff = time.time() - max_age_days * 86400
     jobs = []
     for row in rows:
-        if not isinstance(row, dict) or not row.get("active") or row.get("is_visible") is False:
+        if not isinstance(row, dict) or row.get("is_visible") is False:
             continue
         if categories and str(row.get("category", "")).lower() not in categories:
             continue
-        # Simplify sometimes adds a row days after its date_posted; date_updated catches those.
-        stamps = [v for v in (row.get("date_posted"), row.get("date_updated")) if isinstance(v, (int, float))]
-        if not stamps or max(stamps) < cutoff:
+        # Simplify adds many rows days or weeks after their date_posted, so the window is
+        # wide (90 days in config_all.json): a link not seen before is new whatever its date.
+        posted = row.get("date_posted")
+        if not isinstance(posted, (int, float)) or posted < cutoff:
             continue
         title, url = _to_text(row.get("title")), _to_text(row.get("url"))
         if not title or not url.startswith(("http://", "https://")):
             continue
         locations = [str(loc) for loc in row.get("locations") or [] if loc]
-        jobs.append({
+        job = {
             "title": title[:200],
             "url": url,
             "company": _to_text(row.get("company_name"))[:120],
             "location": "; ".join(locations)[:300],
-        })
+        }
+        if not row.get("active"):
+            job["listed"] = False
+        jobs.append(job)
     return jobs
 
 
@@ -1250,7 +1255,8 @@ def fetch_feed_jobs(target: dict) -> list[dict] | None:
     except Exception as exc:
         log.warning(f"  [feed] Failed to read {target['url']}: {exc}")
         return None
-    log.info(f"  [feed] Found {len(jobs)} postings from the last {max_age_days:g} days")
+    listed = sum(1 for j in jobs if j.get("listed", True))
+    log.info(f"  [feed] Found {listed} open postings from the last {max_age_days:g} days ({len(jobs) - listed} closed)")
     today = datetime.now().date().isoformat()
     return [{**job, "first_seen": today} for job in _dedupe_jobs(jobs)]
 
@@ -2277,7 +2283,8 @@ def check_target(
         return [], []
 
     # --- Diff against last run ---
-    new_jobs = diff_jobs(previous_jobs, current_jobs)
+    # A posting marked "listed": False (closed, e.g. in a feed) is remembered but not alerted.
+    new_jobs = [j for j in diff_jobs(previous_jobs, current_jobs) if j.get("listed", True) is not False]
     if target.get("us_only", us_only):
         outside = [j for j in new_jobs if is_outside_us(j)]
         if outside:

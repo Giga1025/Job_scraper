@@ -1581,7 +1581,7 @@ SPEEDY_URL = "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Job
 def simplify_row(company, title, days_ago=1, **extra):
     row = {"source": "Simplify", "category": "Software", "company_name": company, "title": title, "active": True,
            "is_visible": True, "date_posted": int(time.time() - days_ago * 86400), "id": f"{company}-{title}",
-           "url": f"https://job-boards.greenhouse.io/{company.lower()}/jobs/{abs(hash(title)) % 10**6}",
+           "url": f"https://job-boards.greenhouse.io/{company.lower()}/jobs/{abs(hash((company, title))) % 10**8}",
            "locations": ["San Francisco, CA"], "company_url": "", "sponsorship": "Other", "degrees": []}
     row.update(extra)
     return row
@@ -1605,8 +1605,9 @@ SPEEDY_MD = """## 2027 USA SWE New Graduate Positions
 
 class FeedTests(MonitorTestCase):
     def simplify_target(self, **extra):
+        extra.setdefault("max_age_days", 7)
         return target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
-                      categories=["Software", "AI/ML/Data"], max_age_days=7, **extra)
+                      categories=["Software", "AI/ML/Data"], **extra)
 
     def test_simplify_rows_are_filtered_by_activity_category_and_age(self):
         self.pages[SIMPLIFY_URL] = json.dumps([
@@ -1618,8 +1619,9 @@ class FeedTests(MonitorTestCase):
             simplify_row("Stale", "Software Engineer", days_ago=30),
         ])
         jobs = jm.fetch_feed_jobs(self.simplify_target())
-        self.assertEqual([(j["company"], j["title"]) for j in jobs],
-                         [("Clay", "Early Career Software Engineer"), ("Mach9", "Machine Learning Engineer")])
+        self.assertEqual([(j["company"], j["title"], j.get("listed", True)) for j in jobs],
+                         [("Clay", "Early Career Software Engineer", True), ("Mach9", "Machine Learning Engineer", True),
+                          ("Gone", "Software Engineer", False)])  # closed rows are remembered, not emailed
         self.assertEqual(jobs[0]["location"], "New York, NY; Remote in USA")
 
     def test_speedyapply_tables_with_and_without_salary(self):
@@ -1696,10 +1698,22 @@ class FeedTests(MonitorTestCase):
         _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
         self.assertEqual(reported, {"IXL Learning (via SimplifyJobs New Grad)": ["Software Engineer - New Grad"]})
 
-    def test_simplify_rows_added_late_with_an_old_post_date_are_read(self):
+    def test_a_new_link_is_new_whatever_its_date_and_closed_rows_stay_quiet(self):
+        wide = self.simplify_target(max_age_days=90)
         self.pages[SIMPLIFY_URL] = json.dumps([
-            simplify_row("Late Co", "Software Engineer", days_ago=20, date_updated=int(time.time() - 3600))])
-        self.assertEqual([j["company"] for j in jm.fetch_feed_jobs(self.simplify_target())], ["Late Co"])
+            simplify_row("Old Co", "Software Engineer", days_ago=40),                 # listed at the first check
+            simplify_row("Closed Co", "Software Engineer", days_ago=20, active=False),
+        ])
+        self.run_monitor([wide], email=WORKING_EMAIL)  # first check: recorded silently
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Old Co", "Software Engineer", days_ago=40),
+            simplify_row("Closed Co", "Software Engineer", days_ago=20),              # re-activated: not new
+            simplify_row("Late Co", "Software Engineer", days_ago=35),                # added late: new
+            simplify_row("Shut Co", "Software Engineer", days_ago=1, active=False),   # new but closed: quiet
+            simplify_row("Ancient Co", "Software Engineer", days_ago=200),            # beyond max_age_days
+        ])
+        _, reported = self.run_monitor([wide], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Late Co (via SimplifyJobs New Grad)": ["Software Engineer"]})
 
     def test_a_posting_in_two_feeds_or_already_known_is_emailed_once(self):
         self.mark_known(SIMPLIFY_URL, SPEEDY_URL, URL)

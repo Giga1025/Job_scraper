@@ -729,21 +729,21 @@
       "mode": "feed",
       "format": "simplify",
       "categories": ["Software", "Software Engineering", "AI/ML/Data", "Data Science, AI & Machine Learning"],
-      "max_age_days": 7
+      "max_age_days": 90
     },
     {
       "name": "speedyapply New Grad SWE",
       "url": "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/NEW_GRAD_USA.md",
       "mode": "feed",
       "format": "speedyapply",
-      "max_age_days": 7
+      "max_age_days": 120
     },
     {
       "name": "speedyapply New Grad AI",
       "url": "https://raw.githubusercontent.com/speedyapply/2027-AI-College-Jobs/main/NEW_GRAD_USA.md",
       "mode": "feed",
       "format": "speedyapply",
-      "max_age_days": 7
+      "max_age_days": 120
     }
   ]
 }

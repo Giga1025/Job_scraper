@@ -106,6 +106,9 @@ them. Every left-out posting of the last 7 days, with its reason, is also listed
 links to it. Monitors sharing a `state.json` (e.g. batch configs) share this list. This is on
 whenever `role_filter` is set; `"show_filtered": false` drops left-out postings quietly instead.
 
+`keyword_filters` (global, or per target) still works as an allow-list. Postings it leaves out
+are dropped quietly as before, unless you set `"show_filtered": true`.
+
 ### How often emails come
 
 Each run records new postings straight away, and they wait in `state.json` until an email
@@ -122,19 +125,19 @@ company ("Clay (via SimplifyJobs New Grad)"). `config_all.json` uses three:
 
 | Feed | `format` | What's read |
 |---|---|---|
-| [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions) | `simplify` | its `listings.json`: active rows in the given `categories` |
+| [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions) | `simplify` | its `listings.json`: rows in the given `categories` |
 | [speedyapply 2027 SWE](https://github.com/speedyapply/2027-SWE-College-Jobs) and [AI](https://github.com/speedyapply/2027-AI-College-Jobs) | `speedyapply` | the tables in `NEW_GRAD_USA.md` |
 
-Only postings from the last `max_age_days` (7) are read. A posting that was already found,
+Each feed remembers every posting it has listed in the last `max_age_days` (90 for Simplify,
+120 for speedyapply) and emails a link it hasn't seen before, whatever its posting date:
+Simplify often adds a posting days or weeks after it went up. Closed postings are remembered
+too but never emailed, so one that is re-opened doesn't come back as new. A posting that was already found,
 by a company's own entry or another feed, isn't emailed again, even under a different link:
 the job number in the link (Greenhouse, Ashby, Lever, Workday) is compared, and feeds are also
 compared by company and title. A company's own entry may be filtered (a team, a level, the
 newest page), so its postings that only a feed lists are still emailed. Your role filter and
 US-only setting apply as usual. Like any new target, a feed's first check records what it
 lists without emailing.
-
-`keyword_filters` (global, or per target) still works as an allow-list. Postings it leaves out
-are dropped quietly as before, unless you set `"show_filtered": true`.
 
 ### Job-board APIs and US-only
 
