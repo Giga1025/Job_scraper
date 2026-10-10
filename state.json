@@ -361,6 +361,10 @@
   ],
   "https://jobs.apple.com/en-us/search?location=united-states-USA&sort=newest": [
     {
+      "title": "Wi-Fi Certification Quality Engineer, Wireless Technologies & Ecosystems",
+      "url": "https://jobs.apple.com/en-us/details/200688169-0836/wi-fi-certification-quality-engineer-wireless-technologies-ecosystems?team=SFTWR"
+    },
+    {
       "title": "Creative Operations & Resource Management Lead, Marcom LA",
       "url": "https://jobs.apple.com/en-us/details/200688317-2605/creative-operations-resource-management-lead-marcom-la?team=MKTG"
     },
@@ -421,10 +425,6 @@
       "url": "https://jobs.apple.com/en-us/details/200688248-0836/senior-data-engineer-data-products?team=MLAI"
     },
     {
-      "title": "Machine Learning Engineer, Apple Services Engineering",
-      "url": "https://jobs.apple.com/en-us/details/200687765-3337/machine-learning-engineer-apple-services-engineering?team=MLAI"
-    },
-    {
       "title": "Product Designer, Apple Weather",
       "url": "https://jobs.apple.com/en-us/details/200688180-0670/product-designer-apple-weather?team=DESGN"
     },
@@ -439,6 +439,10 @@
     {
       "title": "System Integration Lead",
       "url": "https://jobs.apple.com/en-us/details/200688037-0836/system-integration-lead?team=HRDWR"
+    },
+    {
+      "title": "Machine Learning Engineer, Apple Services Engineering",
+      "url": "https://jobs.apple.com/en-us/details/200687765-3337/machine-learning-engineer-apple-services-engineering?team=MLAI"
     },
     {
       "title": "Pre-silicon Compute and ML Framework Manager",
@@ -1333,10 +1337,6 @@
       "url": "https://www.metacareers.com/profile/job_details/957354176761521"
     },
     {
-      "title": "Software Engineer, Multimedia & Multimodal AI Menlo Park, CA ⋅ Remote, US Infrastructure Software Engineering Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/1556935935696387"
-    },
-    {
       "title": "Product Content Engineer Los Angeles, CA ⋅ Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Design & User Experience Content Strategy Design",
       "url": "https://www.metacareers.com/profile/job_details/1145229698073705"
     },
@@ -1359,6 +1359,14 @@
     {
       "title": "Software Engineer - Product (Technical Leadership) Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Washington, DC ⋅ New York, NY ⋅ +1 more Artificial Intelligence Facebook Instagram Software Engineering",
       "url": "https://www.metacareers.com/profile/job_details/4043567932553615"
+    },
+    {
+      "title": "Lead Building Engineer Newton County, GA ⋅ Menlo Park, CA ⋅ Montgomery, AL ⋅ Papillion, NE ⋅ Beaver Dam, WI ⋅ +4 more Data Center Data Center Operations",
+      "url": "https://www.metacareers.com/profile/job_details/1288834486094873"
+    },
+    {
+      "title": "Software Engineer, Multimedia & Multimodal AI Menlo Park, CA ⋅ Remote, US Infrastructure Software Engineering Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/1556935935696387"
     },
     {
       "title": "Software Engineer, Machine Learning Sunnyvale, CA ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ +2 more Software Engineering Engineering",
@@ -1419,10 +1427,6 @@
     {
       "title": "Embedded Software Engineer, Firmware Sunnyvale, CA ⋅ Redmond, WA Software Engineering Engineering",
       "url": "https://www.metacareers.com/profile/job_details/893276690137821"
-    },
-    {
-      "title": "Lead Building Engineer Newton County, GA ⋅ Menlo Park, CA ⋅ Montgomery, AL ⋅ Papillion, NE ⋅ Beaver Dam, WI ⋅ +4 more Data Center Data Center Operations",
-      "url": "https://www.metacareers.com/profile/job_details/1288834486094873"
     },
     {
       "title": "Production Systems Engineering Intern Menlo Park, CA Internship - Engineering, Tech & Design Engineering Hardware",
@@ -1694,6 +1698,50 @@
     }
   ],
   "https://explore.jobs.netflix.net/careers?query=&location=United%20States&sort_by=new": [
+    {
+      "title": "Senior Game Producer, Party & Puzzle Games",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790318469454"
+    },
+    {
+      "title": "Title Producer, Content Localization - UCAN Scripted Series & Documentary",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790318513509"
+    },
+    {
+      "title": "Language Producer,  Global English - Content Localization",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790318269445"
+    },
+    {
+      "title": "Art & Print Producer, Awards",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790317126858"
+    },
+    {
+      "title": "Manager, Post Production - Indonesia",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790318617537"
+    },
+    {
+      "title": "Manager, Photo & Audio Visual Studio - Japan",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790318500438"
+    },
+    {
+      "title": "Photo/AV Curation Specialist - Publishing",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790318118567"
+    },
+    {
+      "title": "Coordinator, Creative Strategy - APAC (ex-India)",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790317639495"
+    },
+    {
+      "title": "Senior Manager, Production Management - Korea",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790315182203"
+    },
+    {
+      "title": "Coordinator, Production Management - Indonesia",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790318484648"
+    },
+    {
+      "title": "Executive Producer - Mainstream, Narrative & New Experiences (Games)",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790318883356"
+    },
     {
       "title": "Product Manager, Ads Platform - Sales Products",
       "url": "https://explore.jobs.netflix.net/careers/jobs/790318181132"
@@ -9340,6 +9388,14 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922715516"
     },
     {
+      "title": "Head of Compliance Governance and CMS Oversight, PayPal Bank",
+      "url": "https://paypal.eightfold.ai/careers/job/274922637054"
+    },
+    {
+      "title": "Head of Payment Operations, PayPal Bank",
+      "url": "https://paypal.eightfold.ai/careers/job/274922637052"
+    },
+    {
       "title": "Sr Lead Product Manager",
       "url": "https://paypal.eightfold.ai/careers/job/274922681028"
     },
@@ -9352,16 +9408,8 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922650014"
     },
     {
-      "title": "Head of Compliance Governance and CMS Oversight, PayPal Bank",
-      "url": "https://paypal.eightfold.ai/careers/job/274922637054"
-    },
-    {
       "title": "Software Engineer - Android",
       "url": "https://paypal.eightfold.ai/careers/job/274922740164"
-    },
-    {
-      "title": "Head of Payment Operations, PayPal Bank",
-      "url": "https://paypal.eightfold.ai/careers/job/274922637052"
     },
     {
       "title": "Manager, Tax",
@@ -22274,6 +22322,30 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Product Delivery Manager- Asset Based Lending Wholesale Lending Services",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210764098",
+      "location": "Chicago, IL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 30 Hours, North Jacksonville/Duval County, FL Area - Multiple Locations",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210782277",
+      "location": "Jacksonville, FL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Branch Operations Lead - Venice Market - Sarasota, FL",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795511",
+      "location": "Sarasota, FL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Private Client Banker - (New Build) Hayden - Hayden Lake, ID",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799496",
       "location": "Hayden Lake, ID, United States",
@@ -22906,14 +22978,6 @@
       ]
     },
     {
-      "title": "Part time (20 hours) Associate Banker, Orem Branch, Orem, UT",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797276",
-      "location": "Orem, UT, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Associate Banker, 30 Hours, Medford, OR Area - Multiple Locations",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210781281",
       "location": "Medford, OR, United States",
@@ -23053,6 +23117,14 @@
       "title": "Associate Banker, 30 Hours, Manhattan Beach Area - Multiple locations",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210782186",
       "location": "Manhattan Beach, CA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Part time (20 hours) Associate Banker, Orem Branch, Orem, UT",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797276",
+      "location": "Orem, UT, United States",
       "countries": [
         "US"
       ]
@@ -26216,10 +26288,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800619020"
     },
     {
-      "title": "Machine Learning Researcher",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549783531836"
-    },
-    {
       "title": "Commodities Compliance Professional",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800618510"
     },
@@ -26248,14 +26316,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800374837"
     },
     {
-      "title": "Branch Administrator",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800320516"
-    },
-    {
-      "title": "Restricted Securities Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800276166"
-    },
-    {
       "title": "Parametric - Operations Analyst Cohort, Summer 2027 Grads",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800174740"
     },
@@ -26272,6 +26332,26 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800682710"
     },
     {
+      "title": "Administrative Assistant",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800669071"
+    },
+    {
+      "title": "Lead GCP Security Controls Engineer - VP",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800356261"
+    },
+    {
+      "title": "Machine Learning Researcher",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549783531836"
+    },
+    {
+      "title": "Branch Administrator",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800320516"
+    },
+    {
+      "title": "Restricted Securities Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800276166"
+    },
+    {
       "title": "Client Relationship Analyst",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800688907"
     },
@@ -26284,16 +26364,8 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800689281"
     },
     {
-      "title": "Administrative Assistant",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800669071"
-    },
-    {
       "title": "Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549797058233"
-    },
-    {
-      "title": "Lead GCP Security Controls Engineer - VP",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800356261"
     },
     {
       "title": "Wealth Management Privacy Risk Specialist",
@@ -43933,11 +44005,6 @@
       "location": "San Francisco, CA; New York, NY"
     },
     {
-      "title": "Frontier Data Strategist",
-      "url": "https://job-boards.greenhouse.io/scaleai/jobs/4687050005",
-      "location": "San Francisco, CA; New York, NY"
-    },
-    {
       "title": "GenAI Compliance Operations & Programs Associate",
       "url": "https://job-boards.greenhouse.io/scaleai/jobs/4730306005",
       "location": "Mexico City, MX"
@@ -44595,6 +44662,11 @@
     {
       "title": "Senior Software Engineer, Platform",
       "url": "https://job-boards.greenhouse.io/scaleai/jobs/4730512005",
+      "location": "San Francisco, CA; New York, NY"
+    },
+    {
+      "title": "Frontier Data Strategist",
+      "url": "https://job-boards.greenhouse.io/scaleai/jobs/4687050005",
       "location": "San Francisco, CA; New York, NY"
     },
     {
@@ -49912,12 +49984,8 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
-      "title": "Program Analyst",
-      "url": "https://careers.qualcomm.com/careers/job/446718783531"
-    },
-    {
-      "title": "SOC Power Architecture Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719802797"
+      "title": "SOC Design Verification Engineer-Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446719823591"
     },
     {
       "title": "#Digital Hardware Engineer",
@@ -49978,6 +50046,30 @@
     {
       "title": "Staff Software Engineer – Host & Secure Compute Software - Cork, Ireland",
       "url": "https://careers.qualcomm.com/careers/job/446715866170"
+    },
+    {
+      "title": "Machine Learning R&D",
+      "url": "https://careers.qualcomm.com/careers/job/446719838414"
+    },
+    {
+      "title": "Modem Integration & Test Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719948366"
+    },
+    {
+      "title": "#Systems SoC Test Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719874307"
+    },
+    {
+      "title": "SoC Modeling Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719161124"
+    },
+    {
+      "title": "Program Analyst",
+      "url": "https://careers.qualcomm.com/careers/job/446718783531"
+    },
+    {
+      "title": "SOC Power Architecture Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719802797"
     },
     {
       "title": "RISCV CPU System RTL Engineer",
@@ -50204,18 +50296,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446720358225"
     },
     {
-      "title": "Machine Learning R&D",
-      "url": "https://careers.qualcomm.com/careers/job/446719838414"
-    },
-    {
-      "title": "Modem Integration & Test Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719948366"
-    },
-    {
-      "title": "#Systems SoC Test Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719874307"
-    },
-    {
       "title": "Analog Mixed Signal/Power Management Design Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446718554982"
     },
@@ -50278,10 +50358,6 @@
     {
       "title": "Camera DV Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446720601634"
-    },
-    {
-      "title": "SoC Modeling Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719161124"
     },
     {
       "title": "Executive Assistant & Business Operations Specialist",
@@ -52622,5 +52698,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-10T15:54:06"
+  "_last_email_at": "2026-10-10T20:03:42"
 }
