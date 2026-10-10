@@ -361,6 +361,10 @@
   ],
   "https://jobs.apple.com/en-us/search?location=united-states-USA&sort=newest": [
     {
+      "title": "US-Lead",
+      "url": "https://jobs.apple.com/en-us/details/200687357-2466/us-lead?team=APPST"
+    },
+    {
       "title": "Wi-Fi Certification Quality Engineer, Wireless Technologies & Ecosystems",
       "url": "https://jobs.apple.com/en-us/details/200688169-0836/wi-fi-certification-quality-engineer-wireless-technologies-ecosystems?team=SFTWR"
     },
@@ -429,16 +433,16 @@
       "url": "https://jobs.apple.com/en-us/details/200688180-0670/product-designer-apple-weather?team=DESGN"
     },
     {
-      "title": "Product Designer, Apple Weather",
-      "url": "https://jobs.apple.com/en-us/details/200688180-0836/product-designer-apple-weather?team=DESGN"
-    },
-    {
       "title": "US - Specialist: Seasonal, Part-time",
       "url": "https://jobs.apple.com/en-us/details/114438158/us-specialist-seasonal-part-time?team=APPST"
     },
     {
       "title": "System Integration Lead",
       "url": "https://jobs.apple.com/en-us/details/200688037-0836/system-integration-lead?team=HRDWR"
+    },
+    {
+      "title": "Product Designer, Apple Weather",
+      "url": "https://jobs.apple.com/en-us/details/200688180-0836/product-designer-apple-weather?team=DESGN"
     },
     {
       "title": "Machine Learning Engineer, Apple Services Engineering",
@@ -9388,20 +9392,20 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922715516"
     },
     {
-      "title": "Head of Compliance Governance and CMS Oversight, PayPal Bank",
-      "url": "https://paypal.eightfold.ai/careers/job/274922637054"
-    },
-    {
       "title": "Head of Payment Operations, PayPal Bank",
       "url": "https://paypal.eightfold.ai/careers/job/274922637052"
     },
     {
-      "title": "Sr Lead Product Manager",
-      "url": "https://paypal.eightfold.ai/careers/job/274922681028"
-    },
-    {
       "title": "Manager, Global Mobility Tax",
       "url": "https://paypal.eightfold.ai/careers/job/274919655195"
+    },
+    {
+      "title": "Head of Compliance Governance and CMS Oversight, PayPal Bank",
+      "url": "https://paypal.eightfold.ai/careers/job/274922637054"
+    },
+    {
+      "title": "Sr Lead Product Manager",
+      "url": "https://paypal.eightfold.ai/careers/job/274922681028"
     },
     {
       "title": "Product Manager, Deposits (PayPal Bank)",
@@ -22322,6 +22326,38 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Associate Banker, 30 Hours, North Central Queens  Area - Multiple locations",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210783661",
+      "location": "Jackson Heights, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Part Time (20 Hours) Associate Banker, Metropolitan and Flushing Branch, Ridgewood, NY",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798069",
+      "location": "Ridgewood, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Part Time (30 Hours) Associate Banker, Jackson Heights 82nd St Branch, Jackson Heights, NY, Bilingual Spanish Required",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798127",
+      "location": "Jackson Heights, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Part Time (30 Hours) Associate Banker, Flushing Main St Branch, Flushing, NY, Bilingual Mandarin Required",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798171",
+      "location": "Flushing, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Product Delivery Manager- Asset Based Lending Wholesale Lending Services",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210764098",
       "location": "Chicago, IL, United States",
@@ -22573,14 +22609,6 @@
       "title": "Associate Banker, 20 Hours, Spartanburg, SC - East Spartanburg Branch",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796763",
       "location": "Spartanburg, SC, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Sr Lead Security Engineer - Email",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797189",
-      "location": "Jersey City, NJ, United States",
       "countries": [
         "US"
       ]
@@ -22962,22 +22990,6 @@
       ]
     },
     {
-      "title": "Control Manager - Program - Controls Room – Program Management Vice President",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797196",
-      "location": "Jersey City, NJ, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Assistant Branch Manager (Bilingual English and Spanish Required) Liberty Ave and Drew St - Brooklyn, NY",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797232",
-      "location": "Brooklyn, NY, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Associate Banker, 30 Hours, Medford, OR Area - Multiple Locations",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210781281",
       "location": "Medford, OR, United States",
@@ -23082,14 +23094,6 @@
       ]
     },
     {
-      "title": "Data Visualization & Analytics Director - Security Platforms",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797214",
-      "location": "Tampa, FL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Site Reliability Engineer III",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210792529",
       "location": "Chicago, IL, United States",
@@ -23117,6 +23121,38 @@
       "title": "Associate Banker, 30 Hours, Manhattan Beach Area - Multiple locations",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210782186",
       "location": "Manhattan Beach, CA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Sr Lead Security Engineer - Email",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797189",
+      "location": "Jersey City, NJ, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Control Manager - Program - Controls Room – Program Management Vice President",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797196",
+      "location": "Jersey City, NJ, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Assistant Branch Manager (Bilingual English and Spanish Required) Liberty Ave and Drew St - Brooklyn, NY",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797232",
+      "location": "Brooklyn, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Data Visualization & Analytics Director - Security Platforms",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797214",
+      "location": "Tampa, FL, United States",
       "countries": [
         "US"
       ]
@@ -26312,16 +26348,8 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800542950"
     },
     {
-      "title": "Analyst / Senior Analyst, Client Reporting - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800374837"
-    },
-    {
       "title": "Parametric - Operations Analyst Cohort, Summer 2027 Grads",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800174740"
-    },
-    {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800559177"
     },
     {
       "title": "Fixed Income Compliance Officer, Vice President - Securitized Products and Rates",
@@ -26336,12 +26364,28 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800669071"
     },
     {
-      "title": "Lead GCP Security Controls Engineer - VP",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800356261"
-    },
-    {
       "title": "Machine Learning Researcher",
       "url": "https://morganstanley.eightfold.ai/careers/job/549783531836"
+    },
+    {
+      "title": "Client Relationship Analyst",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800688907"
+    },
+    {
+      "title": "Chief of Staff",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800689281"
+    },
+    {
+      "title": "Analyst / Senior Analyst, Client Reporting - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800374837"
+    },
+    {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800559177"
+    },
+    {
+      "title": "Lead GCP Security Controls Engineer - VP",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800356261"
     },
     {
       "title": "Branch Administrator",
@@ -26352,16 +26396,8 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800276166"
     },
     {
-      "title": "Client Relationship Analyst",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800688907"
-    },
-    {
       "title": "Wealth Management Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549798139986"
-    },
-    {
-      "title": "Chief of Staff",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800689281"
     },
     {
       "title": "Client Service Associate",
@@ -49984,8 +50020,20 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
-      "title": "SOC Design Verification Engineer-Staff",
-      "url": "https://careers.qualcomm.com/careers/job/446719823591"
+      "title": "System Performance Engineer, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446715563391"
+    },
+    {
+      "title": "Analog/Mixed Signal ASIC Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446720208411"
+    },
+    {
+      "title": "SOC Architecture",
+      "url": "https://careers.qualcomm.com/careers/job/446720250879"
+    },
+    {
+      "title": "#System Software Engineer - Power",
+      "url": "https://careers.qualcomm.com/careers/job/446721217993"
     },
     {
       "title": "#Digital Hardware Engineer",
@@ -50048,6 +50096,14 @@
       "url": "https://careers.qualcomm.com/careers/job/446715866170"
     },
     {
+      "title": "#Hardware Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721143441"
+    },
+    {
+      "title": "SOC Design Verification Engineer-Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446719823591"
+    },
+    {
       "title": "Machine Learning R&D",
       "url": "https://careers.qualcomm.com/careers/job/446719838414"
     },
@@ -50102,10 +50158,6 @@
     {
       "title": "Hardware Board Design Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446718450965"
-    },
-    {
-      "title": "#Hardware Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721143441"
     },
     {
       "title": "Senior Hardware Verification Engineer - Cork, Ireland",
@@ -52698,5 +52750,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-10T20:03:42"
+  "_last_email_at": "2026-10-10T23:30:19"
 }
