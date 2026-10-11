@@ -361,6 +361,10 @@
   ],
   "https://jobs.apple.com/en-us/search?location=united-states-USA&sort=newest": [
     {
+      "title": "Human Factors Engineer-ARC",
+      "url": "https://jobs.apple.com/en-us/details/200688368-0836/human-factors-engineer-arc?team=HRDWR"
+    },
+    {
       "title": "US-Lead",
       "url": "https://jobs.apple.com/en-us/details/200687357-2466/us-lead?team=APPST"
     },
@@ -429,16 +433,16 @@
       "url": "https://jobs.apple.com/en-us/details/200688248-0836/senior-data-engineer-data-products?team=MLAI"
     },
     {
-      "title": "Product Designer, Apple Weather",
-      "url": "https://jobs.apple.com/en-us/details/200688180-0670/product-designer-apple-weather?team=DESGN"
-    },
-    {
       "title": "US - Specialist: Seasonal, Part-time",
       "url": "https://jobs.apple.com/en-us/details/114438158/us-specialist-seasonal-part-time?team=APPST"
     },
     {
       "title": "System Integration Lead",
       "url": "https://jobs.apple.com/en-us/details/200688037-0836/system-integration-lead?team=HRDWR"
+    },
+    {
+      "title": "Product Designer, Apple Weather",
+      "url": "https://jobs.apple.com/en-us/details/200688180-0670/product-designer-apple-weather?team=DESGN"
     },
     {
       "title": "Product Designer, Apple Weather",
@@ -902,6 +906,10 @@
     }
   ],
   "https://www.amazon.jobs/en/search?base_query=&loc_query=United+States&sort=recent": [
+    {
+      "title": "Materials Program Manager, Product Operations",
+      "url": "https://www.amazon.jobs/en/jobs/10575384/materials-program-manager-product-operations"
+    },
     {
       "title": "Advertising Account Manager, CN Large Customer, Amazon Ads",
       "url": "https://www.amazon.jobs/en/jobs/10575349/advertising-account-manager-cn-large-customer-amazon-ads"
@@ -5130,6 +5138,11 @@
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/stripe/jobs": [
+    {
+      "title": "Writer, Content Marketing",
+      "url": "https://stripe.com/jobs/search?gh_jid=8265686",
+      "location": "US Hybrid"
+    },
     {
       "title": "Account Executive, Enterprise Platforms, Tier 2 Grower",
       "url": "https://stripe.com/jobs/search?gh_jid=8138042",
@@ -15286,14 +15299,6 @@
       ]
     },
     {
-      "title": "Head of Financial Risk Management - Bitnomial",
-      "url": "https://jobs.ashbyhq.com/kraken.com/4c9cafd3-0ff5-4497-aa85-4fcc4945247a",
-      "location": "United States",
-      "countries": [
-        "United States"
-      ]
-    },
-    {
       "title": "Senior Product Manager - Payments Platform",
       "url": "https://jobs.ashbyhq.com/kraken.com/dffced14-9df1-45cd-bda4-416587ac63b1",
       "location": "United States",
@@ -15954,6 +15959,14 @@
         "Ireland",
         "Cyprus",
         "Canada"
+      ]
+    },
+    {
+      "title": "Head of Financial Risk Management - Bitnomial",
+      "url": "https://jobs.ashbyhq.com/kraken.com/4c9cafd3-0ff5-4497-aa85-4fcc4945247a",
+      "location": "United States",
+      "countries": [
+        "United States"
       ]
     },
     {
@@ -26240,10 +26253,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800645965"
     },
     {
-      "title": "Wealth Management Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799868265"
-    },
-    {
       "title": "Sr. Registered Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549797900387"
     },
@@ -26352,20 +26361,8 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800174740"
     },
     {
-      "title": "Fixed Income Compliance Officer, Vice President - Securitized Products and Rates",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799875968"
-    },
-    {
       "title": "Private Wealth Management Wealth Management Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800682710"
-    },
-    {
-      "title": "Administrative Assistant",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800669071"
-    },
-    {
-      "title": "Machine Learning Researcher",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549783531836"
     },
     {
       "title": "Client Relationship Analyst",
@@ -26388,16 +26385,32 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800356261"
     },
     {
+      "title": "Wealth Management Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549798139986"
+    },
+    {
+      "title": "Wealth Management Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799868265"
+    },
+    {
+      "title": "Fixed Income Compliance Officer, Vice President - Securitized Products and Rates",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799875968"
+    },
+    {
+      "title": "Administrative Assistant",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800669071"
+    },
+    {
+      "title": "Machine Learning Researcher",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549783531836"
+    },
+    {
       "title": "Branch Administrator",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800320516"
     },
     {
       "title": "Restricted Securities Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800276166"
-    },
-    {
-      "title": "Wealth Management Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549798139986"
     },
     {
       "title": "Client Service Associate",
@@ -44793,6 +44806,14 @@
   ],
   "https://careers.snowflake.com/us/en/search-results?keywords=&sortBy=Most%20recent": [
     {
+      "title": "Staff Software Engineer – Engineering Systems, Continuous Integration Team",
+      "url": "https://jobs.ashbyhq.com/snowflake/f38ad1b0-00a6-490d-afcf-80a78c8b8aed"
+    },
+    {
+      "title": "Senior Technical Program Manager - ML/AI",
+      "url": "https://jobs.ashbyhq.com/snowflake/2d66e411-c782-43d5-9ad5-389c4407f9c6"
+    },
+    {
       "title": "Account Engineer",
       "url": "https://jobs.ashbyhq.com/snowflake/4d33c57c-655c-4784-b0f0-d37a07ad68a0"
     },
@@ -44813,14 +44834,6 @@
       "url": "https://jobs.ashbyhq.com/snowflake/fe3e8a19-39e7-44c5-8bf9-75d09a038d1b"
     },
     {
-      "title": "Sales Ops Manager, Partners & Specialists Planning",
-      "url": "https://jobs.ashbyhq.com/snowflake/6eb0df45-4bbf-430f-9ef3-a5ae82bf978b"
-    },
-    {
-      "title": "Partner Manager, Global Systems Integrator",
-      "url": "https://jobs.ashbyhq.com/snowflake/9ba51355-d486-4d17-bc41-e1c1ed57e93d"
-    },
-    {
       "title": "Solution Engineer",
       "url": "https://jobs.ashbyhq.com/snowflake/efd6dbf9-fc71-4b8a-a328-c7c83cf79515"
     },
@@ -44831,6 +44844,14 @@
     {
       "title": "Principal Software Engineer - Elastic Global Services",
       "url": "https://jobs.ashbyhq.com/snowflake/778634b7-b2db-418e-a7b1-922f8a775ff6"
+    },
+    {
+      "title": "Sales Ops Manager, Partners & Specialists Planning",
+      "url": "https://jobs.ashbyhq.com/snowflake/6eb0df45-4bbf-430f-9ef3-a5ae82bf978b"
+    },
+    {
+      "title": "Partner Manager, Global Systems Integrator",
+      "url": "https://jobs.ashbyhq.com/snowflake/9ba51355-d486-4d17-bc41-e1c1ed57e93d"
     },
     {
       "title": "Director of Engineering - Traffic & Networking",
@@ -50020,20 +50041,20 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
-      "title": "System Performance Engineer, Staff",
-      "url": "https://careers.qualcomm.com/careers/job/446715563391"
+      "title": "QGOV Security Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718664836"
     },
     {
-      "title": "Analog/Mixed Signal ASIC Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446720208411"
+      "title": "QGOV Security Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718664837"
     },
     {
-      "title": "SOC Architecture",
-      "url": "https://careers.qualcomm.com/careers/job/446720250879"
+      "title": "QGOV Security Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718664838"
     },
     {
-      "title": "#System Software Engineer - Power",
-      "url": "https://careers.qualcomm.com/careers/job/446721217993"
+      "title": "Computer Vision System Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718686256"
     },
     {
       "title": "#Digital Hardware Engineer",
@@ -50094,6 +50115,26 @@
     {
       "title": "Staff Software Engineer – Host & Secure Compute Software - Cork, Ireland",
       "url": "https://careers.qualcomm.com/careers/job/446715866170"
+    },
+    {
+      "title": "Analog Mixed Signal/Power Management Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718554982"
+    },
+    {
+      "title": "System Performance Engineer, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446715563391"
+    },
+    {
+      "title": "Analog/Mixed Signal ASIC Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446720208411"
+    },
+    {
+      "title": "SOC Architecture",
+      "url": "https://careers.qualcomm.com/careers/job/446720250879"
+    },
+    {
+      "title": "#System Software Engineer - Power",
+      "url": "https://careers.qualcomm.com/careers/job/446721217993"
     },
     {
       "title": "#Hardware Design Engineer",
@@ -50346,10 +50387,6 @@
     {
       "title": "Camera Systems Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446720358225"
-    },
-    {
-      "title": "Analog Mixed Signal/Power Management Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446718554982"
     },
     {
       "title": "#AI Solution Engineer",
@@ -52750,5 +52787,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-10T23:30:19"
+  "_last_email_at": "2026-10-11T02:11:03"
 }
