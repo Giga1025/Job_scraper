@@ -361,6 +361,10 @@
   ],
   "https://jobs.apple.com/en-us/search?location=united-states-USA&sort=newest": [
     {
+      "title": "Graphics Software Engineer",
+      "url": "https://jobs.apple.com/en-us/details/200688305-0157/graphics-software-engineer?team=HRDWR"
+    },
+    {
       "title": "Human Factors Engineer-ARC",
       "url": "https://jobs.apple.com/en-us/details/200688368-0836/human-factors-engineer-arc?team=HRDWR"
     },
@@ -429,16 +433,16 @@
       "url": "https://jobs.apple.com/en-us/details/200686450-3760/shipping-supervisor?team=CORSV"
     },
     {
-      "title": "Senior Data Engineer, Data Products",
-      "url": "https://jobs.apple.com/en-us/details/200688248-0836/senior-data-engineer-data-products?team=MLAI"
-    },
-    {
       "title": "US - Specialist: Seasonal, Part-time",
       "url": "https://jobs.apple.com/en-us/details/114438158/us-specialist-seasonal-part-time?team=APPST"
     },
     {
       "title": "System Integration Lead",
       "url": "https://jobs.apple.com/en-us/details/200688037-0836/system-integration-lead?team=HRDWR"
+    },
+    {
+      "title": "Senior Data Engineer, Data Products",
+      "url": "https://jobs.apple.com/en-us/details/200688248-0836/senior-data-engineer-data-products?team=MLAI"
     },
     {
       "title": "Product Designer, Apple Weather",
@@ -1357,10 +1361,6 @@
       "url": "https://www.metacareers.com/profile/job_details/2309543522914406"
     },
     {
-      "title": "Software Engineer, Multimedia & Multimodal AI Bellevue, WA ⋅ Menlo Park, CA ⋅ New York, NY Software Engineering Infrastructure Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/957354176761521"
-    },
-    {
       "title": "Product Content Engineer Los Angeles, CA ⋅ Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Design & User Experience Content Strategy Design",
       "url": "https://www.metacareers.com/profile/job_details/1145229698073705"
     },
@@ -1387,6 +1387,14 @@
     {
       "title": "Lead Building Engineer Newton County, GA ⋅ Menlo Park, CA ⋅ Montgomery, AL ⋅ Papillion, NE ⋅ Beaver Dam, WI ⋅ +4 more Data Center Data Center Operations",
       "url": "https://www.metacareers.com/profile/job_details/1288834486094873"
+    },
+    {
+      "title": "Software Engineer (Technical Leadership) - Machine Learning Sunnyvale, CA ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ +3 more Software Engineering Engineering Machine Learning",
+      "url": "https://www.metacareers.com/profile/job_details/1075389717795087"
+    },
+    {
+      "title": "Software Engineer, Multimedia & Multimodal AI Bellevue, WA ⋅ Menlo Park, CA ⋅ New York, NY Software Engineering Infrastructure Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/957354176761521"
     },
     {
       "title": "Software Engineer, Multimedia & Multimodal AI Menlo Park, CA ⋅ Remote, US Infrastructure Software Engineering Engineering",
@@ -1591,10 +1599,6 @@
     {
       "title": "UX Researcher, Quantitative Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ New York, NY ⋅ San Francisco, CA Research",
       "url": "https://www.metacareers.com/profile/job_details/27754665087526682"
-    },
-    {
-      "title": "Software Engineer (Technical Leadership) - Machine Learning Sunnyvale, CA ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ +3 more Software Engineering Engineering Machine Learning",
-      "url": "https://www.metacareers.com/profile/job_details/1075389717795087"
     },
     {
       "title": "Partner Solutions Manager, Creators Los Angeles, CA ⋅ New York, NY Business Development & Partnerships Business Development Partnerships",
@@ -9304,11 +9308,11 @@
     },
     {
       "title": "Bilingual Mandarin Business Development Rep Melbourne, Australia",
-      "url": "https://block.xyz/careers/jobs/5442639008"
+      "url": "https://block.xyz/careers/jobs/5442638008"
     },
     {
       "title": "Bilingual Mandarin Business Development Rep Melbourne, Australia",
-      "url": "https://block.xyz/careers/jobs/5442638008"
+      "url": "https://block.xyz/careers/jobs/5442639008"
     },
     {
       "title": "Bilingual Strategic Account Manager Remote Miami, FL, US",
@@ -9417,20 +9421,20 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922715516"
     },
     {
-      "title": "Head of Payment Operations, PayPal Bank",
-      "url": "https://paypal.eightfold.ai/careers/job/274922637052"
-    },
-    {
-      "title": "Head of Compliance Governance and CMS Oversight, PayPal Bank",
-      "url": "https://paypal.eightfold.ai/careers/job/274922637054"
-    },
-    {
       "title": "Manager, Global Mobility Tax",
       "url": "https://paypal.eightfold.ai/careers/job/274919655195"
     },
     {
       "title": "Sr Lead Product Manager",
       "url": "https://paypal.eightfold.ai/careers/job/274922681028"
+    },
+    {
+      "title": "Head of Payment Operations, PayPal Bank",
+      "url": "https://paypal.eightfold.ai/careers/job/274922637052"
+    },
+    {
+      "title": "Head of Compliance Governance and CMS Oversight, PayPal Bank",
+      "url": "https://paypal.eightfold.ai/careers/job/274922637054"
     },
     {
       "title": "Product Manager, Deposits (PayPal Bank)",
@@ -26365,18 +26369,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800542950"
     },
     {
-      "title": "Parametric - Operations Analyst Cohort, Summer 2027 Grads",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800174740"
-    },
-    {
-      "title": "Fixed Income Compliance Officer, Vice President - Securitized Products and Rates",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799875968"
-    },
-    {
-      "title": "Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549797058233"
-    },
-    {
       "title": "Client Relationship Analyst",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800688907"
     },
@@ -26393,10 +26385,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800356261"
     },
     {
-      "title": "Branch Administrator",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800320516"
-    },
-    {
       "title": "Restricted Securities Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800276166"
     },
@@ -26405,16 +26393,8 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800619020"
     },
     {
-      "title": "Private Wealth Management Wealth Management Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800682710"
-    },
-    {
       "title": "Chief of Staff",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800689281"
-    },
-    {
-      "title": "Wealth Management Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549798139986"
     },
     {
       "title": "Administrative Assistant",
@@ -26423,6 +26403,30 @@
     {
       "title": "Machine Learning Researcher",
       "url": "https://morganstanley.eightfold.ai/careers/job/549783531836"
+    },
+    {
+      "title": "Parametric - Operations Analyst Cohort, Summer 2027 Grads",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800174740"
+    },
+    {
+      "title": "Fixed Income Compliance Officer, Vice President - Securitized Products and Rates",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799875968"
+    },
+    {
+      "title": "Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549797058233"
+    },
+    {
+      "title": "Branch Administrator",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800320516"
+    },
+    {
+      "title": "Private Wealth Management Wealth Management Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800682710"
+    },
+    {
+      "title": "Wealth Management Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549798139986"
     },
     {
       "title": "Wealth Management Associate",
@@ -50062,16 +50066,24 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
-      "title": "Senior AI Performance Architect",
-      "url": "https://careers.qualcomm.com/careers/job/446716256165"
+      "title": "RF Product and Bench Test Engineer, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446718350883"
     },
     {
-      "title": "AI Systems Hardware Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446716317581"
+      "title": "Graphics Software Engineer, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446718675738"
     },
     {
-      "title": "Video Research Engineer (Multiple Levels)",
-      "url": "https://careers.qualcomm.com/careers/job/446716320059"
+      "title": "Industrial Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719043984"
+    },
+    {
+      "title": "Project Analyst",
+      "url": "https://careers.qualcomm.com/careers/job/446719899670"
+    },
+    {
+      "title": "Modem Hardware Design Verification Engineer – AI Driven Next Gen Modem Hardware Development, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446720926576"
     },
     {
       "title": "#Digital Hardware Engineer",
@@ -50092,6 +50104,58 @@
     {
       "title": "Department Support Assistant, Staff",
       "url": "https://careers.qualcomm.com/careers/job/446721350022"
+    },
+    {
+      "title": "Analog/Mixed Signal ASIC Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446720208411"
+    },
+    {
+      "title": "#Hardware Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721143441"
+    },
+    {
+      "title": "Hardware Board Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718450965"
+    },
+    {
+      "title": "Senior Hardware Verification Engineer - Cork, Ireland",
+      "url": "https://careers.qualcomm.com/careers/job/446721194774"
+    },
+    {
+      "title": "Hardware System Design Engineer, Senior or Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446720760417"
+    },
+    {
+      "title": "Hardware Verification Engineer - Cork, Ireland",
+      "url": "https://careers.qualcomm.com/careers/job/446721194776"
+    },
+    {
+      "title": "SOC Design Verification Engineer, Staff– Pre-Si/Post-Si Verification",
+      "url": "https://careers.qualcomm.com/careers/job/446719823614"
+    },
+    {
+      "title": "FPGA Firmware Engineer / FPGA Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446717133035"
+    },
+    {
+      "title": "SOC Design Verification Engineer– Pre-Si/Post-Si Verification",
+      "url": "https://careers.qualcomm.com/careers/job/446719823628"
+    },
+    {
+      "title": "SOC Design Verification Engineer– Pre-Si/Post-Si Verification",
+      "url": "https://careers.qualcomm.com/careers/job/446719823634"
+    },
+    {
+      "title": "Senior AI Performance Architect",
+      "url": "https://careers.qualcomm.com/careers/job/446716256165"
+    },
+    {
+      "title": "AI Systems Hardware Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446716317581"
+    },
+    {
+      "title": "Video Research Engineer (Multiple Levels)",
+      "url": "https://careers.qualcomm.com/careers/job/446716320059"
     },
     {
       "title": "Embedded Software Engineer, Senior – Integration - Cork, Ireland",
@@ -50206,20 +50270,12 @@
       "url": "https://careers.qualcomm.com/careers/job/446715563391"
     },
     {
-      "title": "Analog/Mixed Signal ASIC Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446720208411"
-    },
-    {
       "title": "SOC Architecture",
       "url": "https://careers.qualcomm.com/careers/job/446720250879"
     },
     {
       "title": "#System Software Engineer - Power",
       "url": "https://careers.qualcomm.com/careers/job/446721217993"
-    },
-    {
-      "title": "#Hardware Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721143441"
     },
     {
       "title": "SOC Design Verification Engineer-Staff",
@@ -50278,40 +50334,8 @@
       "url": "https://careers.qualcomm.com/careers/job/446720361954"
     },
     {
-      "title": "Hardware Board Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446718450965"
-    },
-    {
-      "title": "Senior Hardware Verification Engineer - Cork, Ireland",
-      "url": "https://careers.qualcomm.com/careers/job/446721194774"
-    },
-    {
-      "title": "Hardware System Design Engineer, Senior or Staff",
-      "url": "https://careers.qualcomm.com/careers/job/446720760417"
-    },
-    {
-      "title": "Hardware Verification Engineer - Cork, Ireland",
-      "url": "https://careers.qualcomm.com/careers/job/446721194776"
-    },
-    {
-      "title": "SOC Design Verification Engineer, Staff– Pre-Si/Post-Si Verification",
-      "url": "https://careers.qualcomm.com/careers/job/446719823614"
-    },
-    {
-      "title": "FPGA Firmware Engineer / FPGA Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446717133035"
-    },
-    {
       "title": "CPU Hardware Verification (Power Management) Staff Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721010101"
-    },
-    {
-      "title": "SOC Design Verification Engineer– Pre-Si/Post-Si Verification",
-      "url": "https://careers.qualcomm.com/careers/job/446719823628"
-    },
-    {
-      "title": "SOC Design Verification Engineer– Pre-Si/Post-Si Verification",
-      "url": "https://careers.qualcomm.com/careers/job/446719823634"
     },
     {
       "title": "GPU Performance Engineer (Multiple locations)",
@@ -52825,5 +52849,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-11T15:37:47"
+  "_last_email_at": "2026-10-11T19:44:40"
 }
