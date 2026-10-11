@@ -2215,10 +2215,6 @@
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco-Metro---Remote/Staff-Prototyping-Engineer--Android_JR360079-1"
     },
     {
-      "title": "Mixed Methods Senior UX Researcher",
-      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Mixed-Methods-Senior-UX-Researcher_JR362485"
-    },
-    {
       "title": "Health & Life Sciences Program Advisory Director",
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/New-Jersey---New-York-City-Metro---Remote/Health---Life-Sciences-Program-Advisory-Director_JR361668"
     },
@@ -2231,6 +2227,14 @@
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Georgia---Atlanta/Executive-Operations---Leadership-Engagement-DirectorDirector_JR363410"
     },
     {
+      "title": "Life Sciences Product Liaison Director (Veeva Expert)",
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/New-Jersey---New-York-City-Metro---Remote/Life-Sciences-Product-Liaison-Director--Veeva-Expert-_JR362743"
+    },
+    {
+      "title": "Mixed Methods Senior UX Researcher",
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Mixed-Methods-Senior-UX-Researcher_JR362485"
+    },
+    {
       "title": "VP, Global Compensation",
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Texas---Austin/VP--Global-Compensation_JR360300"
     },
@@ -2241,10 +2245,6 @@
     {
       "title": "Commercial Account Executive - New Logo",
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/New-York---New-York/Commercial-Account-Executive---New-Logo_JR310259"
-    },
-    {
-      "title": "Life Sciences Product Liaison Director (Veeva Expert)",
-      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/New-Jersey---New-York-City-Metro---Remote/Life-Sciences-Product-Liaison-Director--Veeva-Expert-_JR362743"
     },
     {
       "title": "Commercial/Enterprise Account Executive -Tableau Analytics - Consumer Business Services",
@@ -6396,11 +6396,6 @@
       "location": "N/A"
     },
     {
-      "title": "Engineering Manager - Core Performance",
-      "url": "https://stripe.com/jobs/search?gh_jid=7835108",
-      "location": "Sydney, Australia"
-    },
-    {
       "title": "Engineering Manager, Data Transformation",
       "url": "https://stripe.com/jobs/search?gh_jid=7688358",
       "location": "US-SEA, US-SF, US-NYC, US-Remote"
@@ -8794,6 +8789,11 @@
       "title": "Marketing Operations Program Manager, Events APAC",
       "url": "https://stripe.com/jobs/search?gh_jid=8176256",
       "location": "Singapore"
+    },
+    {
+      "title": "Engineering Manager - Core Performance",
+      "url": "https://stripe.com/jobs/search?gh_jid=7835108",
+      "location": "Sydney, Australia"
     },
     {
       "title": "University Recruiting Manager",
@@ -26341,10 +26341,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800457412"
     },
     {
-      "title": "Client Relationship Analyst",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800619020"
-    },
-    {
       "title": "Commodities Compliance Professional",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800618510"
     },
@@ -26373,28 +26369,8 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800174740"
     },
     {
-      "title": "Private Wealth Management Wealth Management Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800682710"
-    },
-    {
-      "title": "Chief of Staff",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800689281"
-    },
-    {
-      "title": "Wealth Management Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549798139986"
-    },
-    {
       "title": "Fixed Income Compliance Officer, Vice President - Securitized Products and Rates",
       "url": "https://morganstanley.eightfold.ai/careers/job/549799875968"
-    },
-    {
-      "title": "Administrative Assistant",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800669071"
-    },
-    {
-      "title": "Machine Learning Researcher",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549783531836"
     },
     {
       "title": "Client Service Associate",
@@ -26417,16 +26393,40 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800356261"
     },
     {
-      "title": "Wealth Management Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799868265"
-    },
-    {
       "title": "Branch Administrator",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800320516"
     },
     {
       "title": "Restricted Securities Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800276166"
+    },
+    {
+      "title": "Client Relationship Analyst",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800619020"
+    },
+    {
+      "title": "Private Wealth Management Wealth Management Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800682710"
+    },
+    {
+      "title": "Chief of Staff",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800689281"
+    },
+    {
+      "title": "Wealth Management Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549798139986"
+    },
+    {
+      "title": "Administrative Assistant",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800669071"
+    },
+    {
+      "title": "Machine Learning Researcher",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549783531836"
+    },
+    {
+      "title": "Wealth Management Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799868265"
     },
     {
       "title": "Wealth Management Privacy Risk Specialist",
@@ -44851,18 +44851,6 @@
       "url": "https://jobs.ashbyhq.com/snowflake/fe3e8a19-39e7-44c5-8bf9-75d09a038d1b"
     },
     {
-      "title": "Solution Engineer",
-      "url": "https://jobs.ashbyhq.com/snowflake/efd6dbf9-fc71-4b8a-a328-c7c83cf79515"
-    },
-    {
-      "title": "Enterprise Account Executive - Acquisition",
-      "url": "https://jobs.ashbyhq.com/snowflake/2703e2b9-ce72-4c8f-a213-0cd42acdb2a2"
-    },
-    {
-      "title": "Principal Software Engineer - Elastic Global Services",
-      "url": "https://jobs.ashbyhq.com/snowflake/778634b7-b2db-418e-a7b1-922f8a775ff6"
-    },
-    {
       "title": "Sales Ops Manager, Partners & Specialists Planning",
       "url": "https://jobs.ashbyhq.com/snowflake/6eb0df45-4bbf-430f-9ef3-a5ae82bf978b"
     },
@@ -44873,6 +44861,18 @@
     {
       "title": "Director of Engineering - Traffic & Networking",
       "url": "https://jobs.ashbyhq.com/snowflake/07aead0b-3d2a-4162-b578-5eb323230c1f"
+    },
+    {
+      "title": "Solution Engineer",
+      "url": "https://jobs.ashbyhq.com/snowflake/efd6dbf9-fc71-4b8a-a328-c7c83cf79515"
+    },
+    {
+      "title": "Enterprise Account Executive - Acquisition",
+      "url": "https://jobs.ashbyhq.com/snowflake/2703e2b9-ce72-4c8f-a213-0cd42acdb2a2"
+    },
+    {
+      "title": "Principal Software Engineer - Elastic Global Services",
+      "url": "https://jobs.ashbyhq.com/snowflake/778634b7-b2db-418e-a7b1-922f8a775ff6"
     },
     {
       "title": "Software Engineer - Customer Experience Engineering",
@@ -50062,20 +50062,16 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
-      "title": "QGOV Security Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446718664836"
+      "title": "Senior AI Performance Architect",
+      "url": "https://careers.qualcomm.com/careers/job/446716256165"
     },
     {
-      "title": "QGOV Security Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446718664837"
+      "title": "AI Systems Hardware Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446716317581"
     },
     {
-      "title": "QGOV Security Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446718664838"
-    },
-    {
-      "title": "Computer Vision System Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446718686256"
+      "title": "Video Research Engineer (Multiple Levels)",
+      "url": "https://careers.qualcomm.com/careers/job/446716320059"
     },
     {
       "title": "#Digital Hardware Engineer",
@@ -50096,6 +50092,70 @@
     {
       "title": "Department Support Assistant, Staff",
       "url": "https://careers.qualcomm.com/careers/job/446721350022"
+    },
+    {
+      "title": "Embedded Software Engineer, Senior – Integration - Cork, Ireland",
+      "url": "https://careers.qualcomm.com/careers/job/446718835580"
+    },
+    {
+      "title": "Engineer/ Senior Engineer - Modem Software Framework (5G & AI)",
+      "url": "https://careers.qualcomm.com/careers/job/446718329584"
+    },
+    {
+      "title": "CPU Software Architecture Principal Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719474552"
+    },
+    {
+      "title": "Senior Embedded Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721430718"
+    },
+    {
+      "title": "#Wireless Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721161408"
+    },
+    {
+      "title": "Senior Embedded Software Engineer (Cloud Edge & Data Center Machine Learning)",
+      "url": "https://careers.qualcomm.com/careers/job/446721154929"
+    },
+    {
+      "title": "Modem Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721008018"
+    },
+    {
+      "title": "Senior Embedded Software Engineer (Cloud Edge & Data Center Machine Learning)",
+      "url": "https://careers.qualcomm.com/careers/job/446721154919"
+    },
+    {
+      "title": "#Embedded Software Engineer – Device Driver Development",
+      "url": "https://careers.qualcomm.com/careers/job/446718891829"
+    },
+    {
+      "title": "Modem Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719838669"
+    },
+    {
+      "title": "AI TLM Performance Modeling",
+      "url": "https://careers.qualcomm.com/careers/job/446716204241"
+    },
+    {
+      "title": "EDA/CAD SW Engineer (Multiple Levels)",
+      "url": "https://careers.qualcomm.com/careers/job/446715219762"
+    },
+    {
+      "title": "QGOV Security Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718664836"
+    },
+    {
+      "title": "QGOV Security Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718664837"
+    },
+    {
+      "title": "QGOV Security Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718664838"
+    },
+    {
+      "title": "Computer Vision System Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718686256"
     },
     {
       "title": "Linux Software Engineer",
@@ -50274,46 +50334,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446719310987"
     },
     {
-      "title": "Embedded Software Engineer, Senior – Integration - Cork, Ireland",
-      "url": "https://careers.qualcomm.com/careers/job/446718835580"
-    },
-    {
-      "title": "Engineer/ Senior Engineer - Modem Software Framework (5G & AI)",
-      "url": "https://careers.qualcomm.com/careers/job/446718329584"
-    },
-    {
-      "title": "CPU Software Architecture Principal Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719474552"
-    },
-    {
-      "title": "Senior Embedded Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721430718"
-    },
-    {
-      "title": "#Wireless Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721161408"
-    },
-    {
-      "title": "Senior Embedded Software Engineer (Cloud Edge & Data Center Machine Learning)",
-      "url": "https://careers.qualcomm.com/careers/job/446721154929"
-    },
-    {
-      "title": "Modem Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721008018"
-    },
-    {
-      "title": "Senior Embedded Software Engineer (Cloud Edge & Data Center Machine Learning)",
-      "url": "https://careers.qualcomm.com/careers/job/446721154919"
-    },
-    {
-      "title": "#Embedded Software Engineer – Device Driver Development",
-      "url": "https://careers.qualcomm.com/careers/job/446718891829"
-    },
-    {
-      "title": "Modem Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719838669"
-    },
-    {
       "title": "NoC Interconnect Design Engineer and Architect",
       "url": "https://careers.qualcomm.com/careers/job/446719120659"
     },
@@ -50422,16 +50442,8 @@
       "url": "https://careers.qualcomm.com/careers/job/446721233001"
     },
     {
-      "title": "AI TLM Performance Modeling",
-      "url": "https://careers.qualcomm.com/careers/job/446716204241"
-    },
-    {
       "title": "GPU Compiler QA",
       "url": "https://careers.qualcomm.com/careers/job/446716337611"
-    },
-    {
-      "title": "EDA/CAD SW Engineer (Multiple Levels)",
-      "url": "https://careers.qualcomm.com/careers/job/446715219762"
     },
     {
       "title": "Contracts Support Assistant",
@@ -52813,38 +52825,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-11T02:11:03",
-  "_left_out_pending": [
-    {
-      "title": "Senior Applied AI, Partner Solutions Architect, Latin America, Applied AI Partner Solutions Architecture",
-      "url": "https://www.amazon.jobs/en/jobs/10575387/senior-applied-ai-partner-solutions-architect-latin-america-applied-ai-partner-solutions-architecture",
-      "reason": "senior (Senior)",
-      "company": "Amazon"
-    },
-    {
-      "title": "Senior Applied AI, Partner Solutions Architect, Latin America, Applied AI Partner Solutions Architecture",
-      "url": "https://www.amazon.jobs/en/jobs/10575386/senior-applied-ai-partner-solutions-architect-latin-america-applied-ai-partner-solutions-architecture",
-      "reason": "senior (Senior)",
-      "company": "Amazon"
-    },
-    {
-      "title": "Senior Applied AI, Partner Solutions Architect, Latin America, Applied AI Partner Solutions Architecture",
-      "url": "https://www.amazon.jobs/en/jobs/10575385/senior-applied-ai-partner-solutions-architect-latin-america-applied-ai-partner-solutions-architecture",
-      "reason": "senior (Senior)",
-      "company": "Amazon"
-    },
-    {
-      "title": "Mechanical Engineer",
-      "url": "https://careers.amd.com/careers-home/jobs/86176?lang=en-us",
-      "reason": "not software (Mechanical)",
-      "company": "AMD"
-    },
-    {
-      "title": "Senior FullStack - Mid Market",
-      "url": "https://jobs.intuit.com/job/new-york/senior-fullstack-mid-market/27595/101812305488",
-      "location": "New York, New York",
-      "reason": "senior (Senior)",
-      "company": "Intuit (TurboTax / QuickBooks)"
-    }
-  ]
+  "_last_email_at": "2026-10-11T15:37:47"
 }
