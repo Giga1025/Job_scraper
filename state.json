@@ -56728,5 +56728,504 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-13T17:35:59"
+  "_last_email_at": "2026-10-13T17:35:59",
+  "_left_out_pending": [
+    {
+      "title": "Data Center Technician - Phoenix East",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557039010",
+      "reason": "not engineering (Technician)",
+      "company": "Microsoft — US Entry Level"
+    },
+    {
+      "title": "Commercial Strategy and Operations Associate",
+      "url": "https://www.google.com/about/careers/applications/jobs/results/87964979893805766-commercial-strategy-and-operations-associate?location=United+States&target_level=EARLY&sort_by=date",
+      "reason": "not engineering (Operations)",
+      "company": "Google / Alphabet"
+    },
+    {
+      "title": "Technical Product Manager, Partner Reporting Solutions",
+      "url": "https://jobs.apple.com/en-us/details/200679754-0836/technical-product-manager-partner-reporting-solutions?team=SFTWR",
+      "reason": "senior (Manager)",
+      "company": "Apple"
+    },
+    {
+      "title": "Custom Silicon Architect - Camera Hardware",
+      "url": "https://jobs.apple.com/en-us/details/200688049-0836/custom-silicon-architect-camera-hardware?team=HRDWR",
+      "reason": "not software (Silicon)",
+      "company": "Apple"
+    },
+    {
+      "title": "Sr. Engineering Program Manager, Scaled Assurance, Apple Services Engineering",
+      "url": "https://jobs.apple.com/en-us/details/200674415-3337/sr-engineering-program-manager-scaled-assurance-apple-services-engineering?team=SFTWR",
+      "reason": "senior (Sr)",
+      "company": "Apple"
+    },
+    {
+      "title": "Product Manager, Apple Pay",
+      "url": "https://jobs.apple.com/en-us/details/200688812-0836/product-manager-apple-pay?team=MKTG",
+      "reason": "senior (Manager)",
+      "company": "Apple"
+    },
+    {
+      "title": "Robotics Electrical Engineer II",
+      "url": "https://www.amazon.jobs/en/jobs/10577691/robotics-electrical-engineer-ii",
+      "reason": "not software (Electrical)",
+      "company": "Amazon"
+    },
+    {
+      "title": "Area Manager, RSR",
+      "url": "https://www.amazon.jobs/en/jobs/10577630/area-manager-rsr",
+      "reason": "senior (Manager)",
+      "company": "Amazon"
+    },
+    {
+      "title": "Data Center Manager",
+      "url": "https://www.amazon.jobs/en/jobs/10577646/data-center-manager",
+      "reason": "senior (Manager)",
+      "company": "Amazon"
+    },
+    {
+      "title": "AWS Sr. Sales Manager, SSI Commercial, Heartland",
+      "url": "https://www.amazon.jobs/en/jobs/10577609/aws-sr-sales-manager-ssi-commercial-heartland",
+      "reason": "senior (Sr)",
+      "company": "Amazon"
+    },
+    {
+      "title": "Sales Representative, BRA CSC - Vaga Afirmativa para Mulheres, AGS LATAM Brazil CSC",
+      "url": "https://www.amazon.jobs/en/jobs/10577488/sales-representative-bra-csc-vaga-afirmativa-para-mulheres-ags-latam-brazil-csc",
+      "reason": "not engineering (Sales)",
+      "company": "Amazon"
+    },
+    {
+      "title": "Data Engineering Leader, Analytics Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Data & Analytics Data Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/1013029088279316",
+      "reason": "senior (Leader)",
+      "company": "Meta"
+    },
+    {
+      "title": "Public Affairs Marketing Manager Los Angeles, CA ⋅ Menlo Park, CA ⋅ Washington, DC ⋅ New York, NY ⋅ San Francisco, CA ⋅ +1 more Sales & Marketing Marketing",
+      "url": "https://www.metacareers.com/profile/job_details/1567887458172530",
+      "reason": "senior (Manager)",
+      "company": "Meta"
+    },
+    {
+      "title": "Materials Regulatory Compliance (MRC) Intern University Grad - Engineering, Tech & Design Program Management",
+      "url": "https://www.metacareers.com/profile/job_details/2681715625577811",
+      "reason": "internship (Intern)",
+      "company": "Meta"
+    },
+    {
+      "title": "Security Engineering Manager, Security Operations & Incident Response Menlo Park, CA Security Technical Security",
+      "url": "https://www.metacareers.com/profile/job_details/1114862541082678",
+      "reason": "senior (Manager)",
+      "company": "Meta"
+    },
+    {
+      "title": "Lead Product Manager, Venmo Credit Card and Lending",
+      "url": "https://paypal.eightfold.ai/careers/job/274922854432",
+      "reason": "senior (Lead)",
+      "company": "PayPal"
+    },
+    {
+      "title": "Staff Software Engineer",
+      "url": "https://paypal.eightfold.ai/careers/job/274922759669",
+      "reason": "senior (Staff)",
+      "company": "PayPal"
+    },
+    {
+      "title": "Sr. Technical Program Manager, AI Enablement for Enterprise",
+      "url": "https://paypal.eightfold.ai/careers/job/274922258202",
+      "reason": "senior (Sr)",
+      "company": "PayPal"
+    },
+    {
+      "title": "Product Marketing Manager Onboarding",
+      "url": "https://plaid.com/careers/openings/product-marketing/product-marketing-manager-onboarding/",
+      "reason": "senior (Manager)",
+      "company": "Plaid"
+    },
+    {
+      "title": "Enterprise Account Executive, Financial Institutions",
+      "url": "https://jobs.ashbyhq.com/chainalysis-careers/8b0b12e7-1ae0-4cff-8713-8b95fc779bb1",
+      "location": "New York Office",
+      "countries": [
+        "United States"
+      ],
+      "reason": "not engineering (Account Executive)",
+      "company": "Chainalysis"
+    },
+    {
+      "title": "Principal Product Manager",
+      "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/San-Francisco---remote-first-in-US/Principal-Product-Manager_JR101164",
+      "reason": "senior (Principal)",
+      "company": "Circle (USDC)"
+    },
+    {
+      "title": "Client Success Senior Associate - Healthcare Services",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210756974",
+      "location": "Charlotte, NC, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Senior)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Lead Technical Program Manager - Infrastructure Projects",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210771524",
+      "location": "Plano, TX, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Lead)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Relationship Banker - Mountain View - Mountain View CA",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210782341",
+      "location": "Mountain View, CA, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Technology Risk and Control Lead",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210782834",
+      "location": "Columbus, OH, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Lead)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Associate Relationship Banker - CO Metro Central - Denver, CO",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210791267",
+      "location": "Denver, CO, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Vice President, Agility Lead",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210791858",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Vice President)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Associate Relationship Banker - Powell North - Powell, OH",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210791859",
+      "location": "Powell, OH, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Applied AI ML Lead - AI Agents & Agentic Systems",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210791986",
+      "location": "Palo Alto, CA, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Lead)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Business Analysis Manager - Global Screening Operations",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210792057",
+      "location": "Tampa, FL, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Manager)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Lead Technical Program Manager - Payments, Jira",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210792507",
+      "location": "Chicago, IL, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Lead)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Associate Banker, 20 Hours, Woodland Park, CO - Woodland Hwy Branch,",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210793848",
+      "location": "Woodland Park, CO, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Associate Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "JPMorgan Wealth Management Product Experience and Technology Business Management - Vice President",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796162",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Vice President)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Lead Software Engineer - Full Stack",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796195",
+      "location": "Jersey City, NJ, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Lead)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Customer Success Associate I",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796247",
+      "location": "Brooklyn, NY, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Customer Success)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Loan Servicing Analyst",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796428",
+      "location": "Chicago, IL, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Loan)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Loan Servicing Analyst",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796436",
+      "location": "Charlotte, NC, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Loan)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Applied AI ML Lead - Generative AI",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796579",
+      "location": "Jersey City, NJ, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Lead)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Relationship Banker - Iowa Market - West Des Moines, IA",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797587",
+      "location": "West Des Moines, IA, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Relationship Banker - Greater KS Market - Hutchinson, KS",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797644",
+      "location": "Hutchinson, KS, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Relationship Banker - Minnesota Southern Market",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797710",
+      "location": "Edina, MN, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Branch Manager - Del Mar Heights Branch - Del Mar, CA",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797723",
+      "location": "Carlsbad, CA, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Manager)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Branch Operations Lead- Northwest Indiana East market- Portage, IN",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797773",
+      "location": "Portage, IN, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Lead)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Senior Lead Software Engineer - Java, Prime Financial Services Technology",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798008",
+      "location": "Chicago, IL, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Senior)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Relationship Banker - Northwest Queens - Woodside, NY",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798063",
+      "location": "Woodside, NY, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Lead Security Engineer",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798653",
+      "location": "Plano, TX, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Lead)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Associate Relationship Banker -South Delaware Valley Market Hire",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798665",
+      "location": "Rehoboth Beach, DE, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Job Posting Title Client Service Associate (Bilingual English/Spanish)",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800760280",
+      "reason": "not engineering (Client Service)",
+      "company": "Morgan Stanley"
+    },
+    {
+      "title": "Crypto Product Manager - Executive Director",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800622205",
+      "reason": "senior (Manager)",
+      "company": "Morgan Stanley"
+    },
+    {
+      "title": "Investment Banking Semiconductor Vice President - New York",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800340148",
+      "reason": "senior (Vice President)",
+      "company": "Morgan Stanley"
+    },
+    {
+      "title": "Fraud Link Analysis Strategy & Operations",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549798977464",
+      "reason": "not engineering (Operations)",
+      "company": "Morgan Stanley"
+    },
+    {
+      "title": "Senior Software Engineer - Vault",
+      "url": "https://bloomberg.avature.net/careers/JobDetail/Senior-Software-Engineer-Vault/45234",
+      "reason": "senior (Senior)",
+      "company": "Bloomberg"
+    },
+    {
+      "title": "Partner Marketing Lead, Resellers",
+      "url": "https://job-boards.greenhouse.io/anthropic/jobs/5451134008",
+      "location": "San Francisco, CA | New York City, NY",
+      "reason": "senior (Lead)",
+      "company": "Anthropic"
+    },
+    {
+      "title": "HR Business Partner",
+      "url": "https://jobs.ashbyhq.com/openai/c95b87cf-c00d-48b7-a357-aa4f7baa2467",
+      "location": "San Francisco; New York City; Seattle",
+      "countries": [
+        "United States",
+        "United States",
+        "United States"
+      ],
+      "reason": "not engineering (HR)",
+      "company": "OpenAI"
+    },
+    {
+      "title": "Data Program Manager, Science",
+      "url": "https://jobs.ashbyhq.com/openai/2bdd1b8b-2883-40fb-b006-583959ad4c5f",
+      "location": "San Francisco",
+      "countries": [
+        "United States"
+      ],
+      "reason": "senior (Manager)",
+      "company": "OpenAI"
+    },
+    {
+      "title": "Head of Strategic Partnerships, Labs",
+      "url": "https://job-boards.greenhouse.io/scaleai/jobs/4743370005",
+      "location": "San Francisco, CA",
+      "reason": "senior (Head of)",
+      "company": "Scale AI"
+    },
+    {
+      "title": "Staff Software Engineer - Ingestion",
+      "url": "https://jobs.ashbyhq.com/snowflake/35dfd8bf-a458-4c9c-a5d2-0b5d487b9640",
+      "reason": "senior (Staff)",
+      "company": "Snowflake"
+    },
+    {
+      "title": "Research Manager - Post-Training for Agents",
+      "url": "https://careers.datadoghq.com/detail/8279173/?gh_jid=8279173",
+      "location": "New York, New York, USA",
+      "reason": "senior (Manager)",
+      "company": "Datadog"
+    },
+    {
+      "title": "Sales Development Representative - Boston",
+      "url": "https://careers.datadoghq.com/detail/6741571/?gh_jid=6741571",
+      "location": "Boston, Massachusetts, USA",
+      "reason": "not engineering (Sales)",
+      "company": "Datadog"
+    },
+    {
+      "title": "Senior Software Engineer - Data Platform",
+      "url": "https://jobs.intuit.com/job/mountain-view/senior-software-engineer-data-platform/27595/101913370768",
+      "location": "Mountain View, California",
+      "reason": "senior (Senior)",
+      "company": "Intuit (TurboTax / QuickBooks)"
+    },
+    {
+      "title": "Growth Marketing Manager, Mid-Market Demand Generation",
+      "url": "https://jobs.intuit.com/job/sacramento/growth-marketing-manager-mid-market-demand-generation/27595/101913370720",
+      "location": "Multiple Locations",
+      "reason": "senior (Manager)",
+      "company": "Intuit (TurboTax / QuickBooks)"
+    },
+    {
+      "title": "Senior Software Engineer, Video Rendering",
+      "url": "https://careers.roblox.com/jobs/8265736?gh_jid=8265736",
+      "location": "San Mateo, CA, United States",
+      "reason": "senior (Senior)",
+      "company": "Roblox"
+    }
+  ]
 }
