@@ -1,6 +1,22 @@
 {
   "https://apply.careers.microsoft.com/careers?location=United+States&filter_seniority=Entry&sort_by=timestamp": [
     {
+      "title": "Senior Software Engineer",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556875882"
+    },
+    {
+      "title": "Sr. Software Engineer -CTJ- Poly",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556863239"
+    },
+    {
+      "title": "Principal Software Engineer, Foundry Agents - CoreAI",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556863220"
+    },
+    {
+      "title": "Principal Software Engineer",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557021684"
+    },
+    {
       "title": "Software Engineer",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393557026652"
     },
@@ -39,6 +55,30 @@
     {
       "title": "Finance Manager, Revenue & Gross Margin",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393556991271"
+    },
+    {
+      "title": "Senior Software Engineer",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556864745"
+    },
+    {
+      "title": "Software Engineer II - CTJ- POLY",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557000103"
+    },
+    {
+      "title": "Principal Software Engineer (AI / Agentic Developer Productivity)",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556939860"
+    },
+    {
+      "title": "Senior Software Engineer - Responsible AI - CoreAI",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556860172"
+    },
+    {
+      "title": "Software Engineer II and/or Senior Software Engineer - Backend",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556952551"
+    },
+    {
+      "title": "Software Engineer II - CTJ- POLY",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556999149"
     },
     {
       "title": "Construction Project Engineer",
@@ -173,10 +213,6 @@
       "url": "https://apply.careers.microsoft.com/careers/job/1970393556929361"
     },
     {
-      "title": "Senior Software Engineer",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556864745"
-    },
-    {
       "title": "Software Engineer",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393557007990"
     },
@@ -187,10 +223,6 @@
     {
       "title": "Principal Software Engineer - Windows App and Windows Platform",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393556958279"
-    },
-    {
-      "title": "Software Engineer II - CTJ- POLY",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393557000103"
     },
     {
       "title": "Software Engineer II",
@@ -217,10 +249,6 @@
       "url": "https://apply.careers.microsoft.com/careers/job/1970393556926865"
     },
     {
-      "title": "Principal Software Engineer (AI / Agentic Developer Productivity)",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556939860"
-    },
-    {
       "title": "Senior Software Engineer",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393556958252"
     },
@@ -231,10 +259,6 @@
     {
       "title": "Senior Software Engineer",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393557008053"
-    },
-    {
-      "title": "Senior Software Engineer - Responsible AI - CoreAI",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556860172"
     },
     {
       "title": "Senior Software Engineer",
@@ -281,16 +305,8 @@
       "url": "https://apply.careers.microsoft.com/careers/job/1970393556992082"
     },
     {
-      "title": "Software Engineer II and/or Senior Software Engineer - Backend",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556952551"
-    },
-    {
       "title": "Software Engineer II - CTJ - Poly",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393556995383"
-    },
-    {
-      "title": "Software Engineer II - CTJ- POLY",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556999149"
     },
     {
       "title": "Software Engineer II - CTJ- POLY",
@@ -310,6 +326,14 @@
     }
   ],
   "https://www.google.com/about/careers/applications/jobs/results?location=United%20States&target_level=EARLY&sort_by=date": [
+    {
+      "title": "Data Center Technician, Global Server Operations",
+      "url": "https://www.google.com/about/careers/applications/jobs/results/111511343525176006-data-center-technician-global-server-operations?location=United+States&target_level=EARLY&sort_by=date"
+    },
+    {
+      "title": "Technical Program Manager I, XR Demos, Platforms and Devices",
+      "url": "https://www.google.com/about/careers/applications/jobs/results/93771273166824134-technical-program-manager-i-xr-demos-platforms-and-devices?location=United+States&target_level=EARLY&sort_by=date"
+    },
     {
       "title": "Associate Red Team Consultant, US Central, Mandiant, Google Cloud",
       "url": "https://www.google.com/about/careers/applications/jobs/results/107171846008251078-associate-red-team-consultant-us-central-mandiant-google-cloud?location=United+States&target_level=EARLY&sort_by=date"
@@ -379,12 +403,12 @@
       "url": "https://www.google.com/about/careers/applications/jobs/results/136375102475248326-network-implementation-engineering?location=United+States&target_level=EARLY&sort_by=date"
     },
     {
-      "title": "Data Center Technician",
-      "url": "https://www.google.com/about/careers/applications/jobs/results/89800064800563910-data-center-technician?location=United+States&target_level=EARLY&sort_by=date"
-    },
-    {
       "title": "Business Program Manager, Data Center Operations",
       "url": "https://www.google.com/about/careers/applications/jobs/results/117483306571702982-business-program-manager-data-center-operations?location=United+States&target_level=EARLY&sort_by=date"
+    },
+    {
+      "title": "Data Center Technician",
+      "url": "https://www.google.com/about/careers/applications/jobs/results/89800064800563910-data-center-technician?location=United+States&target_level=EARLY&sort_by=date"
     },
     {
       "title": "Data Center Technician",
@@ -1751,6 +1775,46 @@
   ],
   "https://www.amazon.jobs/en/search?base_query=&loc_query=United+States&sort=recent": [
     {
+      "title": "Delivery Station Customer Service Associate - Tempo determinato 6 mesi",
+      "url": "https://www.amazon.jobs/en/jobs/10579752/delivery-station-customer-service-associate-tempo-determinato-6-mesi"
+    },
+    {
+      "title": "Applied Scientist, Prime Video Commerce Insights",
+      "url": "https://www.amazon.jobs/en/jobs/10579750/applied-scientist-prime-video-commerce-insights"
+    },
+    {
+      "title": "Construction Project Manager, EMEA Construction",
+      "url": "https://www.amazon.jobs/en/jobs/10579745/construction-project-manager-emea-construction"
+    },
+    {
+      "title": "Construction Project Manager",
+      "url": "https://www.amazon.jobs/en/jobs/10579744/construction-project-manager"
+    },
+    {
+      "title": "Sr. Vendor Manager Kindle (French speaker) - Fixed Term Contract, Kindle France",
+      "url": "https://www.amazon.jobs/en/jobs/10579734/sr-vendor-manager-kindle-french-speaker-fixed-term-contract-kindle-france"
+    },
+    {
+      "title": "Business Intelligence Engineer Internship France",
+      "url": "https://www.amazon.jobs/en/jobs/10579727/business-intelligence-engineer-internship-france"
+    },
+    {
+      "title": "Senior Solutions Architect, CEE Enterprise, FSI",
+      "url": "https://www.amazon.jobs/en/jobs/10579686/senior-solutions-architect-cee-enterprise-fsi"
+    },
+    {
+      "title": "Business Intelligence Intern Italy",
+      "url": "https://www.amazon.jobs/en/jobs/10579728/business-intelligence-intern-italy"
+    },
+    {
+      "title": "Operations Manager, AMZL-Delivery Station",
+      "url": "https://www.amazon.jobs/en/jobs/10579719/operations-manager-amzl-delivery-station"
+    },
+    {
+      "title": "Business Intelligence Engineer Internship Turkey",
+      "url": "https://www.amazon.jobs/en/jobs/10579683/business-intelligence-engineer-internship-turkey"
+    },
+    {
       "title": "Executive Assistant, Amazon Ads CreativeX & Retail Ads Services",
       "url": "https://www.amazon.jobs/en/jobs/10579614/executive-assistant-amazon-ads-creativex-retail-ads-services"
     },
@@ -2669,6 +2733,46 @@
   ],
   "https://www.metacareers.com/jobsearch/?offices[0]=Aiken%2C%20SC&offices[1]=Altoona%2C%20IA&offices[2]=Ashburn%2C%20VA&offices[3]=Atlanta%2C%20GA&offices[4]=Aurora%2C%20IL&offices[5]=Austin%2C%20TX&offices[6]=Beaver%20Dam%2C%20WI&offices[7]=Bellevue%2C%20WA&offices[8]=Boston%2C%20MA&offices[9]=Bowling%20Green%2C%20OH&offices[10]=Burlingame%2C%20CA&offices[11]=Cambridge%2C%20MA&offices[12]=Cedar%20Rapids%2C%20IA&offices[13]=Chandler%2C%20AZ&offices[14]=Cheyenne%2C%20WY&offices[15]=Chicago%2C%20IL&offices[16]=Crook%20County%2C%20OR&offices[17]=DeKalb%2C%20IL&offices[18]=Denver%2C%20CO&offices[19]=Detroit%2C%20MI&offices[20]=Eagle%20Mountain%2C%20UT&offices[21]=El%20Paso%2C%20TX&offices[22]=Forest%20City%2C%20NC&offices[23]=Fort%20Worth%2C%20TX&offices[24]=Foster%20City%2C%20CA&offices[25]=Fremont%2C%20CA&offices[26]=Gallatin%2C%20TN&offices[27]=Garland%2C%20TX&offices[28]=Goodyear%2C%20AZ&offices[29]=Henrico%2C%20VA&offices[30]=Hillsboro%2C%20OR&offices[31]=Houston%2C%20TX&offices[32]=Huntsville%2C%20AL&offices[33]=Irvine%2C%20CA&offices[34]=Jeffersonville%2C%20IN&offices[35]=Kansas%20City%2C%20MO&offices[36]=Kuna%2C%20ID&offices[37]=Lebanon%2C%20IN&offices[38]=Los%20Angeles%2C%20CA&offices[39]=Los%20Lunas%2C%20NM&offices[40]=Loudoun%20County%2C%20VA&offices[41]=Louisville%2C%20CO&offices[42]=Menlo%20Park%2C%20CA&offices[43]=Mesa%2C%20AZ&offices[44]=Miami%2C%20Florida&offices[45]=Montgomery%2C%20AL&offices[46]=Mountain%20View%2C%20CA&offices[47]=New%20Albany%2C%20OH&offices[48]=New%20York%2C%20NY&offices[49]=Newark%2C%20CA&offices[50]=Newark%2C%20OH&offices[51]=Newton%20County%2C%20GA&offices[52]=Northridge%2C%20CA&offices[53]=Papillion%2C%20NE&offices[54]=Pasadena%2C%20CA&offices[55]=Pittsburgh%2C%20PA&offices[56]=Polk%20County%2C%20IA&offices[57]=Prineville%2C%20OR&offices[58]=Rayville%2C%20LA&offices[59]=Redmond%2C%20WA&offices[60]=Remote%2C%20US&offices[61]=Reston%2C%20VA&offices[62]=Richmond%2C%20VA&offices[63]=Rosemount%2C%20MN&offices[64]=Salt%20Lake%2C%20UT&offices[65]=San%20Diego%2C%20CA&offices[66]=San%20Francisco%2C%20CA&offices[67]=San%20Mateo%2C%20CA&offices[68]=Sandston%2C%20VA&offices[69]=Santa%20Clara%2C%20CA&offices[70]=Sarpy%20County%2C%20NE&offices[71]=Sausalito%2C%20CA&offices[72]=Seattle%2C%20WA&offices[73]=Stanton%20Springs%2C%20GA&offices[74]=Sterling%2C%20VA&offices[75]=Sunnyvale%2C%20CA&offices[76]=Temple%2C%20TX&offices[77]=Tulsa%2C%20OK&offices[78]=Utah%20County%2C%20UT&offices[79]=Valencia%2C%20NM&offices[80]=Vancouver%2C%20WA&offices[81]=Washington%2C%20DC&sort_by_new=true": [
     {
+      "title": "Electrical Subject Matter Expert, Data Center Operations Temple, TX ⋅ Jeffersonville, IN ⋅ Beaver Dam, WI ⋅ El Paso, TX Data Center Data Center Operations",
+      "url": "https://www.metacareers.com/profile/job_details/2787411734955554"
+    },
+    {
+      "title": "Commercial Sourcing Manager, Network Systems Austin, TX ⋅ Fremont, CA Data Center Data Center Operations",
+      "url": "https://www.metacareers.com/profile/job_details/2275029323066913"
+    },
+    {
+      "title": "ASIC Engineer, Design for Test Sunnyvale, CA ⋅ Austin, TX Infrastructure Engineering Design Hardware",
+      "url": "https://www.metacareers.com/profile/job_details/953255894453403"
+    },
+    {
+      "title": "Software Engineer (Technical Leadership) Remote, US ⋅ Bellevue, WA ⋅ Menlo Park, CA ⋅ New York, NY Software Engineering Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/2282367178830920"
+    },
+    {
+      "title": "Software Engineer, Infrastructure Sunnyvale, CA ⋅ Los Angeles, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ +7 more Software Engineering Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/2486789151677735"
+    },
+    {
+      "title": "Product Manager Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Burlingame, CA ⋅ Remote, US ⋅ +5 more Product Management Product Strategy",
+      "url": "https://www.metacareers.com/profile/job_details/1238249364564427"
+    },
+    {
+      "title": "Software Engineer, Product Sunnyvale, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Austin, TX ⋅ +7 more Software Engineering Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/9657291271065759"
+    },
+    {
+      "title": "Software Engineer, Machine Learning Sunnyvale, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ +4 more Software Engineering Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/998357492128826"
+    },
+    {
+      "title": "Software Engineer (Technical Leadership) - Machine Learning Sunnyvale, CA ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ +3 more Software Engineering Engineering Machine Learning",
+      "url": "https://www.metacareers.com/profile/job_details/1075389717795087"
+    },
+    {
+      "title": "Product Manager, Central Products Menlo Park, CA ⋅ Seattle, WA ⋅ Remote, US ⋅ New York, NY Product Management Product Strategy",
+      "url": "https://www.metacareers.com/profile/job_details/34138980215746375"
+    },
+    {
       "title": "Network Engineer, Operations & Support Denver, CO ⋅ Menlo Park, CA ⋅ Boston, MA Data Center Infrastructure Data Center Design, Engineering, & Construction Network Engineering",
       "url": "https://www.metacareers.com/profile/job_details/1456536816494707"
     },
@@ -2685,24 +2789,12 @@
       "url": "https://www.metacareers.com/profile/job_details/1070564468548321"
     },
     {
-      "title": "Software Engineer, Infrastructure Sunnyvale, CA ⋅ Los Angeles, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ +7 more Software Engineering Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/2486789151677735"
-    },
-    {
       "title": "Software Engineer, Machine Learning RecSys Sunnyvale, CA ⋅ Bellevue, WA ⋅ Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Software Engineering Machine Learning Engineering",
       "url": "https://www.metacareers.com/profile/job_details/1665891037811282"
     },
     {
-      "title": "Product Manager Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Burlingame, CA ⋅ Remote, US ⋅ +5 more Product Management Product Strategy",
-      "url": "https://www.metacareers.com/profile/job_details/1238249364564427"
-    },
-    {
       "title": "Product Marketing Manager Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Sales & Marketing Business Marketing Product Marketing Management",
       "url": "https://www.metacareers.com/profile/job_details/5101897033369980"
-    },
-    {
-      "title": "Software Engineer, Product Sunnyvale, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Austin, TX ⋅ +7 more Software Engineering Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/9657291271065759"
     },
     {
       "title": "Product Manager (Leadership) Sunnyvale, CA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ Burlingame, CA ⋅ New York, NY ⋅ +2 more Advertising Technology AI Infrastructure Program Management",
@@ -2735,10 +2827,6 @@
     {
       "title": "Data Scientist, Product Analytics Sunnyvale, CA ⋅ Los Angeles, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ +7 more Data & Analytics Data Science",
       "url": "https://www.metacareers.com/profile/job_details/1070147800777577"
-    },
-    {
-      "title": "Software Engineer, Machine Learning Sunnyvale, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ +4 more Software Engineering Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/998357492128826"
     },
     {
       "title": "Network Engineer, Deployment & Support Menlo Park, CA ⋅ Beaver Dam, WI ⋅ Fort Worth, TX ⋅ Lebanon, IN ⋅ El Paso, TX ⋅ +2 more Data Center Data Center Operations Network Engineering",
@@ -2847,10 +2935,6 @@
     {
       "title": "Software Engineer, Multimedia & Multimodal AI Menlo Park, CA ⋅ Remote, US Infrastructure Software Engineering Engineering",
       "url": "https://www.metacareers.com/profile/job_details/1556935935696387"
-    },
-    {
-      "title": "Software Engineer (Technical Leadership) - Machine Learning Sunnyvale, CA ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ +3 more Software Engineering Engineering Machine Learning",
-      "url": "https://www.metacareers.com/profile/job_details/1075389717795087"
     },
     {
       "title": "Software Engineer, Systems ML Sunnyvale, CA ⋅ Bellevue, WA ⋅ Menlo Park, CA ⋅ New York, NY Artificial Intelligence AI Infrastructure Infrastructure Software Engineering Engineering Machine Learning",
@@ -3055,10 +3139,6 @@
     {
       "title": "Critical Facility Engineer Henrico, VA ⋅ Kansas City, MO ⋅ Temple, TX ⋅ Newton County, GA ⋅ Montgomery, AL ⋅ +5 more Data Center Data Center Operations",
       "url": "https://www.metacareers.com/profile/job_details/1641406750475279"
-    },
-    {
-      "title": "Product Manager, Central Products Menlo Park, CA ⋅ Seattle, WA ⋅ Remote, US ⋅ New York, NY Product Management Product Strategy",
-      "url": "https://www.metacareers.com/profile/job_details/34138980215746375"
     },
     {
       "title": "Software Engineer, GenAI Frameworks - MTIA Menlo Park, CA AI Research AI Infrastructure Artificial Intelligence Software Engineering Engineering",
@@ -4549,6 +4629,14 @@
   ],
   "https://api.lever.co/v0/postings/palantir": [
     {
+      "title": "Meritocracy Fellowship",
+      "url": "https://jobs.lever.co/palantir/7fa0ceca-c30e-48de-9b27-f98469c374f3",
+      "location": "New York, NY",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Compliance Analyst",
       "url": "https://jobs.lever.co/palantir/4d3986f0-4c01-4327-a0e4-e7d9bc7bc0c3",
       "location": "Washington, D.C.",
@@ -5098,22 +5186,6 @@
       "location": "Warsaw, Poland",
       "countries": [
         "PL"
-      ]
-    },
-    {
-      "title": "Edge Infrastructure Engineer",
-      "url": "https://jobs.lever.co/palantir/ce20af4c-4de3-4079-bbdf-bc30a2e25404",
-      "location": "Paris, France",
-      "countries": [
-        "FR"
-      ]
-    },
-    {
-      "title": "Edge Infrastructure Engineer",
-      "url": "https://jobs.lever.co/palantir/fe65ee3c-61e0-4eb6-99e5-c90e38e7043f",
-      "location": "London, United Kingdom",
-      "countries": [
-        "GB"
       ]
     },
     {
@@ -7061,6 +7133,22 @@
       ]
     },
     {
+      "title": "Edge Infrastructure Engineer",
+      "url": "https://jobs.lever.co/palantir/ce20af4c-4de3-4079-bbdf-bc30a2e25404",
+      "location": "Paris, France",
+      "countries": [
+        "FR"
+      ]
+    },
+    {
+      "title": "Edge Infrastructure Engineer",
+      "url": "https://jobs.lever.co/palantir/fe65ee3c-61e0-4eb6-99e5-c90e38e7043f",
+      "location": "London, United Kingdom",
+      "countries": [
+        "GB"
+      ]
+    },
+    {
       "title": "Forward Deployed Software Engineer",
       "url": "https://jobs.lever.co/palantir/d084b769-6f53-4409-afa8-c183b059b384",
       "location": "Stockholm, Sweden",
@@ -7158,6 +7246,21 @@
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/stripe/jobs": [
+    {
+      "title": "Account Executive, Product Sales - Payouts",
+      "url": "https://stripe.com/jobs/search?gh_jid=8273743",
+      "location": "Singapore, Sydney"
+    },
+    {
+      "title": "Corporate Accounting Analyst (Bangalore)",
+      "url": "https://stripe.com/jobs/search?gh_jid=8273713",
+      "location": "Bengaluru"
+    },
+    {
+      "title": "Verifications Operations Associate",
+      "url": "https://stripe.com/jobs/search?gh_jid=8022703",
+      "location": "Bengaluru"
+    },
     {
       "title": "Product Manager, Global Self-Serve Product",
       "url": "https://stripe.com/jobs/search?gh_jid=8267105",
@@ -7867,11 +7970,6 @@
       "title": "Account Executive, Product - Local Payment Methods",
       "url": "https://stripe.com/jobs/search?gh_jid=8190036",
       "location": "US-CA"
-    },
-    {
-      "title": "Account Executive, Product - Local Payment Methods",
-      "url": "https://stripe.com/jobs/search?gh_jid=8196267",
-      "location": "London"
     },
     {
       "title": "Account Executive, Product (Payouts) - Hunter",
@@ -9739,19 +9837,9 @@
       "location": "Chicago, Illinois"
     },
     {
-      "title": "Sales Development Representative",
-      "url": "https://stripe.com/jobs/search?gh_jid=8048266",
-      "location": "Dublin"
-    },
-    {
       "title": "Sales Development Representative, AUNZ",
       "url": "https://stripe.com/jobs/search?gh_jid=8074892",
       "location": "Sydney"
-    },
-    {
-      "title": "Sales Development Representative (German fluency)",
-      "url": "https://stripe.com/jobs/search?gh_jid=6570259",
-      "location": "Dublin"
     },
     {
       "title": "Sales Development Representative, Japan",
@@ -10344,11 +10432,6 @@
       "location": "Bengaluru, India"
     },
     {
-      "title": "Staff Engineer, Payments",
-      "url": "https://stripe.com/jobs/search?gh_jid=8185014",
-      "location": "Bengaluru"
-    },
-    {
       "title": "Staff Engineer, Revenue Experiences",
       "url": "https://stripe.com/jobs/search?gh_jid=8222459",
       "location": "Bengaluru"
@@ -10797,6 +10880,26 @@
       "title": "Client Platform Security Engineer",
       "url": "https://stripe.com/jobs/search?gh_jid=7982720",
       "location": "New York, New York"
+    },
+    {
+      "title": "Account Executive, Product - Local Payment Methods",
+      "url": "https://stripe.com/jobs/search?gh_jid=8196267",
+      "location": "London"
+    },
+    {
+      "title": "Sales Development Representative",
+      "url": "https://stripe.com/jobs/search?gh_jid=8048266",
+      "location": "Dublin"
+    },
+    {
+      "title": "Sales Development Representative (German fluency)",
+      "url": "https://stripe.com/jobs/search?gh_jid=6570259",
+      "location": "Dublin"
+    },
+    {
+      "title": "Staff Engineer, Payments",
+      "url": "https://stripe.com/jobs/search?gh_jid=8185014",
+      "location": "Bengaluru"
     },
     {
       "title": "Technical Program Manager, Extensibility",
@@ -11582,10 +11685,6 @@
       "url": "https://paypal.eightfold.ai/careers/job/274917452620"
     },
     {
-      "title": "Senior Software Engineer - Python",
-      "url": "https://paypal.eightfold.ai/careers/job/274917627749"
-    },
-    {
       "title": "Manager, Tax",
       "url": "https://paypal.eightfold.ai/careers/job/274922712123"
     },
@@ -11600,6 +11699,10 @@
     {
       "title": "Analyst, FP&A",
       "url": "https://paypal.eightfold.ai/careers/job/274922421748"
+    },
+    {
+      "title": "Senior Software Engineer - Python",
+      "url": "https://paypal.eightfold.ai/careers/job/274917627749"
     },
     {
       "title": "Sr Software Engineer - CPE",
@@ -13145,6 +13248,11 @@
       "location": "Bellevue, WA; Menlo Park, CA"
     },
     {
+      "title": "Fraud Operations Intern (Summer 2027)",
+      "url": "https://boards.greenhouse.io/robinhood/jobs/8198241?t=gh_src=&gh_jid=8198241",
+      "location": "Denver, CO"
+    },
+    {
       "title": "Software Engineer, AI Security",
       "url": "https://boards.greenhouse.io/robinhood/jobs/8220757?t=gh_src=&gh_jid=8220757",
       "location": "Bellevue, WA; Menlo Park, CA"
@@ -13153,11 +13261,6 @@
       "title": "Fraud Investigator - Customer Protection",
       "url": "https://boards.greenhouse.io/robinhood/jobs/8186282?t=gh_src=&gh_jid=8186282",
       "location": "Denver, CO; Lake Mary, FL"
-    },
-    {
-      "title": "Fraud Operations Intern (Summer 2027)",
-      "url": "https://boards.greenhouse.io/robinhood/jobs/8198241?t=gh_src=&gh_jid=8198241",
-      "location": "Denver, CO"
     },
     {
       "title": "Senior Treasury Analyst",
@@ -14472,22 +14575,6 @@
       ]
     },
     {
-      "title": "Operations Analyst",
-      "url": "https://jobs.lever.co/binance/1b148889-f898-4579-84f7-dbccfa5fee4a",
-      "location": "Brazil, Sao Paulo",
-      "countries": [
-        "BR"
-      ]
-    },
-    {
-      "title": "Strategy & Operations Manager - LATAM",
-      "url": "https://jobs.lever.co/binance/4feba408-6143-4579-9d79-e88362b2c947",
-      "location": "Brazil, Sao Paulo; Mexico, Mexico City; Argentina, Buenos Aires",
-      "countries": [
-        "BR"
-      ]
-    },
-    {
       "title": "Binance Accelerator Program -  AI Supportability Engineer",
       "url": "https://jobs.lever.co/binance/8cd93838-3c12-4386-8dc2-8dfe69873e27",
       "location": "Asia; Taiwan, Taipei",
@@ -14608,43 +14695,11 @@
       ]
     },
     {
-      "title": "Communications Manager - Global",
-      "url": "https://jobs.lever.co/binance/8b6f3a93-f9d3-4227-87c3-5e56832b54a7",
-      "location": "UAE, Dubai",
-      "countries": [
-        "AE"
-      ]
-    },
-    {
       "title": "Compliance Analyst",
       "url": "https://jobs.lever.co/binance/102bf83f-e63d-4c80-bfbd-d8c327a99690",
       "location": "Kazakhstan, Astana",
       "countries": [
         "KZ"
-      ]
-    },
-    {
-      "title": "Compliance Analyst",
-      "url": "https://jobs.lever.co/binance/d0e313e2-3f7e-4ea0-8cc9-984f0a90aab1",
-      "location": "Colombia, Bogota",
-      "countries": [
-        "CO"
-      ]
-    },
-    {
-      "title": "Deputy Regulatory Compliance Officer - ADGM",
-      "url": "https://jobs.lever.co/binance/10e63f0e-7bfb-431d-8b79-5030c758d730",
-      "location": "UAE, Abu Dhabi; UAE, Dubai",
-      "countries": [
-        "AE"
-      ]
-    },
-    {
-      "title": "Growth Lead - Argentina",
-      "url": "https://jobs.lever.co/binance/f607edcb-9e41-4a76-be9a-12989e30d9f2",
-      "location": "Argentina, Buenos Aires",
-      "countries": [
-        "AR"
       ]
     },
     {
@@ -14664,27 +14719,11 @@
       ]
     },
     {
-      "title": "MLRO - Mexico",
-      "url": "https://jobs.lever.co/binance/ecbd6d95-cb4a-46e4-9e7c-61bb95a99841",
-      "location": "Mexico, Mexico City",
-      "countries": [
-        "MX"
-      ]
-    },
-    {
       "title": "MLRO - Pakistan",
       "url": "https://jobs.lever.co/binance/c55bcd68-325d-4349-803e-9740eedc5b33",
       "location": "Pakistan, Islamabad",
       "countries": [
         "PK"
-      ]
-    },
-    {
-      "title": "Operations Manager - South Africa",
-      "url": "https://jobs.lever.co/binance/909abbaa-aa23-4607-960f-3fcaf8634ff0",
-      "location": "South Africa, Cape Town",
-      "countries": [
-        "ZA"
       ]
     },
     {
@@ -14749,6 +14788,70 @@
       "location": "Asia; Taiwan, Taipei; Australia, Brisbane; Australia, Melbourne; Australia, Sydney; Hong Kong; Japan, Tokyo; New Zealand, Auckland; Netherlands, Amsterdam",
       "countries": [
         "SG"
+      ]
+    },
+    {
+      "title": "Operations Analyst",
+      "url": "https://jobs.lever.co/binance/1b148889-f898-4579-84f7-dbccfa5fee4a",
+      "location": "Brazil, Sao Paulo",
+      "countries": [
+        "BR"
+      ]
+    },
+    {
+      "title": "Strategy & Operations Manager - LATAM",
+      "url": "https://jobs.lever.co/binance/4feba408-6143-4579-9d79-e88362b2c947",
+      "location": "Brazil, Sao Paulo; Mexico, Mexico City; Argentina, Buenos Aires",
+      "countries": [
+        "BR"
+      ]
+    },
+    {
+      "title": "Communications Manager - Global",
+      "url": "https://jobs.lever.co/binance/8b6f3a93-f9d3-4227-87c3-5e56832b54a7",
+      "location": "UAE, Dubai",
+      "countries": [
+        "AE"
+      ]
+    },
+    {
+      "title": "Compliance Analyst",
+      "url": "https://jobs.lever.co/binance/d0e313e2-3f7e-4ea0-8cc9-984f0a90aab1",
+      "location": "Colombia, Bogota",
+      "countries": [
+        "CO"
+      ]
+    },
+    {
+      "title": "Deputy Regulatory Compliance Officer - ADGM",
+      "url": "https://jobs.lever.co/binance/10e63f0e-7bfb-431d-8b79-5030c758d730",
+      "location": "UAE, Abu Dhabi; UAE, Dubai",
+      "countries": [
+        "AE"
+      ]
+    },
+    {
+      "title": "Growth Lead - Argentina",
+      "url": "https://jobs.lever.co/binance/f607edcb-9e41-4a76-be9a-12989e30d9f2",
+      "location": "Argentina, Buenos Aires",
+      "countries": [
+        "AR"
+      ]
+    },
+    {
+      "title": "MLRO - Mexico",
+      "url": "https://jobs.lever.co/binance/ecbd6d95-cb4a-46e4-9e7c-61bb95a99841",
+      "location": "Mexico, Mexico City",
+      "countries": [
+        "MX"
+      ]
+    },
+    {
+      "title": "Operations Manager - South Africa",
+      "url": "https://jobs.lever.co/binance/909abbaa-aa23-4607-960f-3fcaf8634ff0",
+      "location": "South Africa, Cape Town",
+      "countries": [
+        "ZA"
       ]
     },
     {
@@ -17114,6 +17217,18 @@
   ],
   "https://api.ashbyhq.com/posting-api/job-board/kraken.com": [
     {
+      "title": "Assistant General Counsel – Product and Regulatory Legal (EU)",
+      "url": "https://jobs.ashbyhq.com/kraken.com/a831f2fe-fd7f-4379-b7f9-bde67710b661",
+      "location": "United Kingdom; Ireland; Cyprus; Portugal; Poland",
+      "countries": [
+        "United Kingdom",
+        "Ireland",
+        "Cyprus",
+        "Portugal",
+        "Poland"
+      ]
+    },
+    {
       "title": "Senior Software Engineer – AI Infrastructure",
       "url": "https://jobs.ashbyhq.com/kraken.com/d62250a9-363c-43b0-b3de-958e3cc9f97b",
       "location": "United Kingdom; Brazil; Ireland; Peru; Costa Rica; Latvia; Argentina; Romania; Cyprus; Portugal; Slovenia; South Africa; Czech Republic; Panama; Estonia; Canada; Hungary; Mexico; Poland; Spain; Bulgaria",
@@ -17171,35 +17286,6 @@
         "Chile",
         "Poland",
         "Slovakia",
-        "Bulgaria"
-      ]
-    },
-    {
-      "title": "Sr. Web Designer - Growth Foundations",
-      "url": "https://jobs.ashbyhq.com/kraken.com/2df89f8e-be14-440e-9614-550f1d10eeb9",
-      "location": "United Kingdom; Brazil; United Arab Emirates; Ireland; Peru; Sweden; Colombia; Argentina; Romania; Cyprus; Switzerland; Portugal; Lithuania; South Africa; Czech Republic; Canada; Hungary; Mexico; Chile; Poland; Spain; Bulgaria",
-      "countries": [
-        "United Kingdom",
-        "Brazil",
-        "United Arab Emirates",
-        "Ireland",
-        "Peru",
-        "Sweden",
-        "Colombia",
-        "Argentina",
-        "Romania",
-        "Cyprus",
-        "Switzerland",
-        "Portugal",
-        "Lithuania",
-        "South Africa",
-        "Czech Republic",
-        "Canada",
-        "Hungary",
-        "Mexico",
-        "Chile",
-        "Poland",
-        "Spain",
         "Bulgaria"
       ]
     },
@@ -17573,16 +17659,6 @@
       "countries": [
         "United Kingdom",
         "Canada"
-      ]
-    },
-    {
-      "title": "Tech Recruiter",
-      "url": "https://jobs.ashbyhq.com/kraken.com/5b87c3ae-888a-4170-a9f0-cb8385c3f941",
-      "location": "Brazil; Portugal; Poland",
-      "countries": [
-        "Brazil",
-        "Portugal",
-        "Poland"
       ]
     },
     {
@@ -18402,6 +18478,45 @@
       ]
     },
     {
+      "title": "Sr. Web Designer - Growth Foundations",
+      "url": "https://jobs.ashbyhq.com/kraken.com/2df89f8e-be14-440e-9614-550f1d10eeb9",
+      "location": "United Kingdom; Brazil; United Arab Emirates; Ireland; Peru; Sweden; Colombia; Argentina; Romania; Cyprus; Switzerland; Portugal; Lithuania; South Africa; Czech Republic; Canada; Hungary; Mexico; Chile; Poland; Spain; Bulgaria",
+      "countries": [
+        "United Kingdom",
+        "Brazil",
+        "United Arab Emirates",
+        "Ireland",
+        "Peru",
+        "Sweden",
+        "Colombia",
+        "Argentina",
+        "Romania",
+        "Cyprus",
+        "Switzerland",
+        "Portugal",
+        "Lithuania",
+        "South Africa",
+        "Czech Republic",
+        "Canada",
+        "Hungary",
+        "Mexico",
+        "Chile",
+        "Poland",
+        "Spain",
+        "Bulgaria"
+      ]
+    },
+    {
+      "title": "Tech Recruiter",
+      "url": "https://jobs.ashbyhq.com/kraken.com/5b87c3ae-888a-4170-a9f0-cb8385c3f941",
+      "location": "Brazil; Portugal; Poland",
+      "countries": [
+        "Brazil",
+        "Portugal",
+        "Poland"
+      ]
+    },
+    {
       "title": "Platform Product Manager - Payward Services",
       "url": "https://jobs.ashbyhq.com/kraken.com/397cb2c1-c989-4050-8507-81d2e0fae360",
       "location": "United States",
@@ -18762,14 +18877,6 @@
     }
   ],
   "https://api.ashbyhq.com/posting-api/job-board/chainalysis-careers": [
-    {
-      "title": "Software Engineer II, Compliance Core",
-      "url": "https://jobs.ashbyhq.com/chainalysis-careers/05ebe657-fb6e-47c0-a8ce-4ac6ac362d2d",
-      "location": "New York Office",
-      "countries": [
-        "United States"
-      ]
-    },
     {
       "title": "Enterprise Account Executive, Financial Institutions",
       "url": "https://jobs.ashbyhq.com/chainalysis-careers/8b0b12e7-1ae0-4cff-8713-8b95fc779bb1",
@@ -19207,6 +19314,14 @@
       "title": "Deployment Strategist - Crypto Investigations",
       "url": "https://jobs.ashbyhq.com/chainalysis-careers/0e7f0f5f-0a3f-4e37-9428-5aa259a22a72",
       "location": "Remote - USA",
+      "countries": [
+        "United States"
+      ]
+    },
+    {
+      "title": "Software Engineer II, Compliance Core",
+      "url": "https://jobs.ashbyhq.com/chainalysis-careers/05ebe657-fb6e-47c0-a8ce-4ac6ac362d2d",
+      "location": "New York Office",
       "countries": [
         "United States"
       ]
@@ -23641,11 +23756,6 @@
       "location": "New York"
     },
     {
-      "title": "HR Coordinator",
-      "url": "https://www.jumptrading.com/hr/job?gh_jid=7926278",
-      "location": "London"
-    },
-    {
       "title": "HR Operations Specialist",
       "url": "https://www.jumptrading.com/hr/job?gh_jid=8045867",
       "location": "Hong Kong or Singapore"
@@ -23849,6 +23959,11 @@
       "title": "Workplace Experience Coordinator",
       "url": "https://www.jumptrading.com/hr/job?gh_jid=8248589",
       "location": "Hong Kong"
+    },
+    {
+      "title": "HR Coordinator",
+      "url": "https://www.jumptrading.com/hr/job?gh_jid=7926278",
+      "location": "London"
     },
     {
       "title": "Campus Quantitative Researcher | Trading Team PhD/Postdoc (Full-Time)",
@@ -24623,6 +24738,22 @@
   ],
   "https://higher.gs.com/roles?division=Global+Markets&division=Engineering&country=United+States&sort=NEWEST": [
     {
+      "title": "AM Mosaic Technology - Software Engineer - Associate - London London · United Kingdom · Associate",
+      "url": "https://higher.gs.com/roles/186506"
+    },
+    {
+      "title": "Software Engineer - Lakehouse and AI Data Platform - Warsaw - Analyst/Associate Warsaw · Poland · Associate",
+      "url": "https://higher.gs.com/roles/179762"
+    },
+    {
+      "title": "Private Wealth Management, Financial Analyst, Analyst, Amsterdam Amsterdam · Netherlands · Analyst",
+      "url": "https://higher.gs.com/roles/175455"
+    },
+    {
+      "title": "GBM - Transaction Banking Technology - Bengaluru - Vice President - Data Engineering Bengaluru · India · Vice President",
+      "url": "https://higher.gs.com/roles/184063"
+    },
+    {
       "title": "Asset & Wealth Management- WIS Quantitative Equity Solutions Client Portfolio Management- Associate-Bengaluru Bengaluru · India · Associate",
       "url": "https://higher.gs.com/roles/176626"
     },
@@ -24675,6 +24806,18 @@
       "url": "https://higher.gs.com/roles/171064"
     },
     {
+      "title": "The Core Engineering- Liquidity Quantitative Engineer / Strat - Vice President - London London · United Kingdom · Vice President",
+      "url": "https://higher.gs.com/roles/171766"
+    },
+    {
+      "title": "Global Banking & Markets - Private Dept-TxB Client Implementation-Dallas-Vice President Dallas · United States · Vice President",
+      "url": "https://higher.gs.com/roles/186706"
+    },
+    {
+      "title": "Global Banking and Markets, Transaction Banking, Operations - Global Client Servicing, Senior Associate, Singapore Singapore · Singapore · Senior Associate",
+      "url": "https://higher.gs.com/roles/184196"
+    },
+    {
       "title": "Private Wealth Management, Managed Strategies Structured Product, Executive Director, London London · United Kingdom · Vice President",
       "url": "https://higher.gs.com/roles/164522"
     },
@@ -24687,16 +24830,8 @@
       "url": "https://higher.gs.com/roles/172655"
     },
     {
-      "title": "The Core Engineering- Liquidity Quantitative Engineer / Strat - Vice President - London London · United Kingdom · Vice President",
-      "url": "https://higher.gs.com/roles/171766"
-    },
-    {
       "title": "Global Banking & Markets - Capital Solutions Group - Latam - Analyst - New York New York · United States · Analyst",
       "url": "https://higher.gs.com/roles/186685"
-    },
-    {
-      "title": "Global Banking & Markets - Private Dept-TxB Client Implementation-Dallas-Vice President Dallas · United States · Vice President",
-      "url": "https://higher.gs.com/roles/186706"
     },
     {
       "title": "GBM - Private - Investment Banking Associate, Natural Resources - New York New York · United States · Associate",
@@ -24925,10 +25060,6 @@
     {
       "title": "Asset & Wealth Management, Credit Research, Executive Director, Taiwan Taiwan · Associate",
       "url": "https://higher.gs.com/roles/169153"
-    },
-    {
-      "title": "Global Banking and Markets, Transaction Banking, Operations - Global Client Servicing, Senior Associate, Singapore Singapore · Singapore · Senior Associate",
-      "url": "https://higher.gs.com/roles/184196"
     },
     {
       "title": "Asset & Wealth Management Private, Private Credit Investing, Analyst, Tokyo Minato-Ku · Japan · Analyst",
@@ -25449,6 +25580,54 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Applied AI and Machine Learning Lead",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796580",
+      "location": "Jersey City, NJ, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "J.P. Morgan Wealth Management – Private Client Advisor - Oklahoma City, OK",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800575",
+      "location": "Oklahoma City, OK, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "J.P. Morgan Wealth Management - Private Client Investment Associate - Warren, MI",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800621",
+      "location": "Warren, MI, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "J.P. Morgan Wealth Management - Private Client Investment Associate - Ann Arbor, MI",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800630",
+      "location": "Ann Arbor, MI, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Credit Card Customer Service Account Specialist I",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800648",
+      "location": "Heathrow, FL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Branch Operation Lead - LI Northwest - Garden City Park, NY",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800705",
+      "location": "Garden City Park, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Python Software Engineer III",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210778199",
       "location": "Jersey City, NJ, United States",
@@ -25593,14 +25772,6 @@
       ]
     },
     {
-      "title": "Senior Lead Software Engineer- AI/ML Training Infrastructure",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210782300",
-      "location": "Seattle, WA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Lead Software Engineer - Agentic AI, Java/Python",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210783917",
       "location": "Jersey City, NJ, United States",
@@ -25715,14 +25886,6 @@
     {
       "title": "Business Relationship Manager Senior Deepening - Vice President",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210794592",
-      "location": "New York, NY, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Global Research - Industry & Policy Thematics - Executive Director",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210794611",
       "location": "New York, NY, United States",
       "countries": [
         "US"
@@ -25897,14 +26060,6 @@
       ]
     },
     {
-      "title": "Finance & Business Management",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210787107",
-      "location": "New York, NY, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Events Management, Communications Senior Associate",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210787417",
       "location": "Wilmington, DE, United States",
@@ -25931,14 +26086,6 @@
     {
       "title": "Sr. Director of Software Engineering - Business Banking",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795233",
-      "location": "Columbus, OH, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Java Lead Software Engineer",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795259",
       "location": "Columbus, OH, United States",
       "countries": [
         "US"
@@ -26065,22 +26212,6 @@
       ]
     },
     {
-      "title": "Associate Banker, 30 Hours, Charleston, SC - Meeting St Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798596",
-      "location": "Charleston, SC, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Lead Technical Program Manager Payments",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798620",
-      "location": "Tampa, FL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Senior Executive Administrative Assistant",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210771953",
       "location": "New York, NY, United States",
@@ -26140,14 +26271,6 @@
       "title": "Business Relationship Manager I - Officer",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797033",
       "location": "Bayside, NY, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Executive Director, Customer Experience Core Product - Benefits Platform",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797053",
-      "location": "NY, United States",
       "countries": [
         "US"
       ]
@@ -26244,6 +26367,70 @@
       "title": "Applied AI/ML Lead",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210791679",
       "location": "Jersey City, NJ, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Experienced Software Engineer Java / Python (Full Stack or Back End)",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210785255",
+      "location": "Plano, TX, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Senior Lead Software Engineer- AI/ML Training Infrastructure",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210782300",
+      "location": "Seattle, WA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Global Research - Industry & Policy Thematics - Executive Director",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210794611",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Finance & Business Management",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210787107",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Java Lead Software Engineer",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795259",
+      "location": "Columbus, OH, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 30 Hours, Charleston, SC - Meeting St Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798596",
+      "location": "Charleston, SC, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Lead Technical Program Manager Payments",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798620",
+      "location": "Tampa, FL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Executive Director, Customer Experience Core Product - Benefits Platform",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797053",
+      "location": "NY, United States",
       "countries": [
         "US"
       ]
@@ -28556,14 +28743,6 @@
       "title": "Investment Phone Specialist - JPMorgan Wealth Management - San Antonio, TX",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210793752",
       "location": "San Antonio, TX, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Experienced Software Engineer Java / Python (Full Stack or Back End)",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210785255",
-      "location": "Plano, TX, United States",
       "countries": [
         "US"
       ]
@@ -32523,6 +32702,14 @@
   ],
   "https://morganstanley.eightfold.ai/careers?location=United%20States": [
     {
+      "title": "Fixed Income Rates Product Controller",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800795211"
+    },
+    {
+      "title": "Platinum Relationship Manager",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549794752570"
+    },
+    {
       "title": "Analyst, Performance Attribution - Parametric",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800356234"
     },
@@ -32603,6 +32790,38 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549794753137"
     },
     {
+      "title": "Crypto Product Manager - Executive Director",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800622205"
+    },
+    {
+      "title": "Internal Audit Associate – Investment Management Technology",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800575307"
+    },
+    {
+      "title": "Investment Banking Semiconductor Vice President - New York",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800340148"
+    },
+    {
+      "title": "Central Review Unit Risk Officer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800762315"
+    },
+    {
+      "title": "Operations Analyst - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799441719"
+    },
+    {
+      "title": "Wealth Management Private Banking Operations - High Net Worth Collateral Monitoring - Director",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800192130"
+    },
+    {
+      "title": "Analyst / Senior Analyst, Client Reporting - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800374837"
+    },
+    {
+      "title": "Portfolio Manager - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800664144"
+    },
+    {
       "title": "Internal Audit Director -  MSPBNA Lending and Deposit Products",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800578205"
     },
@@ -32619,20 +32838,8 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800640841"
     },
     {
-      "title": "Crypto Product Manager - Executive Director",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800622205"
-    },
-    {
-      "title": "Internal Audit Associate – Investment Management Technology",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800575307"
-    },
-    {
       "title": "Internal Audit Director – Fixed Income (Lending)",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800376375"
-    },
-    {
-      "title": "Investment Banking Semiconductor Vice President - New York",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800340148"
     },
     {
       "title": "Fraud Link Analysis Strategy & Operations",
@@ -32641,10 +32848,6 @@
     {
       "title": "Group Director",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800763542"
-    },
-    {
-      "title": "Central Review Unit Risk Officer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800762315"
     },
     {
       "title": "Digital Assets Strategy and Execution - Vice President",
@@ -32657,10 +32860,6 @@
     {
       "title": "Employee Investing and Activities Compliance, Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800455856"
-    },
-    {
-      "title": "Operations Analyst - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799441719"
     },
     {
       "title": "Vice President, Financial Planning Director (Southeast Region)",
@@ -32687,10 +32886,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549799714552"
     },
     {
-      "title": "Wealth Management Private Banking Operations - High Net Worth Collateral Monitoring - Director",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800192130"
-    },
-    {
       "title": "Market Risk (Risk Management) : Job Level - Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800692227"
     },
@@ -32701,14 +32896,6 @@
     {
       "title": "Executive Director & External Wholesaler, Wirehouse Channel – Greater Dallas",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800640266"
-    },
-    {
-      "title": "Analyst / Senior Analyst, Client Reporting - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800374837"
-    },
-    {
-      "title": "Portfolio Manager - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800664144"
     },
     {
       "title": "Investment Banking Industrials Associate / Vice President - New York",
@@ -33321,6 +33508,10 @@
   ],
   "https://bloomberg.avature.net/careers/SearchJobs/?listFilterMode=1&1845%5B%5D=162508": [
     {
+      "title": "Senior Cybersecurity Solutions Architect (NYC)",
+      "url": "https://bloomberg.avature.net/careers/JobDetail/Senior-Cybersecurity-Solutions-Architect-NYC/45271"
+    },
+    {
       "title": "Talent Development Designer",
       "url": "https://bloomberg.avature.net/careers/JobDetail/Talent-Development-Designer/45273"
     },
@@ -33353,10 +33544,6 @@
       "url": "https://bloomberg.avature.net/careers/JobDetail/Senior-Data-Management-Professional-Data-Engineering-Data-AI/45112"
     },
     {
-      "title": "Bloomberg Economics US Senior Economist",
-      "url": "https://bloomberg.avature.net/careers/JobDetail/Bloomberg-Economics-US-Senior-Economist/45110"
-    },
-    {
       "title": "Senior Software Engineer - CSP Voice Platform",
       "url": "https://bloomberg.avature.net/careers/JobDetail/Senior-Software-Engineer-CSP-Voice-Platform/45069"
     },
@@ -33367,6 +33554,10 @@
     {
       "title": "Booking Producer, Surveillance",
       "url": "https://bloomberg.avature.net/careers/JobDetail/Booking-Producer-Surveillance/45087"
+    },
+    {
+      "title": "Bloomberg Economics US Senior Economist",
+      "url": "https://bloomberg.avature.net/careers/JobDetail/Bloomberg-Economics-US-Senior-Economist/45110"
     },
     {
       "title": "Senior Software Engineer - Customer Distribution Infrastructure",
@@ -46054,6 +46245,31 @@
   ],
   "https://boards-api.greenhouse.io/v1/boards/databricks/jobs": [
     {
+      "title": "Emerging Enterprise Core Account Executive, DACH",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8883715002",
+      "location": "Munich, Germany"
+    },
+    {
+      "title": "Senior Engagement Manager, Forward Deployed Engineering",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8884904002",
+      "location": "London, United Kingdom"
+    },
+    {
+      "title": "Solutions Architect",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8885035002",
+      "location": "Zürich, Switzerland"
+    },
+    {
+      "title": "Sr. Engagement Manager, FDE",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8885045002",
+      "location": "Munich, Germany"
+    },
+    {
+      "title": "Technical Program Manager, Forward Deployed Engineering",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8884751002",
+      "location": "London, United Kingdom"
+    },
+    {
       "title": "Team Lead, Executive Support",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8885966002",
       "location": "Costa Rica"
@@ -48865,11 +49081,6 @@
     },
     {
       "title": "Sr. Forward Deployed Engineer",
-      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8645054002",
-      "location": "Stockholm, Sweden"
-    },
-    {
-      "title": "Sr. Forward Deployed Engineer",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8854739002",
       "location": "Western Australia, Australia"
     },
@@ -50509,6 +50720,11 @@
       "location": "USCA"
     },
     {
+      "title": "Sr. Forward Deployed Engineer",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8645054002",
+      "location": "Stockholm, Sweden"
+    },
+    {
       "title": "Staff Software Engineer, Foundational Model Serving",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8224683002",
       "location": "San Francisco, California"
@@ -51416,11 +51632,6 @@
       "location": "San Francisco, CA"
     },
     {
-      "title": "Sales Enablement Lead",
-      "url": "https://job-boards.greenhouse.io/scaleai/jobs/4717574005",
-      "location": "Dubai, UAE; London, UK"
-    },
-    {
       "title": "Security Engineer, Infrastructure",
       "url": "https://job-boards.greenhouse.io/scaleai/jobs/4646888005",
       "location": "New York, NY; San Francisco, CA; Seattle, WA; Washington, DC"
@@ -51826,6 +52037,11 @@
       "location": "San Francisco, CA; New York, NY"
     },
     {
+      "title": "Sales Enablement Lead",
+      "url": "https://job-boards.greenhouse.io/scaleai/jobs/4717574005",
+      "location": "Dubai, UAE; London, UK"
+    },
+    {
       "title": "Business Development Representative, Partnerships (Physical AI)",
       "url": "https://job-boards.greenhouse.io/scaleai/jobs/4694836005",
       "location": "New York, NY"
@@ -51943,6 +52159,10 @@
   ],
   "https://careers.snowflake.com/us/en/search-results?keywords=&sortBy=Most%20recent": [
     {
+      "title": "Senior Solution Engineer (Expansion)",
+      "url": "https://jobs.ashbyhq.com/snowflake/53062740-a42c-4fd2-8c33-c4d5dbee27bf"
+    },
+    {
       "title": "Principal Software Engineer, Anti-Abuse",
       "url": "https://jobs.ashbyhq.com/snowflake/797cadbe-fad8-4f1d-a656-d14ca76d29b9"
     },
@@ -51953,10 +52173,6 @@
     {
       "title": "Senior Content Marketing Manager",
       "url": "https://jobs.ashbyhq.com/snowflake/ea667605-bc5a-48a1-a602-9029e0606677"
-    },
-    {
-      "title": "Principal Program Manager - Migrations",
-      "url": "https://jobs.ashbyhq.com/snowflake/570cbac3-875a-4ce4-83b4-3c19e4b279db"
     },
     {
       "title": "Industry Principal, Life Sciences",
@@ -51981,6 +52197,10 @@
     {
       "title": "Software Engineer - Ingestion Execution Platform",
       "url": "https://jobs.ashbyhq.com/snowflake/b6fed204-3317-43ba-b87b-f045e4cf8d68"
+    },
+    {
+      "title": "Principal Program Manager - Migrations",
+      "url": "https://jobs.ashbyhq.com/snowflake/570cbac3-875a-4ce4-83b4-3c19e4b279db"
     },
     {
       "title": "Director, Product Management - Data Transformation (Frontier Engineering)",
@@ -52205,6 +52425,11 @@
   ],
   "https://boards-api.greenhouse.io/v1/boards/datadog/jobs": [
     {
+      "title": "Commercial Account Executive (Italy)",
+      "url": "https://careers.datadoghq.com/detail/8210507/?gh_jid=8210507",
+      "location": "Amsterdam, The Netherlands; Dublin, Ireland"
+    },
+    {
       "title": "Senior Manager, Product Design - Security",
       "url": "https://careers.datadoghq.com/detail/8281102/?gh_jid=8281102",
       "location": "New York, New York, USA"
@@ -52248,11 +52473,6 @@
       "title": "Sales Development Representative (LATAM - Portuguese Speaking)",
       "url": "https://careers.datadoghq.com/detail/8139396/?gh_jid=8139396",
       "location": "Boston, Massachusetts, USA"
-    },
-    {
-      "title": "Commercial Account Executive - Israel",
-      "url": "https://careers.datadoghq.com/detail/8245889/?gh_jid=8245889",
-      "location": "Tel Aviv, Israel"
     },
     {
       "title": "FP&A Analyst, Cloud Finance",
@@ -53535,11 +53755,6 @@
       "location": "London, United Kingdom"
     },
     {
-      "title": "Regional Marketing Content Manager - LATAM",
-      "url": "https://careers.datadoghq.com/detail/8141790/?gh_jid=8141790",
-      "location": "Sao Paulo, Brazil"
-    },
-    {
       "title": "Regional Vice President, Enterprise Sales, Public Sector - US State and Local",
       "url": "https://careers.datadoghq.com/detail/8212513/?gh_jid=8212513",
       "location": "Boston, Massachusetts, USA; Chicago, Illinois, USA; New York, New York, USA; North Carolina, USA, Remote; San Francisco, California, USA"
@@ -53593,11 +53808,6 @@
       "title": "Sales Engineer (Customer Success)",
       "url": "https://careers.datadoghq.com/detail/8204163/?gh_jid=8204163",
       "location": "Denver, Colorado, USA"
-    },
-    {
-      "title": "Sales Engineer - Enterprise",
-      "url": "https://careers.datadoghq.com/detail/8090275/?gh_jid=8090275",
-      "location": "Tokyo, Japan"
     },
     {
       "title": "Sales Engineer - Enterprise",
@@ -54385,6 +54595,26 @@
       "location": "New York, New York, USA"
     },
     {
+      "title": "Incident and Escalation Manager, EMEA",
+      "url": "https://careers.datadoghq.com/detail/8188800/?gh_jid=8188800",
+      "location": "Dublin, Ireland; Paris, France"
+    },
+    {
+      "title": "Commercial Account Executive - Israel",
+      "url": "https://careers.datadoghq.com/detail/8245889/?gh_jid=8245889",
+      "location": "Tel Aviv, Israel"
+    },
+    {
+      "title": "Regional Marketing Content Manager - LATAM",
+      "url": "https://careers.datadoghq.com/detail/8141790/?gh_jid=8141790",
+      "location": "Sao Paulo, Brazil"
+    },
+    {
+      "title": "Sales Engineer - Enterprise",
+      "url": "https://careers.datadoghq.com/detail/8090275/?gh_jid=8090275",
+      "location": "Tokyo, Japan"
+    },
+    {
       "title": "Marketing Operations Associate",
       "url": "https://careers.datadoghq.com/detail/8177270/?gh_jid=8177270",
       "location": "Singapore, Singapore"
@@ -54443,11 +54673,6 @@
       "title": "Product Strategy and Corporate Development Lead (EMEA)",
       "url": "https://careers.datadoghq.com/detail/7413847/?gh_jid=7413847",
       "location": "Paris, France"
-    },
-    {
-      "title": "Incident and Escalation Manager, EMEA",
-      "url": "https://careers.datadoghq.com/detail/8188800/?gh_jid=8188800",
-      "location": "Dublin, Ireland; Paris, France"
     },
     {
       "title": "Key Accounts Executive - EMEA",
@@ -54671,6 +54896,11 @@
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/cloudflare/jobs": [
+    {
+      "title": "IT Operations Specialist I",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/8281074?gh_jid=8281074",
+      "location": "In-Office"
+    },
     {
       "title": "Network Security Support Engineer",
       "url": "https://boards.greenhouse.io/cloudflare/jobs/8028403?gh_jid=8028403",
@@ -55009,11 +55239,6 @@
     {
       "title": "Associate General Counsel, Privacy Compliance",
       "url": "https://boards.greenhouse.io/cloudflare/jobs/8144669?gh_jid=8144669",
-      "location": "Hybrid"
-    },
-    {
-      "title": "Business Development Representative - Bahasa Indonesia Speaking",
-      "url": "https://boards.greenhouse.io/cloudflare/jobs/7167659?gh_jid=7167659",
       "location": "Hybrid"
     },
     {
@@ -56012,16 +56237,6 @@
       "location": "Hybrid"
     },
     {
-      "title": "Senior Manager, Customer Engineering, India",
-      "url": "https://boards.greenhouse.io/cloudflare/jobs/8020043?gh_jid=8020043",
-      "location": "Remote India"
-    },
-    {
-      "title": "Senior Manager, Customer Engineering UKI",
-      "url": "https://boards.greenhouse.io/cloudflare/jobs/7761342?gh_jid=7761342",
-      "location": "Hybrid"
-    },
-    {
       "title": "Senior Manager, Forward Deployed Engineering",
       "url": "https://boards.greenhouse.io/cloudflare/jobs/8192032?gh_jid=8192032",
       "location": "Hybrid"
@@ -56280,11 +56495,6 @@
       "title": "Senior Revenue Operations Support Manager, Singapore",
       "url": "https://boards.greenhouse.io/cloudflare/jobs/8172873?gh_jid=8172873",
       "location": "Hybrid"
-    },
-    {
-      "title": "Senior Sales Director – Enterprise, Benelux",
-      "url": "https://boards.greenhouse.io/cloudflare/jobs/8046286?gh_jid=8046286",
-      "location": "Distributed"
     },
     {
       "title": "Senior Sales Manager, Central Eastern Europe - Digital Natives",
@@ -56895,6 +57105,26 @@
       "title": "Senior Systems Engineer",
       "url": "https://boards.greenhouse.io/cloudflare/jobs/8087792?gh_jid=8087792",
       "location": "Hybrid"
+    },
+    {
+      "title": "Business Development Representative - Bahasa Indonesia Speaking",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/7167659?gh_jid=7167659",
+      "location": "Hybrid"
+    },
+    {
+      "title": "Senior Manager, Customer Engineering, India",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/8020043?gh_jid=8020043",
+      "location": "Remote India"
+    },
+    {
+      "title": "Senior Manager, Customer Engineering UKI",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/7761342?gh_jid=7761342",
+      "location": "Hybrid"
+    },
+    {
+      "title": "Senior Sales Director – Enterprise, Benelux",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/8046286?gh_jid=8046286",
+      "location": "Distributed"
     },
     {
       "title": "Client Executive, SLED",
@@ -57611,28 +57841,16 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
-      "title": "#Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721477865"
+      "title": "Memory Designer",
+      "url": "https://careers.qualcomm.com/careers/job/446716319290"
     },
     {
-      "title": "Pre-Silicon Validation Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721363946"
-    },
-    {
-      "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
-      "url": "https://careers.qualcomm.com/careers/job/446720740540"
-    },
-    {
-      "title": "Staff Engineer, Device Drivers (San Diego or Boulder, CO)",
-      "url": "https://careers.qualcomm.com/careers/job/446715878664"
+      "title": "GPU HLM Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446717477209"
     },
     {
       "title": "Staff Linux Software Engineer (Multiple Locations)",
       "url": "https://careers.qualcomm.com/careers/job/446721450017"
-    },
-    {
-      "title": "Engineer, Staff_CE_Device Driver Development",
-      "url": "https://careers.qualcomm.com/careers/job/446721162727"
     },
     {
       "title": "Staff Software Engineer, Linux Device Driver & Host SW (San Diego OR Boulder)",
@@ -57665,6 +57883,58 @@
     {
       "title": "Senior Staff Software Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446715551159"
+    },
+    {
+      "title": "Linux Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719814299"
+    },
+    {
+      "title": "R&D – IoT Linux Software Staff Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446717614758"
+    },
+    {
+      "title": "Lead Engineer, Senior - Linux Software APSS Image Integration",
+      "url": "https://careers.qualcomm.com/careers/job/446721378161"
+    },
+    {
+      "title": "WLAN Linux Networking Engineer Staff (Software)",
+      "url": "https://careers.qualcomm.com/careers/job/446721118847"
+    },
+    {
+      "title": "Ambient Compute System Architecture and Power Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719837521"
+    },
+    {
+      "title": "Machine Learning R&D",
+      "url": "https://careers.qualcomm.com/careers/job/446719838414"
+    },
+    {
+      "title": "Modem Integration & Test Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719948366"
+    },
+    {
+      "title": "#Systems SoC Test Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719874307"
+    },
+    {
+      "title": "#Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721477865"
+    },
+    {
+      "title": "Pre-Silicon Validation Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721363946"
+    },
+    {
+      "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
+      "url": "https://careers.qualcomm.com/careers/job/446720740540"
+    },
+    {
+      "title": "Staff Engineer, Device Drivers (San Diego or Boulder, CO)",
+      "url": "https://careers.qualcomm.com/careers/job/446715878664"
+    },
+    {
+      "title": "Engineer, Staff_CE_Device Driver Development",
+      "url": "https://careers.qualcomm.com/careers/job/446721162727"
     },
     {
       "title": "#Embedded Software Engineer – Device Driver Development",
@@ -57735,22 +58005,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446721303445"
     },
     {
-      "title": "Linux Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719814299"
-    },
-    {
-      "title": "R&D – IoT Linux Software Staff Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446717614758"
-    },
-    {
-      "title": "Lead Engineer, Senior - Linux Software APSS Image Integration",
-      "url": "https://careers.qualcomm.com/careers/job/446721378161"
-    },
-    {
-      "title": "WLAN Linux Networking Engineer Staff (Software)",
-      "url": "https://careers.qualcomm.com/careers/job/446721118847"
-    },
-    {
       "title": "Staff Software Engineer – Host & Secure Compute Software - Cork, Ireland",
       "url": "https://careers.qualcomm.com/careers/job/446715866170"
     },
@@ -57809,10 +58063,6 @@
     {
       "title": "PCB Designer, Staff",
       "url": "https://careers.qualcomm.com/careers/job/446717263332"
-    },
-    {
-      "title": "Ambient Compute System Architecture and Power Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719837521"
     },
     {
       "title": "SOC Power Architecture Engineer",
@@ -58007,14 +58257,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446717808670"
     },
     {
-      "title": "Machine Learning R&D",
-      "url": "https://careers.qualcomm.com/careers/job/446719838414"
-    },
-    {
-      "title": "Modem Integration & Test Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719948366"
-    },
-    {
       "title": "QGOV Security Software Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446718664836"
     },
@@ -58081,10 +58323,6 @@
     {
       "title": "SOC Design Verification Engineer-Staff",
       "url": "https://careers.qualcomm.com/careers/job/446719823591"
-    },
-    {
-      "title": "#Systems SoC Test Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719874307"
     },
     {
       "title": "QGOV Security Software Engineer",
@@ -58593,6 +58831,11 @@
     }
   ],
   "https://jobs.intuit.com/search-jobs/results?OrganizationIds=27595&FacetFilters%5B0%5D.ID=6252001&FacetFilters%5B0%5D.FacetType=2&FacetFilters%5B0%5D.IsApplied=true&SearchResultsModuleName=Search+Results&SortCriteria=1&SortDirection=1&RecordsPerPage=50": [
+    {
+      "title": "Software Engineer 2 - Growth Team",
+      "url": "https://jobs.intuit.com/job/new-york/software-engineer-2-growth-team/27595/101984582368",
+      "location": "New York, New York"
+    },
     {
       "title": "Staff Business Operations Manager",
       "url": "https://jobs.intuit.com/job/mountain-view/staff-business-operations-manager/27595/101973351760",
@@ -60837,5 +61080,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-15T07:22:04"
+  "_last_email_at": "2026-10-15T12:53:17"
 }
