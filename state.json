@@ -4947,10 +4947,6 @@
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Virginia---Herndon/Systems-Engineering-Engineer--TS-SCI-Clearance-_JR355439"
     },
     {
-      "title": "SRE Systems Engineer (TS/SCI Clearance)",
-      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Virginia---Herndon/SRE-Systems-Engineer--TS-SCI-Clearance-_JR363405-1"
-    },
-    {
       "title": "Recruiting Coordinator",
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Recruiting-Coordinator_JR363046-1"
     },
@@ -4961,6 +4957,14 @@
     {
       "title": "Senior Experience Architect (Professional Services)",
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Illinois---Remote/Senior-Experience-Architect--Professional-Services-_JR361440-1"
+    },
+    {
+      "title": "Manager, Revenue Recognition Strategy",
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Georgia---Atlanta/Manager--Revenue-Recognition-Strategy_JR362479"
+    },
+    {
+      "title": "SRE Systems Engineer (TS/SCI Clearance)",
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Virginia---Herndon/SRE-Systems-Engineer--TS-SCI-Clearance-_JR363405-1"
     },
     {
       "title": "Account Solution Engineer - Federal Civilian",
@@ -5465,10 +5469,6 @@
     {
       "title": "Senior Director, Product Marketing (Service Strategy, Core, and AI)",
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Senior-Director-Service-Strategy--Core--and-AI_JR355117"
-    },
-    {
-      "title": "Manager, Revenue Recognition Strategy",
-      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Georgia---Atlanta/Manager--Revenue-Recognition-Strategy_JR362479"
     },
     {
       "title": "Signature Success, Sales Executive - Telco, Media, Technology Vertical",
@@ -12102,6 +12102,11 @@
       "location": "US Remote"
     },
     {
+      "title": "Operations Program Manager",
+      "url": "https://stripe.com/jobs/search?gh_jid=8203653",
+      "location": "Bengaluru"
+    },
+    {
       "title": "PMM Lead, Executive Content & Experiences",
       "url": "https://stripe.com/jobs/search?gh_jid=8178459",
       "location": "San Francisco, New York, Seattle, Chicago, Atlanta, Remote in the US"
@@ -12244,11 +12249,6 @@
     {
       "title": "Accounts Receivable Manager",
       "url": "https://stripe.com/jobs/search?gh_jid=7118945",
-      "location": "Bengaluru"
-    },
-    {
-      "title": "Operations Program Manager",
-      "url": "https://stripe.com/jobs/search?gh_jid=8203653",
       "location": "Bengaluru"
     },
     {
@@ -13013,6 +13013,10 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922653220"
     },
     {
+      "title": "Senior Manager, Business Operations",
+      "url": "https://paypal.eightfold.ai/careers/job/274922541647"
+    },
+    {
       "title": "Senior Manager, Business Operations & Program Management",
       "url": "https://paypal.eightfold.ai/careers/job/274922421662"
     },
@@ -13051,10 +13055,6 @@
     {
       "title": "Director, Enterprise Quality team",
       "url": "https://paypal.eightfold.ai/careers/job/274922421863"
-    },
-    {
-      "title": "Senior Manager, Business Operations",
-      "url": "https://paypal.eightfold.ai/careers/job/274922541647"
     },
     {
       "title": "Manager, Tax",
@@ -26464,6 +26464,10 @@
   ],
   "https://higher.gs.com/roles?division=Global+Markets&division=Engineering&country=United+States&sort=NEWEST": [
     {
+      "title": "GBM - Public,  Electronic Cash Market Making, Quantitative Engineering, Vice President - New York New York · United States · Vice President",
+      "url": "https://higher.gs.com/roles/177618"
+    },
+    {
       "title": "Executive Office, Investor Relations, Senior Analyst, New York New York · United States · Senior Analyst",
       "url": "https://higher.gs.com/roles/184226"
     },
@@ -26516,10 +26520,6 @@
       "url": "https://higher.gs.com/roles/181618"
     },
     {
-      "title": "GBM Public, Macro FX France/Belux Sales, Analyst/Associate, Paris Paris · France · Analyst",
-      "url": "https://higher.gs.com/roles/180996"
-    },
-    {
       "title": "Asset & Wealth Management, Private Wealth Management, Equity Structuring, 10b5-1 Plans, Vice President - New York New York · United States · Vice President",
       "url": "https://higher.gs.com/roles/186849"
     },
@@ -26542,6 +26542,10 @@
     {
       "title": "Asset & Wealth Management, Growth Marketing & Lead Generation, Associate - New York New York · United States · Associate",
       "url": "https://higher.gs.com/roles/182350"
+    },
+    {
+      "title": "GBM Public, Macro FX France/Belux Sales, Analyst/Associate, Paris Paris · France · Analyst",
+      "url": "https://higher.gs.com/roles/180996"
     },
     {
       "title": "Controllers, Asset and Wealth Management, Fund Controller, Analyst, Dublin Dublin · Ireland · Analyst",
@@ -27478,6 +27482,54 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Associate Banker, 30 Hours, Dover, DE - North Dover Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799022",
+      "location": "Dover, DE, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 20 Hours, Collegeville, PA - Collegeville Shopping Center Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800228",
+      "location": "Collegeville, PA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 30 Hours, Homestead, PA - Waterfront Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800236",
+      "location": "Homestead, PA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 20 Hours, Exton, PA - Exton Square Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800292",
+      "location": "Exton, PA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Relationship Banker - Broadway and 96th St. - New York, NY",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800945",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Relationship Banker - Port Authority - New York, NY",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801037",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Relationship Banker - Washington Thornton - Thornton, CO - CO METRO NORTHWEST",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799980",
       "location": "Thornton, CO, United States",
@@ -28118,30 +28170,6 @@
       ]
     },
     {
-      "title": "Business Relationship Manager Senior - Deepening",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797299",
-      "location": "Peoria, AZ, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Business Transformation Director, AI Transformation",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797613",
-      "location": "Wilmington, DE, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Risk Management - Third Party Data - Vice President",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797707",
-      "location": "Wilmington, DE, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Lead Software Engineer - Java or Python, Agentic AI",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210776957",
       "location": "Jersey City, NJ, United States",
@@ -28214,22 +28242,6 @@
       ]
     },
     {
-      "title": "Part Time (20 Hours) Associate Banker, Roland Park Branch, Baltimore, Maryland",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797305",
-      "location": "Baltimore, MD, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Part Time (30 Hours) Associate Banker, Mondawmin Community Center Branch, Baltimore, Maryland",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797306",
-      "location": "Baltimore, MD, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Java Lead Software Engineer",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795259",
       "location": "Columbus, OH, United States",
@@ -28240,14 +28252,6 @@
     {
       "title": "Associate, Markets Planning and Analysis",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210794714",
-      "location": "NY, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Executive Director, Customer Experience Core Product - Benefits Platform",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797053",
       "location": "NY, United States",
       "countries": [
         "US"
@@ -28273,6 +28277,54 @@
       "title": "Lead Software Engineer- Java Full Stack - Production support",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210784336",
       "location": "Houston, TX, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Business Relationship Manager Senior - Deepening",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797299",
+      "location": "Peoria, AZ, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Business Transformation Director, AI Transformation",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797613",
+      "location": "Wilmington, DE, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Risk Management - Third Party Data - Vice President",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797707",
+      "location": "Wilmington, DE, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Part Time (20 Hours) Associate Banker, Roland Park Branch, Baltimore, Maryland",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797305",
+      "location": "Baltimore, MD, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Part Time (30 Hours) Associate Banker, Mondawmin Community Center Branch, Baltimore, Maryland",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797306",
+      "location": "Baltimore, MD, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Executive Director, Customer Experience Core Product - Benefits Platform",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797053",
+      "location": "NY, United States",
       "countries": [
         "US"
       ]
@@ -35428,54 +35480,6 @@
       "countries": [
         "US"
       ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, Boca Raton, Florida",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210707083",
-      "location": "Boca Raton, FL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Home Lending Advisor - Charlotte NC Branches",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210709720",
-      "location": "Charlotte, NC, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, Orlando South",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210715105",
-      "location": "Lakeland, FL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Home Lending Advisor - Palm Beach Gardens, FL",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210719686",
-      "location": "Palm Beach Gardens, FL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, Jupiter, FL",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210741576",
-      "location": "Jupiter, FL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, Greensboro, NC",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210741699",
-      "location": "Greensboro, NC, United States",
-      "countries": [
-        "US"
-      ]
     }
   ],
   "https://morganstanley.eightfold.ai/careers?location=United%20States": [
@@ -35692,6 +35696,34 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800622205"
     },
     {
+      "title": "Senior Digital Asset Advisory Compliance Officer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549794753137"
+    },
+    {
+      "title": "Private Wealth Management Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800444948"
+    },
+    {
+      "title": "Global Financial Crimes Sanctions Compliance Officer Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800638745"
+    },
+    {
+      "title": "Analyst, Performance Attribution - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800356234"
+    },
+    {
+      "title": "Equity Research – Analyst/Associate, Airlines & Freight Transportation (New York)",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800769665"
+    },
+    {
+      "title": "Global Operations Resilience Team- Director (AVP)",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800675242"
+    },
+    {
+      "title": "Portfolio Manager - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800664144"
+    },
+    {
       "title": "Business Service Officer",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800786086"
     },
@@ -35708,10 +35740,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800192130"
     },
     {
-      "title": "Senior Digital Asset Advisory Compliance Officer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549794753137"
-    },
-    {
       "title": "Office Manager - Parametric",
       "url": "https://morganstanley.eightfold.ai/careers/job/549799505121"
     },
@@ -35722,10 +35750,6 @@
     {
       "title": "Registered Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800342096"
-    },
-    {
-      "title": "Private Wealth Management Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800444948"
     },
     {
       "title": "Analyst / Senior Analyst, Client Reporting - Parametric",
@@ -35744,14 +35768,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800764683"
     },
     {
-      "title": "Global Financial Crimes Sanctions Compliance Officer Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800638745"
-    },
-    {
-      "title": "Analyst, Performance Attribution - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800356234"
-    },
-    {
       "title": "Associate, Consultant Relations - Parametric",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800325866"
     },
@@ -35768,14 +35784,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800809784"
     },
     {
-      "title": "Equity Research – Analyst/Associate, Airlines & Freight Transportation (New York)",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800769665"
-    },
-    {
-      "title": "Global Operations Resilience Team- Director (AVP)",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800675242"
-    },
-    {
       "title": "Registered Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800517813"
     },
@@ -35786,10 +35794,6 @@
     {
       "title": "Intern - Bilingual English/Mandarin",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800708308"
-    },
-    {
-      "title": "Portfolio Manager - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800664144"
     },
     {
       "title": "Vice President, Financial Planning Director - Western Region",
@@ -40483,14 +40487,6 @@
       "title": "Workforce Development & Education Manager, Infrastructure Sites",
       "url": "https://jobs.ashbyhq.com/openai/8f8e9acf-37e7-4085-9ab4-f794c186331a",
       "location": "US - Remote",
-      "countries": [
-        "United States"
-      ]
-    },
-    {
-      "title": "Strategy & Operations, Program Manager",
-      "url": "https://jobs.ashbyhq.com/openai/fa42ad51-0ffa-4ec4-a004-3f24d790a3d4",
-      "location": "San Francisco",
       "countries": [
         "United States"
       ]
@@ -47025,6 +47021,14 @@
     {
       "title": "Model Policy Manager, National Security",
       "url": "https://jobs.ashbyhq.com/openai/230d7d77-133e-4b87-a7a4-3e8d4e9fdab3",
+      "location": "San Francisco",
+      "countries": [
+        "United States"
+      ]
+    },
+    {
+      "title": "Strategy & Operations, Program Manager",
+      "url": "https://jobs.ashbyhq.com/openai/fa42ad51-0ffa-4ec4-a004-3f24d790a3d4",
       "location": "San Francisco",
       "countries": [
         "United States"
@@ -63480,6 +63484,11 @@
   ],
   "https://boards-api.greenhouse.io/v1/boards/roblox/jobs": [
     {
+      "title": "Executive Talent Business Partner",
+      "url": "https://careers.roblox.com/jobs/8269038?gh_jid=8269038",
+      "location": "San Mateo, CA, United States"
+    },
+    {
       "title": "Senior Content Designer",
       "url": "https://careers.roblox.com/jobs/8278922?gh_jid=8278922",
       "location": "San Mateo, CA, United States"
@@ -64963,6 +64972,79 @@
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Principal-Architect--AI-Labs_JR364779",
       "reason": "senior (Principal)",
       "company": "Salesforce"
+    },
+    {
+      "title": "GBM - Public,  Electronic Cash Market Making, Quantitative Engineering, Vice President - New York New York · United States · Vice President",
+      "url": "https://higher.gs.com/roles/177618",
+      "reason": "senior (Vice President)",
+      "company": "Goldman Sachs"
+    },
+    {
+      "title": "Associate Banker, 30 Hours, Dover, DE - North Dover Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799022",
+      "location": "Dover, DE, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Associate Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Associate Banker, 20 Hours, Collegeville, PA - Collegeville Shopping Center Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800228",
+      "location": "Collegeville, PA, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Associate Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Associate Banker, 30 Hours, Homestead, PA - Waterfront Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800236",
+      "location": "Homestead, PA, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Associate Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Associate Banker, 20 Hours, Exton, PA - Exton Square Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800292",
+      "location": "Exton, PA, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Associate Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Relationship Banker - Broadway and 96th St. - New York, NY",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800945",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Relationship Banker - Port Authority - New York, NY",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801037",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Banker)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Executive Talent Business Partner",
+      "url": "https://careers.roblox.com/jobs/8269038?gh_jid=8269038",
+      "location": "San Mateo, CA, United States",
+      "reason": "not engineering (Executive)",
+      "company": "Roblox"
     }
   ]
 }
