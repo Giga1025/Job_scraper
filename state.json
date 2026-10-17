@@ -1,6 +1,10 @@
 {
   "https://apply.careers.microsoft.com/careers?location=United+States&filter_seniority=Entry&sort_by=timestamp": [
     {
+      "title": "Cloud Solution Architect, Copilot and Power Platform",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557027410"
+    },
+    {
       "title": "Microwave Design and Layout Engineer",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393557042160"
     },
@@ -33,12 +37,12 @@
       "url": "https://apply.careers.microsoft.com/careers/job/1970393557026551"
     },
     {
-      "title": "Digital Cloud Solution Architecture IC2",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393557041043"
-    },
-    {
       "title": "Finance Manager, Revenue & Gross Margin",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393556991271"
+    },
+    {
+      "title": "Digital Cloud Solution Architecture IC2",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557041043"
     },
     {
       "title": "Critical Environment Electrical Engineer",
@@ -2274,6 +2278,10 @@
     }
   ],
   "https://www.amazon.jobs/en/search?base_query=&loc_query=United+States&sort=recent": [
+    {
+      "title": "Systems Development Engineer, OISL Test Automation",
+      "url": "https://www.amazon.jobs/en/jobs/10582075/systems-development-engineer-oisl-test-automation"
+    },
     {
       "title": "HW Test Development Engineer, Amazon LEO",
       "url": "https://www.amazon.jobs/en/jobs/10581935/hw-test-development-engineer-amazon-leo"
@@ -27490,6 +27498,14 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Content Management Platform Manager, Vice President",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210765270",
+      "location": "Columbus, OH, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Associate Banker, 30 Hours, Dover, DE - North Dover Branch",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799022",
       "location": "Dover, DE, United States",
@@ -28170,14 +28186,6 @@
       ]
     },
     {
-      "title": "Director of Software Engineering - Data & AI",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796936",
-      "location": "Plano, TX, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Lead Software Engineer - Java or Python, Agentic AI",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210776957",
       "location": "Jersey City, NJ, United States",
@@ -28285,6 +28293,14 @@
       "title": "Lead Software Engineer- Java Full Stack - Production support",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210784336",
       "location": "Houston, TX, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Director of Software Engineering - Data & AI",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796936",
+      "location": "Plano, TX, United States",
       "countries": [
         "US"
       ]
@@ -35480,14 +35496,6 @@
       "countries": [
         "US"
       ]
-    },
-    {
-      "title": "Area Product Owner, Quantitative Risk Analytics",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210705145",
-      "location": "New York, NY, United States",
-      "countries": [
-        "US"
-      ]
     }
   ],
   "https://morganstanley.eightfold.ai/careers?location=United%20States": [
@@ -35704,6 +35712,34 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800622205"
     },
     {
+      "title": "Senior Digital Asset Advisory Compliance Officer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549794753137"
+    },
+    {
+      "title": "Risk Officer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549798013565"
+    },
+    {
+      "title": "Office Manager - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799505121"
+    },
+    {
+      "title": "Vice President - Software Engineer - Backend",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799423962"
+    },
+    {
+      "title": "Operations Analyst - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799441719"
+    },
+    {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800517813"
+    },
+    {
+      "title": "Lead Web Proxy & AI Security Engineer - Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800516680"
+    },
+    {
       "title": "Private Wealth Management Registered Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800444948"
     },
@@ -35732,22 +35768,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800764683"
     },
     {
-      "title": "Senior Digital Asset Advisory Compliance Officer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549794753137"
-    },
-    {
-      "title": "Risk Officer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549798013565"
-    },
-    {
-      "title": "Office Manager - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799505121"
-    },
-    {
-      "title": "Vice President - Software Engineer - Backend",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799423962"
-    },
-    {
       "title": "Analyst, Performance Attribution - Parametric",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800356234"
     },
@@ -35768,10 +35788,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800786167"
     },
     {
-      "title": "Operations Analyst - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799441719"
-    },
-    {
       "title": "Registered Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800342096"
     },
@@ -35790,14 +35806,6 @@
     {
       "title": "Intern",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800809784"
-    },
-    {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800517813"
-    },
-    {
-      "title": "Lead Web Proxy & AI Security Engineer - Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800516680"
     },
     {
       "title": "Intern - Bilingual English/Mandarin",
@@ -64967,104 +64975,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-17T08:50:08",
-  "_left_out_pending": [
-    {
-      "title": "Director, AI Labs Scouts",
-      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Director--AI-Labs-Scouts_JR364780",
-      "reason": "senior (Director)",
-      "company": "Salesforce"
-    },
-    {
-      "title": "Principal Architect, AI Labs",
-      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Principal-Architect--AI-Labs_JR364779",
-      "reason": "senior (Principal)",
-      "company": "Salesforce"
-    },
-    {
-      "title": "GBM - Public,  Electronic Cash Market Making, Quantitative Engineering, Vice President - New York New York · United States · Vice President",
-      "url": "https://higher.gs.com/roles/177618",
-      "reason": "senior (Vice President)",
-      "company": "Goldman Sachs"
-    },
-    {
-      "title": "Associate Banker, 30 Hours, Dover, DE - North Dover Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799022",
-      "location": "Dover, DE, United States",
-      "countries": [
-        "US"
-      ],
-      "reason": "not engineering (Associate Banker)",
-      "company": "JPMorgan Chase"
-    },
-    {
-      "title": "Associate Banker, 20 Hours, Collegeville, PA - Collegeville Shopping Center Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800228",
-      "location": "Collegeville, PA, United States",
-      "countries": [
-        "US"
-      ],
-      "reason": "not engineering (Associate Banker)",
-      "company": "JPMorgan Chase"
-    },
-    {
-      "title": "Associate Banker, 30 Hours, Homestead, PA - Waterfront Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800236",
-      "location": "Homestead, PA, United States",
-      "countries": [
-        "US"
-      ],
-      "reason": "not engineering (Associate Banker)",
-      "company": "JPMorgan Chase"
-    },
-    {
-      "title": "Associate Banker, 20 Hours, Exton, PA - Exton Square Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800292",
-      "location": "Exton, PA, United States",
-      "countries": [
-        "US"
-      ],
-      "reason": "not engineering (Associate Banker)",
-      "company": "JPMorgan Chase"
-    },
-    {
-      "title": "Relationship Banker - Broadway and 96th St. - New York, NY",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800945",
-      "location": "New York, NY, United States",
-      "countries": [
-        "US"
-      ],
-      "reason": "not engineering (Banker)",
-      "company": "JPMorgan Chase"
-    },
-    {
-      "title": "Relationship Banker - Port Authority - New York, NY",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801037",
-      "location": "New York, NY, United States",
-      "countries": [
-        "US"
-      ],
-      "reason": "not engineering (Banker)",
-      "company": "JPMorgan Chase"
-    },
-    {
-      "title": "Executive Talent Business Partner",
-      "url": "https://careers.roblox.com/jobs/8269038?gh_jid=8269038",
-      "location": "San Mateo, CA, United States",
-      "reason": "not engineering (Executive)",
-      "company": "Roblox"
-    },
-    {
-      "title": "Estimating Manager, MEP - Data Center Reston, VA ⋅ Menlo Park, CA Data Center Data Center Design, Engineering, & Construction",
-      "url": "https://www.metacareers.com/profile/job_details/1017755164517174",
-      "reason": "senior (Manager)",
-      "company": "Meta"
-    },
-    {
-      "title": "Preconstruction Manager, Leased - Data Center Design, Engineering, and Construction Denver, CO ⋅ Bellevue, WA ⋅ Austin, TX ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ +3 more Data Center Data Center Design, Engi",
-      "url": "https://www.metacareers.com/profile/job_details/1098116586180702",
-      "reason": "senior (Manager)",
-      "company": "Meta"
-    }
-  ]
+  "_last_email_at": "2026-10-17T23:24:49"
 }
