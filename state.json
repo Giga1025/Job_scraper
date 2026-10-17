@@ -781,6 +781,22 @@
   ],
   "https://jobs.apple.com/en-us/search?location=united-states-USA&sort=newest": [
     {
+      "title": "Data Scientist - Intelligent Experiences, MLO",
+      "url": "https://jobs.apple.com/en-us/details/200687787-0836/data-scientist-intelligent-experiences-mlo?team=MLAI"
+    },
+    {
+      "title": "Senior Product Manager, Apple Store Online",
+      "url": "https://jobs.apple.com/en-us/details/200689990-0836/senior-product-manager-apple-store-online?team=SLDEV"
+    },
+    {
+      "title": "Core Bring Up Engineer, Core OS",
+      "url": "https://jobs.apple.com/en-us/details/200689992-0836/core-bring-up-engineer-core-os?team=SFTWR"
+    },
+    {
+      "title": "Engineering Leader, AI Safety Engineering & Evaluation, Apple Services Engineering",
+      "url": "https://jobs.apple.com/en-us/details/200689831-0836/engineering-leader-ai-safety-engineering-evaluation-apple-services-engineering?team=SFTWR"
+    },
+    {
       "title": "Software Engineer, Internal Tools - Media, Graphics & Compute Tech",
       "url": "https://jobs.apple.com/en-us/details/200689896/software-engineer-internal-tools-media-graphics-compute-tech?team=SFTWR"
     },
@@ -837,6 +853,14 @@
       "url": "https://jobs.apple.com/en-us/details/200689106-3956/hardware-design-engineer?team=HRDWR"
     },
     {
+      "title": "US - Specialist: Seasonal, Part-time",
+      "url": "https://jobs.apple.com/en-us/details/114438158/us-specialist-seasonal-part-time?team=APPST"
+    },
+    {
+      "title": "Pre-silicon Compute and ML Framework Manager",
+      "url": "https://jobs.apple.com/en-us/details/200678347-0836/pre-silicon-compute-and-ml-framework-manager?team=SFTWR"
+    },
+    {
       "title": "Hardware Design Engineer",
       "url": "https://jobs.apple.com/en-us/details/200689115-3956/hardware-design-engineer?team=HRDWR"
     },
@@ -855,10 +879,6 @@
     {
       "title": "Cellular Power Systems Engineer",
       "url": "https://jobs.apple.com/en-us/details/200688522-3543/cellular-power-systems-engineer?team=HRDWR"
-    },
-    {
-      "title": "US - Specialist: Seasonal, Part-time",
-      "url": "https://jobs.apple.com/en-us/details/114438158/us-specialist-seasonal-part-time?team=APPST"
     },
     {
       "title": "IS&T Services Broadcast Engineer,  Employee Experience & Productivity",
@@ -1805,10 +1825,6 @@
       "url": "https://jobs.apple.com/en-us/details/200687765-3337/machine-learning-engineer-apple-services-engineering?team=MLAI"
     },
     {
-      "title": "Pre-silicon Compute and ML Framework Manager",
-      "url": "https://jobs.apple.com/en-us/details/200678347-0836/pre-silicon-compute-and-ml-framework-manager?team=SFTWR"
-    },
-    {
       "title": "Software Engineering Manager - Apple Security Identity",
       "url": "https://jobs.apple.com/en-us/details/200688175-3337/software-engineering-manager-apple-security-identity?team=SFTWR"
     },
@@ -2267,10 +2283,6 @@
       "url": "https://www.amazon.jobs/en/jobs/10581930/applied-scientist-ii-sponsored-products-bidding"
     },
     {
-      "title": "Executive Assistant II, People eXperience & Technology",
-      "url": "https://www.amazon.jobs/en/jobs/10581893/executive-assistant-ii-people-experience-technology"
-    },
-    {
       "title": "Prime Air Ground Handler, Amazon Prime Air",
       "url": "https://www.amazon.jobs/en/jobs/10581901/prime-air-ground-handler-amazon-prime-air"
     },
@@ -2301,6 +2313,10 @@
     {
       "title": "Prime Air Ground Handler, Amazon Prime Air",
       "url": "https://www.amazon.jobs/en/jobs/10581814/prime-air-ground-handler-amazon-prime-air"
+    },
+    {
+      "title": "Executive Assistant II, People eXperience & Technology",
+      "url": "https://www.amazon.jobs/en/jobs/10581893/executive-assistant-ii-people-experience-technology"
     },
     {
       "title": "Prime Air Ground Handler, Amazon Prime Air",
@@ -3513,10 +3529,6 @@
       "url": "https://www.metacareers.com/profile/job_details/1238249364564427"
     },
     {
-      "title": "Product Marketing Manager Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Sales & Marketing Business Marketing Product Marketing Management",
-      "url": "https://www.metacareers.com/profile/job_details/5101897033369980"
-    },
-    {
       "title": "Signal Integrity / Power Integrity Engineer Sunnyvale, CA ⋅ Redmond, WA ⋅ San Diego, CA ⋅ New York, NY AR/VR Meta Quest Facebook Reality Labs Hardware",
       "url": "https://www.metacareers.com/profile/job_details/2309543522914406"
     },
@@ -3527,6 +3539,14 @@
     {
       "title": "Product Manager Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ New York, NY ⋅ San Francisco, CA Instagram Product Strategy",
       "url": "https://www.metacareers.com/profile/job_details/961472602841468"
+    },
+    {
+      "title": "Software Engineer, iOS Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ New York, NY ⋅ +1 more Software Engineering Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/1203016587809246"
+    },
+    {
+      "title": "Product Marketing Manager Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Sales & Marketing Business Marketing Product Marketing Management",
+      "url": "https://www.metacareers.com/profile/job_details/5101897033369980"
     },
     {
       "title": "ASIC Engineer, Foundry and IP Sunnyvale, CA ⋅ Austin, TX Facebook Infrastructure Data Center Design Engineering Hardware",
@@ -3611,10 +3631,6 @@
     {
       "title": "Software Engineer (Leadership) - Infrastructure Sunnyvale, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ +3 more Artificial Intelligence Instagram Facebook Generative AI Software Eng",
       "url": "https://www.metacareers.com/profile/job_details/704019139159184"
-    },
-    {
-      "title": "Software Engineer, iOS Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ New York, NY ⋅ +1 more Software Engineering Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/1203016587809246"
     },
     {
       "title": "Production Engineering Bellevue, WA ⋅ Menlo Park, CA ⋅ Boston, MA ⋅ New York, NY ⋅ Fremont, CA Infrastructure Production Engineering",
@@ -4696,6 +4712,22 @@
     }
   ],
   "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite?redirect=/en-US/NVIDIAExternalCareerSite/userHome&locationHierarchy1=2fcb99c455831013ea52fb338f2932d8&workerSubType=ab40a98049581037a3ada55b087049b7": [
+    {
+      "title": "Data Science Iterate on large datasets, deploy models more frequently, and lower total cost",
+      "url": "https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/"
+    },
+    {
+      "title": "Open Positions",
+      "url": "https://jobs.nvidia.com/careers"
+    },
+    {
+      "title": "How We Hire",
+      "url": "https://www.nvidia.com/en-us/about-nvidia/careers/how-we-hire/"
+    },
+    {
+      "title": "University Recruiting",
+      "url": "https://www.nvidia.com/en-us/about-nvidia/careers/university-recruiting/"
+    },
     {
       "title": "ASIC Verification Engineer - New College Grad 2026",
       "url": "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/US-TX-Austin/ASIC-Verification-Engineer---New-College-Grad-2026_JR2012573"
@@ -12973,6 +13005,10 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922653220"
     },
     {
+      "title": "Manager, Enterprise Quality",
+      "url": "https://paypal.eightfold.ai/careers/job/274922421852"
+    },
+    {
       "title": "Sr. Technical Program Manager, AI Enablement for Enterprise",
       "url": "https://paypal.eightfold.ai/careers/job/274922258202"
     },
@@ -13007,10 +13043,6 @@
     {
       "title": "Director, Enterprise Quality team",
       "url": "https://paypal.eightfold.ai/careers/job/274922421863"
-    },
-    {
-      "title": "Manager, Enterprise Quality",
-      "url": "https://paypal.eightfold.ai/careers/job/274922421852"
     },
     {
       "title": "Senior Manager, Business Operations",
@@ -27438,6 +27470,62 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Relationship Banker - Washington Thornton - Thornton, CO - CO METRO NORTHWEST",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799980",
+      "location": "Thornton, CO, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Private Client Banker - Wadsworth and Jewell - Lakewood, CO",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800344",
+      "location": "Lakewood, CO, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Relationship Banker - Englewood Hampden - Englewood, CO",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800348",
+      "location": "CO, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Branch Operations Lead - Metro Southwest Market - Lakewood, CO",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800353",
+      "location": "Lakewood, CO, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Relationship Banker - Silverthorne/Vail/Avon - CO METRO NORTH",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800411",
+      "location": "Silverthorne, CO, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Relationship Banker - South Ogden - South Ogden, UT",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800622",
+      "location": "South Ogden, UT, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Relationship Banker - Broadway & Dakota - Denver, CO",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800789",
+      "location": "Denver, CO, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Market Risk Implementation & Analytics – Vice President",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210718468",
       "location": "New York, NY, United States",
@@ -27721,14 +27809,6 @@
       "title": "Senior Manager of Infrastructure Engineering",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796768",
       "location": "Jersey City, NJ, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Software Engineer II - Python, Databricks, ETL",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798585",
-      "location": "Chicago, IL, United States",
       "countries": [
         "US"
       ]
@@ -28054,30 +28134,6 @@
       ]
     },
     {
-      "title": "Part Time (30 Hours) Associate Banker Foothill and Citrus Branch, Fontana, CA",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797792",
-      "location": "Fontana, CA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "J.P. Morgan Wealth Management – Private Client Advisor - Colorado Springs, CO (Austin Bluffs)",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798628",
-      "location": "Colorado Springs, CO, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Associate Banker, 30 Hours, Farragut, TN - Farragut Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798719",
-      "location": "Farragut, TN, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Lead Software Engineer - Java or Python, Agentic AI",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210776957",
       "location": "Jersey City, NJ, United States",
@@ -28118,25 +28174,9 @@
       ]
     },
     {
-      "title": "Associate Banker, 20 Hours, Avon, IN - East Avon Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798406",
-      "location": "Avon, IN, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Private Client Banker - Village of Merrick Park - Coral Gables, FL",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210794809",
       "location": "Coral Gables, FL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Private Client Banker - Biscayne and 182nd - Aventura, FL",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798166",
-      "location": "Aventura, FL, United States",
       "countries": [
         "US"
       ]
@@ -28206,14 +28246,6 @@
       ]
     },
     {
-      "title": "J.P. Morgan Wealth Management- Vice President, Product Manager",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798823",
-      "location": "NY, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Finance & Business Management",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210787107",
       "location": "New York, NY, United States",
@@ -28233,6 +28265,62 @@
       "title": "Lead Software Engineer- Java Full Stack - Production support",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210784336",
       "location": "Houston, TX, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Software Engineer II - Python, Databricks, ETL",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798585",
+      "location": "Chicago, IL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Part Time (30 Hours) Associate Banker Foothill and Citrus Branch, Fontana, CA",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797792",
+      "location": "Fontana, CA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "J.P. Morgan Wealth Management – Private Client Advisor - Colorado Springs, CO (Austin Bluffs)",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798628",
+      "location": "Colorado Springs, CO, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 30 Hours, Farragut, TN - Farragut Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798719",
+      "location": "Farragut, TN, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 20 Hours, Avon, IN - East Avon Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798406",
+      "location": "Avon, IN, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Private Client Banker - Biscayne and 182nd - Aventura, FL",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798166",
+      "location": "Aventura, FL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "J.P. Morgan Wealth Management- Vice President, Product Manager",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798823",
+      "location": "NY, United States",
       "countries": [
         "US"
       ]
@@ -35380,62 +35468,6 @@
       "countries": [
         "US"
       ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, Winston Salem, NC",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210741721",
-      "location": "Winston Salem, NC, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, Raleigh, NC",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210741727",
-      "location": "Raleigh, NC, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, Garner, and Raleigh, NC",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210742862",
-      "location": "Garner, NC, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, Atlanta, Georgia Central East",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210744877",
-      "location": "Atlanta, GA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, Northeast Atlanta, Georgia",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210745015",
-      "location": "Buford, GA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, South Atlanta, Georgia",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210745084",
-      "location": "Newnan, GA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Executive Recruiter Associate - Asset & Wealth Management",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210748727",
-      "location": "New York, NY, United States",
-      "countries": [
-        "US"
-      ]
     }
   ],
   "https://morganstanley.eightfold.ai/careers?location=United%20States": [
@@ -35612,10 +35644,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549794752570"
     },
     {
-      "title": "Wealth Management Private Banking Operations - High Net Worth Collateral Monitoring - Director",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800192130"
-    },
-    {
       "title": "Private Markets Transaction Desk Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800707628"
     },
@@ -35656,10 +35684,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800342096"
     },
     {
-      "title": "Senior Digital Asset Advisory Compliance Officer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549794753137"
-    },
-    {
       "title": "Crypto Product Manager - Executive Director",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800622205"
     },
@@ -35668,20 +35692,40 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800786086"
     },
     {
-      "title": "Private Wealth Management Business Service Officer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800768681"
-    },
-    {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800764683"
-    },
-    {
       "title": "Private Wealth Management Registered Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800444948"
     },
     {
       "title": "Risk Officer",
       "url": "https://morganstanley.eightfold.ai/careers/job/549798013565"
+    },
+    {
+      "title": "Analyst / Senior Analyst, Client Reporting - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800374837"
+    },
+    {
+      "title": "Risk Officer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800786167"
+    },
+    {
+      "title": "2027 Premier Relationship Manager",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800790247"
+    },
+    {
+      "title": "Wealth Management Private Banking Operations - High Net Worth Collateral Monitoring - Director",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800192130"
+    },
+    {
+      "title": "Senior Digital Asset Advisory Compliance Officer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549794753137"
+    },
+    {
+      "title": "Private Wealth Management Business Service Officer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800768681"
+    },
+    {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800764683"
     },
     {
       "title": "Global Financial Crimes Sanctions Compliance Officer Vice President",
@@ -35694,14 +35738,6 @@
     {
       "title": "Associate, Consultant Relations - Parametric",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800325866"
-    },
-    {
-      "title": "Analyst / Senior Analyst, Client Reporting - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800374837"
-    },
-    {
-      "title": "Risk Officer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800786167"
     },
     {
       "title": "Vice President - Software Engineer - Backend",
@@ -35722,10 +35758,6 @@
     {
       "title": "Operations Analyst - Parametric",
       "url": "https://morganstanley.eightfold.ai/careers/job/549799441719"
-    },
-    {
-      "title": "2027 Premier Relationship Manager",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800790247"
     },
     {
       "title": "Equity Research – Analyst/Associate, Airlines & Freight Transportation (New York)",
@@ -61464,6 +61496,34 @@
       "url": "https://careers.qualcomm.com/careers/job/446717556726"
     },
     {
+      "title": "Hardware Platform Architect",
+      "url": "https://careers.qualcomm.com/careers/job/446717026616"
+    },
+    {
+      "title": "Memory Control Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446717808670"
+    },
+    {
+      "title": "Senior Staff Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446715551159"
+    },
+    {
+      "title": "Linux Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719814299"
+    },
+    {
+      "title": "R&D – IoT Linux Software Staff Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446717614758"
+    },
+    {
+      "title": "Lead Engineer, Senior - Linux Software APSS Image Integration",
+      "url": "https://careers.qualcomm.com/careers/job/446721378161"
+    },
+    {
+      "title": "WLAN Linux Networking Engineer Staff (Software)",
+      "url": "https://careers.qualcomm.com/careers/job/446721118847"
+    },
+    {
       "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
       "url": "https://careers.qualcomm.com/careers/job/446720740540"
     },
@@ -61478,14 +61538,6 @@
     {
       "title": "#Embedded Software Engineer – Device Driver Development",
       "url": "https://careers.qualcomm.com/careers/job/446718891829"
-    },
-    {
-      "title": "Hardware Platform Architect",
-      "url": "https://careers.qualcomm.com/careers/job/446717026616"
-    },
-    {
-      "title": "Memory Control Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446717808670"
     },
     {
       "title": "#RF Test Engineer",
@@ -61556,10 +61608,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446721161553"
     },
     {
-      "title": "Senior Staff Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446715551159"
-    },
-    {
       "title": "Modem Software Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721373024"
     },
@@ -61574,22 +61622,6 @@
     {
       "title": "#Software Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721233027"
-    },
-    {
-      "title": "Linux Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719814299"
-    },
-    {
-      "title": "R&D – IoT Linux Software Staff Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446717614758"
-    },
-    {
-      "title": "Lead Engineer, Senior - Linux Software APSS Image Integration",
-      "url": "https://careers.qualcomm.com/careers/job/446721378161"
-    },
-    {
-      "title": "WLAN Linux Networking Engineer Staff (Software)",
-      "url": "https://careers.qualcomm.com/careers/job/446721118847"
     },
     {
       "title": "Machine Learning R&D",
@@ -64910,5 +64942,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-17T04:14:44"
+  "_last_email_at": "2026-10-17T08:50:08"
 }
