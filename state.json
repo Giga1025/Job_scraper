@@ -3533,10 +3533,6 @@
       "url": "https://www.metacareers.com/profile/job_details/1420853345578936"
     },
     {
-      "title": "Software Engineer, Product Sunnyvale, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Austin, TX ⋅ +7 more Software Engineering Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/9657291271065759"
-    },
-    {
       "title": "Software Engineer, Machine Learning Sunnyvale, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ +4 more Software Engineering Engineering",
       "url": "https://www.metacareers.com/profile/job_details/998357492128826"
     },
@@ -3551,6 +3547,14 @@
     {
       "title": "Software Engineer, iOS Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ New York, NY ⋅ +1 more Software Engineering Engineering",
       "url": "https://www.metacareers.com/profile/job_details/1203016587809246"
+    },
+    {
+      "title": "Software Engineer, Machine Learning RecSys Sunnyvale, CA ⋅ Bellevue, WA ⋅ Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Software Engineering Machine Learning Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/1665891037811282"
+    },
+    {
+      "title": "Software Engineer, Product Sunnyvale, CA ⋅ Remote, US ⋅ Bellevue, WA ⋅ Redmond, WA ⋅ Austin, TX ⋅ +7 more Software Engineering Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/9657291271065759"
     },
     {
       "title": "Signal Integrity / Power Integrity Engineer Sunnyvale, CA ⋅ Redmond, WA ⋅ San Diego, CA ⋅ New York, NY AR/VR Meta Quest Facebook Reality Labs Hardware",
@@ -3803,10 +3807,6 @@
     {
       "title": "Research Engineer, Monetization AI Sunnyvale, CA ⋅ Bellevue, WA ⋅ New York, NY AI Research Advertising Technology Artificial Intelligence Research Software Engineering Engineering Machine Learning",
       "url": "https://www.metacareers.com/profile/job_details/1070564468548321"
-    },
-    {
-      "title": "Software Engineer, Machine Learning RecSys Sunnyvale, CA ⋅ Bellevue, WA ⋅ Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Software Engineering Machine Learning Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/1665891037811282"
     },
     {
       "title": "Product Manager (Leadership) Sunnyvale, CA ⋅ Redmond, WA ⋅ Menlo Park, CA ⋅ Burlingame, CA ⋅ New York, NY ⋅ +2 more Advertising Technology AI Infrastructure Program Management",
@@ -8743,11 +8743,6 @@
       "location": "South San Francisco"
     },
     {
-      "title": "Head of Southern Europe Revenue & Growth",
-      "url": "https://stripe.com/jobs/search?gh_jid=8264423",
-      "location": "Madrid"
-    },
-    {
       "title": "Software Engineer",
       "url": "https://stripe.com/jobs/search?gh_jid=8267736",
       "location": "Seattle, WA"
@@ -12123,6 +12118,11 @@
       "location": "Bengaluru"
     },
     {
+      "title": "Head of Southern Europe Revenue & Growth",
+      "url": "https://stripe.com/jobs/search?gh_jid=8264423",
+      "location": "Madrid"
+    },
+    {
       "title": "PMM Lead, Executive Content & Experiences",
       "url": "https://stripe.com/jobs/search?gh_jid=8178459",
       "location": "San Francisco, New York, Seattle, Chicago, Atlanta, Remote in the US"
@@ -12981,10 +12981,6 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922421601"
     },
     {
-      "title": "Sr Staff Software Engineer",
-      "url": "https://paypal.eightfold.ai/careers/job/274918256654"
-    },
-    {
       "title": "Executive Assistant Business Partner",
       "url": "https://paypal.eightfold.ai/careers/job/274922817887"
     },
@@ -13029,12 +13025,16 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922653220"
     },
     {
-      "title": "Senior Director, Media & Growth",
-      "url": "https://paypal.eightfold.ai/careers/job/274922258233"
-    },
-    {
       "title": "Senior Manager, Business Operations",
       "url": "https://paypal.eightfold.ai/careers/job/274922541647"
+    },
+    {
+      "title": "Sr Staff Software Engineer",
+      "url": "https://paypal.eightfold.ai/careers/job/274918256654"
+    },
+    {
+      "title": "Senior Director, Media & Growth",
+      "url": "https://paypal.eightfold.ai/careers/job/274922258233"
     },
     {
       "title": "Sr. Technical Program Manager, AI Enablement for Enterprise",
@@ -35520,10 +35520,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800765497"
     },
     {
-      "title": "Machine Learning, Assistant Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799201782"
-    },
-    {
       "title": "Machine Learning, Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549799201735"
     },
@@ -35554,14 +35550,6 @@
     {
       "title": "Alternative Investments Sales Desk Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800667617"
-    },
-    {
-      "title": "Associate Service Manager",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799950111"
-    },
-    {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799440741"
     },
     {
       "title": "Registered Client Service Associate",
@@ -35708,24 +35696,12 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549794753137"
     },
     {
-      "title": "Operations Analyst - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799441719"
-    },
-    {
       "title": "Office Manager - Parametric",
       "url": "https://morganstanley.eightfold.ai/careers/job/549799505121"
     },
     {
-      "title": "Business Service Officer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800786086"
-    },
-    {
       "title": "Analyst / Senior Analyst, Client Reporting - Parametric",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800374837"
-    },
-    {
-      "title": "Associate, Consultant Relations - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800325866"
     },
     {
       "title": "Registered Client Relationship Analyst",
@@ -35744,12 +35720,40 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549799423962"
     },
     {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800517813"
-    },
-    {
       "title": "Wealth Management Private Banking Operations - High Net Worth Collateral Monitoring - Director",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800192130"
+    },
+    {
+      "title": "Risk Officer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549798013565"
+    },
+    {
+      "title": "Machine Learning, Assistant Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799201782"
+    },
+    {
+      "title": "Associate Service Manager",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799950111"
+    },
+    {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799440741"
+    },
+    {
+      "title": "Operations Analyst - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799441719"
+    },
+    {
+      "title": "Business Service Officer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800786086"
+    },
+    {
+      "title": "Associate, Consultant Relations - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800325866"
+    },
+    {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800517813"
     },
     {
       "title": "Global Operations Resilience Team- Director (AVP)",
@@ -35758,10 +35762,6 @@
     {
       "title": "Portfolio Manager - Parametric",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800664144"
-    },
-    {
-      "title": "Risk Officer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549798013565"
     },
     {
       "title": "Lead Web Proxy & AI Security Engineer - Vice President",
@@ -61521,6 +61521,38 @@
       "url": "https://careers.qualcomm.com/careers/job/446715551159"
     },
     {
+      "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
+      "url": "https://careers.qualcomm.com/careers/job/446720740540"
+    },
+    {
+      "title": "Staff Engineer, Device Drivers (San Diego or Boulder, CO)",
+      "url": "https://careers.qualcomm.com/careers/job/446715878664"
+    },
+    {
+      "title": "FPGA Firmware Engineer / FPGA Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446717133035"
+    },
+    {
+      "title": "#Embedded Software Engineer – Device Driver Development",
+      "url": "https://careers.qualcomm.com/careers/job/446718891829"
+    },
+    {
+      "title": "System Performance Modeling Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446715371689"
+    },
+    {
+      "title": "Hardware Platform Architect",
+      "url": "https://careers.qualcomm.com/careers/job/446717026616"
+    },
+    {
+      "title": "Memory Designer",
+      "url": "https://careers.qualcomm.com/careers/job/446716319290"
+    },
+    {
+      "title": "#Sensors Software Engineer (Engineer or Senior)",
+      "url": "https://careers.qualcomm.com/careers/job/446720889828"
+    },
+    {
       "title": "Linux Software Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446719814299"
     },
@@ -61589,14 +61621,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446718849543"
     },
     {
-      "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
-      "url": "https://careers.qualcomm.com/careers/job/446720740540"
-    },
-    {
-      "title": "Staff Engineer, Device Drivers (San Diego or Boulder, CO)",
-      "url": "https://careers.qualcomm.com/careers/job/446715878664"
-    },
-    {
       "title": "System Integration & Test Engineer - Top Secret Clearance Preferred (San Diego CA)",
       "url": "https://careers.qualcomm.com/careers/job/446720174470"
     },
@@ -61611,10 +61635,6 @@
     {
       "title": "PCB Designer, Staff",
       "url": "https://careers.qualcomm.com/careers/job/446717263332"
-    },
-    {
-      "title": "FPGA Firmware Engineer / FPGA Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446717133035"
     },
     {
       "title": "Modem Hardware Design Verification Engineer – AI Driven Next Gen Modem Hardware Development, Staff",
@@ -61677,10 +61697,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446721162727"
     },
     {
-      "title": "#Embedded Software Engineer – Device Driver Development",
-      "url": "https://careers.qualcomm.com/careers/job/446718891829"
-    },
-    {
       "title": "#Software Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721232996"
     },
@@ -61717,20 +61733,12 @@
       "url": "https://careers.qualcomm.com/careers/job/446716320059"
     },
     {
-      "title": "System Performance Modeling Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446715371689"
-    },
-    {
       "title": "Graphics ASICS Hardware Design Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446715371868"
     },
     {
       "title": "GPU Power Analysis Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446715532700"
-    },
-    {
-      "title": "Hardware Platform Architect",
-      "url": "https://careers.qualcomm.com/careers/job/446717026616"
     },
     {
       "title": "Memory Control Design Engineer",
@@ -61879,10 +61887,6 @@
     {
       "title": "SOC Design Verification Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446720709621"
-    },
-    {
-      "title": "Memory Designer",
-      "url": "https://careers.qualcomm.com/careers/job/446716319290"
     },
     {
       "title": "GPU HLM Engineer",
@@ -62245,10 +62249,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446719107884"
     },
     {
-      "title": "#Sensors Software Engineer (Engineer or Senior)",
-      "url": "https://careers.qualcomm.com/careers/job/446720889828"
-    },
-    {
       "title": "#5G/6G Modem Software Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721230796"
     },
@@ -62583,6 +62583,11 @@
     }
   ],
   "https://jobs.intuit.com/search-jobs/results?OrganizationIds=27595&FacetFilters%5B0%5D.ID=6252001&FacetFilters%5B0%5D.FacetType=2&FacetFilters%5B0%5D.IsApplied=true&SearchResultsModuleName=Search+Results&SortCriteria=1&SortDirection=1&RecordsPerPage=50": [
+    {
+      "title": "Principal Product Marketing Manager, QuickBooks",
+      "url": "https://jobs.intuit.com/job/san-francisco/principal-product-marketing-manager-quickbooks/27595/102111822912",
+      "location": "Multiple Locations"
+    },
     {
       "title": "Software Engineer 2, Mid Market Intelligence",
       "url": "https://jobs.intuit.com/job/mountain-view/software-engineer-2-mid-market-intelligence/27595/102055626928",
@@ -65012,5 +65017,14 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-18T01:31:39"
+  "_last_email_at": "2026-10-18T01:31:39",
+  "_left_out_pending": [
+    {
+      "title": "Principal Product Marketing Manager, QuickBooks",
+      "url": "https://jobs.intuit.com/job/san-francisco/principal-product-marketing-manager-quickbooks/27595/102111822912",
+      "location": "Multiple Locations",
+      "reason": "senior (Principal)",
+      "company": "Intuit (TurboTax / QuickBooks)"
+    }
+  ]
 }
