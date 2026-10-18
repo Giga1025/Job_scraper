@@ -1,46 +1,6 @@
 {
   "https://apply.careers.microsoft.com/careers?location=United+States&filter_seniority=Entry&sort_by=timestamp": [
     {
-      "title": "Cloud Solution Architect, AI Solutions and Copilot",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556949446"
-    },
-    {
-      "title": "Principal Platform Power and Performance Engineer",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556929417"
-    },
-    {
-      "title": "Senior Cloud Solution Architect, Cloud & AI Business Solutions",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393557002031"
-    },
-    {
-      "title": "Senior Cloud Solution Architect - Agentic AI and Copilot Studio",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393557002039"
-    },
-    {
-      "title": "Cloud Solution Architect Director - AI Business Solutions",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393557023148"
-    },
-    {
-      "title": "Senior Cloud Solution Architect, Code-With Engineering, Partner Solutions",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393557019343"
-    },
-    {
-      "title": "Sr Cloud Solution Architect - Copilot",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393557001432"
-    },
-    {
-      "title": "Principal Cloud Solution Architect, Cloud and Agentic AI Solutions - New York",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393557019307"
-    },
-    {
-      "title": "Cloud Solution Architect",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393557026798"
-    },
-    {
-      "title": "Director Security Cloud Solution Architect",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556979039"
-    },
-    {
       "title": "Cloud Solution Architect, Copilot and Power Platform",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393557027410"
     },
@@ -79,6 +39,46 @@
     {
       "title": "Finance Manager, Revenue & Gross Margin",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393556991271"
+    },
+    {
+      "title": "Cloud Solution Architect, AI Solutions and Copilot",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556949446"
+    },
+    {
+      "title": "Principal Platform Power and Performance Engineer",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556929417"
+    },
+    {
+      "title": "Senior Cloud Solution Architect, Cloud & AI Business Solutions",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557002031"
+    },
+    {
+      "title": "Senior Cloud Solution Architect - Agentic AI and Copilot Studio",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557002039"
+    },
+    {
+      "title": "Cloud Solution Architect Director - AI Business Solutions",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557023148"
+    },
+    {
+      "title": "Senior Cloud Solution Architect, Code-With Engineering, Partner Solutions",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557019343"
+    },
+    {
+      "title": "Sr Cloud Solution Architect - Copilot",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557001432"
+    },
+    {
+      "title": "Principal Cloud Solution Architect, Cloud and Agentic AI Solutions - New York",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557019307"
+    },
+    {
+      "title": "Cloud Solution Architect",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393557026798"
+    },
+    {
+      "title": "Director Security Cloud Solution Architect",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556979039"
     },
     {
       "title": "Digital Cloud Solution Architecture IC2",
@@ -4407,12 +4407,12 @@
       "url": "https://explore.jobs.netflix.net/careers/jobs/790317608614"
     },
     {
-      "title": "Market Planning & Operations Sr. Manager (UCAN) Sports Planning & Solutions",
-      "url": "https://explore.jobs.netflix.net/careers/jobs/790317941156"
-    },
-    {
       "title": "Media Solutions & Planning Manager (UCAN - Market Planning & Operations)",
       "url": "https://explore.jobs.netflix.net/careers/jobs/790317759412"
+    },
+    {
+      "title": "Market Planning & Operations Sr. Manager (UCAN) Sports Planning & Solutions",
+      "url": "https://explore.jobs.netflix.net/careers/jobs/790317941156"
     },
     {
       "title": "Partner Engagement Manager, Taiwan",
@@ -26536,6 +26536,10 @@
   ],
   "https://higher.gs.com/roles?division=Global+Markets&division=Engineering&country=United+States&sort=NEWEST": [
     {
+      "title": "Product Management, Asset & Wealth Management, London, Vice President London · United Kingdom · Vice President",
+      "url": "https://higher.gs.com/roles/186125"
+    },
+    {
       "title": "Quantitative Strategist, Global Banking & Markets, Commodities Trading - Associate / Vice President New York · United States · Vice President",
       "url": "https://higher.gs.com/roles/173976"
     },
@@ -26588,14 +26592,6 @@
       "url": "https://higher.gs.com/roles/172718"
     },
     {
-      "title": "Global Banking & Markets, FX Market Sales Strats London · United Kingdom · Vice President",
-      "url": "https://higher.gs.com/roles/186932"
-    },
-    {
-      "title": "Asset & Wealth Management, Private Wealth Management, Equity Structuring, 10b5-1 Plans, Vice President - New York New York · United States · Vice President",
-      "url": "https://higher.gs.com/roles/186849"
-    },
-    {
       "title": "Asset & Wealth Management, Multi-Asset Solutions: Quantitative Research, Vice President - New York New York · United States · Vice President",
       "url": "https://higher.gs.com/roles/186254"
     },
@@ -26614,6 +26610,18 @@
     {
       "title": "Asset & Wealth Management, Growth Marketing & Lead Generation, Associate - New York New York · United States · Associate",
       "url": "https://higher.gs.com/roles/182350"
+    },
+    {
+      "title": "Pega Engineer, Global Banking & Markets, Transaction Banking Dallas · United States · Vice President",
+      "url": "https://higher.gs.com/roles/184065"
+    },
+    {
+      "title": "Global Banking & Markets, FX Market Sales Strats London · United Kingdom · Vice President",
+      "url": "https://higher.gs.com/roles/186932"
+    },
+    {
+      "title": "Asset & Wealth Management, Private Wealth Management, Equity Structuring, 10b5-1 Plans, Vice President - New York New York · United States · Vice President",
+      "url": "https://higher.gs.com/roles/186849"
     },
     {
       "title": "The Core Engineering - Site Reliability Engineering - Associate - Birmingham Birmingham · United Kingdom · Associate",
@@ -26754,10 +26762,6 @@
     {
       "title": "Goldman Sachs Asset & Wealth Management - OCIO Insurance Analyst - The Hague The Hague · Netherlands · Vice President",
       "url": "https://higher.gs.com/roles/169152"
-    },
-    {
-      "title": "Pega Engineer, Global Banking & Markets, Transaction Banking Dallas · United States · Vice President",
-      "url": "https://higher.gs.com/roles/184065"
     },
     {
       "title": "Product Management, Asset & Wealth Management, Private Wealth Management New York · United States · Associate",
@@ -27562,6 +27566,38 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Private Client Banker - Nolensville Pike and Old Hickory Blvd - Nashville, TN",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799456",
+      "location": "Nashville, TN, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Relationship Banker - Hendersonville - Hendersonville, TN",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799532",
+      "location": "Hendersonville, TN, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Lead Software Engineer – Market Risk Reporting & Visualization",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800952",
+      "location": "Jersey City, NJ, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Software Engineer III – Market Risk Reporting & Visualization",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800953",
+      "location": "Jersey City, NJ, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Marketing Analytics-Senior Associate",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799981",
       "location": "Wilmington, DE, United States",
@@ -27962,14 +27998,6 @@
       ]
     },
     {
-      "title": "Lead Technical Program Manager",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795902",
-      "location": "Jersey City, NJ, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "J.P. Morgan Advisors - Senior Client Associate",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210666328",
       "location": "New York, NY, United States",
@@ -28234,22 +28262,6 @@
       ]
     },
     {
-      "title": "Principal Architect- Data SRE",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210794887",
-      "location": "Palo Alto, CA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Executive Administrative Assistant",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795697",
-      "location": "New York, NY, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Lead Software Engineer - Java or Python, Agentic AI",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210776957",
       "location": "Jersey City, NJ, United States",
@@ -28322,14 +28334,6 @@
       ]
     },
     {
-      "title": "Java Lead Software Engineer",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795259",
-      "location": "Columbus, OH, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Associate, Markets Planning and Analysis",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210794714",
       "location": "NY, United States",
@@ -28357,6 +28361,38 @@
       "title": "Lead Software Engineer- Java Full Stack - Production support",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210784336",
       "location": "Houston, TX, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Lead Technical Program Manager",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795902",
+      "location": "Jersey City, NJ, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Principal Architect- Data SRE",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210794887",
+      "location": "Palo Alto, CA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Executive Administrative Assistant",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795697",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Java Lead Software Engineer",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795259",
+      "location": "Columbus, OH, United States",
       "countries": [
         "US"
       ]
@@ -35528,38 +35564,6 @@
       "countries": [
         "US"
       ]
-    },
-    {
-      "title": "Senior Home Lending Advisor, Allentown, PA",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798597",
-      "location": "Allentown, PA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Branch Manager - Harbison Center - Columbia, SC",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798601",
-      "location": "Columbia, SC, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Supplier Cybersecurity Assessor - Vice President",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798636",
-      "location": "Columbus, OH, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "U.S. Private Bank - Private Banker - Senior Associate",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798677",
-      "location": "Philadelphia, PA, United States",
-      "countries": [
-        "US"
-      ]
     }
   ],
   "https://morganstanley.eightfold.ai/careers?location=United%20States": [
@@ -35776,6 +35780,34 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549799440741"
     },
     {
+      "title": "Analyst / Senior Analyst, Client Reporting - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800374837"
+    },
+    {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800764683"
+    },
+    {
+      "title": "Private Wealth Management Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800444948"
+    },
+    {
+      "title": "Wealth Management Private Banking Operations - High Net Worth Collateral Monitoring - Director",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800192130"
+    },
+    {
+      "title": "Associate, Consultant Relations - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800325866"
+    },
+    {
+      "title": "Analyst, Performance Attribution - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800356234"
+    },
+    {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800342096"
+    },
+    {
       "title": "Office Manager - Parametric",
       "url": "https://morganstanley.eightfold.ai/careers/job/549799505121"
     },
@@ -35804,10 +35836,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800768681"
     },
     {
-      "title": "Analyst / Senior Analyst, Client Reporting - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800374837"
-    },
-    {
       "title": "Global Operations Resilience Team- Director (AVP)",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800675242"
     },
@@ -35818,10 +35846,6 @@
     {
       "title": "Global Financial Crimes Sanctions Compliance Officer Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800638745"
-    },
-    {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800764683"
     },
     {
       "title": "Equity Research – Analyst/Associate, Airlines & Freight Transportation (New York)",
@@ -35840,20 +35864,8 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800786086"
     },
     {
-      "title": "Private Wealth Management Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800444948"
-    },
-    {
       "title": "Senior Digital Asset Advisory Compliance Officer",
       "url": "https://morganstanley.eightfold.ai/careers/job/549794753137"
-    },
-    {
-      "title": "Wealth Management Private Banking Operations - High Net Worth Collateral Monitoring - Director",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800192130"
-    },
-    {
-      "title": "Associate, Consultant Relations - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800325866"
     },
     {
       "title": "Registered Client Service Associate",
@@ -35862,14 +35874,6 @@
     {
       "title": "Lead Web Proxy & AI Security Engineer - Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800516680"
-    },
-    {
-      "title": "Analyst, Performance Attribution - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800356234"
-    },
-    {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800342096"
     },
     {
       "title": "Intern",
@@ -36679,6 +36683,11 @@
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/anthropic/jobs": [
+    {
+      "title": "Community Engagement Manager, Data Centers (Indiana & Kentucky)",
+      "url": "https://job-boards.greenhouse.io/anthropic/jobs/5454535008",
+      "location": "Remote-Friendly, United States"
+    },
     {
       "title": "Principal Engineer Capacity/Compute",
       "url": "https://job-boards.greenhouse.io/anthropic/jobs/5456039008",
@@ -61575,6 +61584,14 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
+      "title": "Business Operations Analyst – Datacenter Business Unit",
+      "url": "https://careers.qualcomm.com/careers/job/446721143259"
+    },
+    {
+      "title": "#Backend Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721162271"
+    },
+    {
       "title": "Staff Software Engineer, Linux Device Driver & Host SW (San Diego OR Boulder)",
       "url": "https://careers.qualcomm.com/careers/job/446719948774"
     },
@@ -61593,6 +61610,58 @@
     {
       "title": "Software Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721051165"
+    },
+    {
+      "title": "FPGA Firmware Engineer / FPGA Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446717133035"
+    },
+    {
+      "title": "Modem Hardware Design Verification Engineer – AI Driven Next Gen Modem Hardware Development, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446720926576"
+    },
+    {
+      "title": "#Hardware Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721143441"
+    },
+    {
+      "title": "Hardware Board Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446718450965"
+    },
+    {
+      "title": "Hardware System Design Engineer, Senior or Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446720760417"
+    },
+    {
+      "title": "Hardware Verification Engineer - Cork, Ireland",
+      "url": "https://careers.qualcomm.com/careers/job/446721194776"
+    },
+    {
+      "title": "SOC Design Verification Engineer, Staff– Pre-Si/Post-Si Verification",
+      "url": "https://careers.qualcomm.com/careers/job/446719823614"
+    },
+    {
+      "title": "SOC Design Verification Engineer– Pre-Si/Post-Si Verification",
+      "url": "https://careers.qualcomm.com/careers/job/446719823628"
+    },
+    {
+      "title": "SOC Design Verification Engineer– Pre-Si/Post-Si Verification",
+      "url": "https://careers.qualcomm.com/careers/job/446719823634"
+    },
+    {
+      "title": "SOC Power/Limits Architect",
+      "url": "https://careers.qualcomm.com/careers/job/446721201019"
+    },
+    {
+      "title": "Software Development Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721106667"
+    },
+    {
+      "title": "Baseband Hardware Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446720943599"
+    },
+    {
+      "title": "Demand Analyst",
+      "url": "https://careers.qualcomm.com/careers/job/446721139803"
     },
     {
       "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
@@ -61645,10 +61714,6 @@
     {
       "title": "Analog Mixed Signal/Power Management Design Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446718554982"
-    },
-    {
-      "title": "FPGA Firmware Engineer / FPGA Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446717133035"
     },
     {
       "title": "System Performance Modeling Engineer",
@@ -61775,40 +61840,8 @@
       "url": "https://careers.qualcomm.com/careers/job/446721363946"
     },
     {
-      "title": "Modem Hardware Design Verification Engineer – AI Driven Next Gen Modem Hardware Development, Staff",
-      "url": "https://careers.qualcomm.com/careers/job/446720926576"
-    },
-    {
-      "title": "#Hardware Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721143441"
-    },
-    {
-      "title": "Hardware Board Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446718450965"
-    },
-    {
       "title": "Senior Hardware Verification Engineer - Cork, Ireland",
       "url": "https://careers.qualcomm.com/careers/job/446721194774"
-    },
-    {
-      "title": "Hardware System Design Engineer, Senior or Staff",
-      "url": "https://careers.qualcomm.com/careers/job/446720760417"
-    },
-    {
-      "title": "Hardware Verification Engineer - Cork, Ireland",
-      "url": "https://careers.qualcomm.com/careers/job/446721194776"
-    },
-    {
-      "title": "SOC Design Verification Engineer, Staff– Pre-Si/Post-Si Verification",
-      "url": "https://careers.qualcomm.com/careers/job/446719823614"
-    },
-    {
-      "title": "SOC Design Verification Engineer– Pre-Si/Post-Si Verification",
-      "url": "https://careers.qualcomm.com/careers/job/446719823628"
-    },
-    {
-      "title": "SOC Design Verification Engineer– Pre-Si/Post-Si Verification",
-      "url": "https://careers.qualcomm.com/careers/job/446719823634"
     },
     {
       "title": "Senior Financial Analyst – Ventures Analytics & Operations",
@@ -61861,14 +61894,6 @@
     {
       "title": "#Machine Learning Engineer – Agentic AI",
       "url": "https://careers.qualcomm.com/careers/job/446721159438"
-    },
-    {
-      "title": "SOC Power/Limits Architect",
-      "url": "https://careers.qualcomm.com/careers/job/446721201019"
-    },
-    {
-      "title": "Software Development Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721106667"
     },
     {
       "title": "PMIC Reference HW Design Engineer",
@@ -62009,10 +62034,6 @@
     {
       "title": "IPS Hardware Support Technician/Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446720924663"
-    },
-    {
-      "title": "Baseband Hardware Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446720943599"
     },
     {
       "title": "SOC Design Verification Engineer",
@@ -62373,10 +62394,6 @@
     {
       "title": "Contracts Support Assistant",
       "url": "https://careers.qualcomm.com/careers/job/446720924609"
-    },
-    {
-      "title": "Demand Analyst",
-      "url": "https://careers.qualcomm.com/careers/job/446721139803"
     },
     {
       "title": "Security Specialist",
@@ -65120,5 +65137,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-18T21:03:47"
+  "_last_email_at": "2026-10-18T23:03:32"
 }
