@@ -13029,16 +13029,16 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922653220"
     },
     {
+      "title": "Senior Manager, Business Operations",
+      "url": "https://paypal.eightfold.ai/careers/job/274922541647"
+    },
+    {
       "title": "Sr. Technical Program Manager, AI Enablement for Enterprise",
       "url": "https://paypal.eightfold.ai/careers/job/274922258202"
     },
     {
       "title": "Lead Product Manager -  BNPL",
       "url": "https://paypal.eightfold.ai/careers/job/274922421650"
-    },
-    {
-      "title": "Senior Manager, Business Operations",
-      "url": "https://paypal.eightfold.ai/careers/job/274922541647"
     },
     {
       "title": "Senior Manager, Business Operations & Program Management",
@@ -35716,14 +35716,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549794753137"
     },
     {
-      "title": "Risk Officer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549798013565"
-    },
-    {
-      "title": "Office Manager - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799505121"
-    },
-    {
       "title": "Vice President - Software Engineer - Backend",
       "url": "https://morganstanley.eightfold.ai/careers/job/549799423962"
     },
@@ -35736,6 +35728,26 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800517813"
     },
     {
+      "title": "Wealth Management Private Banking Operations - High Net Worth Collateral Monitoring - Director",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800192130"
+    },
+    {
+      "title": "Global Operations Resilience Team- Director (AVP)",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800675242"
+    },
+    {
+      "title": "Portfolio Manager - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800664144"
+    },
+    {
+      "title": "Risk Officer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549798013565"
+    },
+    {
+      "title": "Office Manager - Parametric",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799505121"
+    },
+    {
       "title": "Lead Web Proxy & AI Security Engineer - Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800516680"
     },
@@ -35746,10 +35758,6 @@
     {
       "title": "Global Financial Crimes Sanctions Compliance Officer Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800638745"
-    },
-    {
-      "title": "Wealth Management Private Banking Operations - High Net Worth Collateral Monitoring - Director",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800192130"
     },
     {
       "title": "Business Service Officer",
@@ -35774,14 +35782,6 @@
     {
       "title": "Equity Research – Analyst/Associate, Airlines & Freight Transportation (New York)",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800769665"
-    },
-    {
-      "title": "Global Operations Resilience Team- Director (AVP)",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800675242"
-    },
-    {
-      "title": "Portfolio Manager - Parametric",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800664144"
     },
     {
       "title": "Risk Officer",
@@ -36615,6 +36615,11 @@
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/anthropic/jobs": [
+    {
+      "title": "Manager, Account Executive",
+      "url": "https://job-boards.greenhouse.io/anthropic/jobs/5391356008",
+      "location": "Tokyo, Japan"
+    },
     {
       "title": "Customer Success Manager, Enterprise Tech",
       "url": "https://job-boards.greenhouse.io/anthropic/jobs/5454800008",
@@ -38806,11 +38811,6 @@
       "location": "Tokyo, Japan"
     },
     {
-      "title": "Revenue Strategy & Operations",
-      "url": "https://job-boards.greenhouse.io/anthropic/jobs/5199633008",
-      "location": "Seoul, South Korea"
-    },
-    {
       "title": "Safeguards Enforcement Analyst, Access Controls & Identity",
       "url": "https://job-boards.greenhouse.io/anthropic/jobs/5319626008",
       "location": "San Francisco, CA | New York City, NY | Washington, DC"
@@ -39889,6 +39889,11 @@
       "title": "Staff Software Engineer: Compute",
       "url": "https://job-boards.greenhouse.io/anthropic/jobs/5432558008",
       "location": "San Francisco, CA | New York City, NY"
+    },
+    {
+      "title": "Revenue Strategy & Operations",
+      "url": "https://job-boards.greenhouse.io/anthropic/jobs/5199633008",
+      "location": "Seoul, South Korea"
     },
     {
       "title": "Applied AI Engineer, DNB",
@@ -61476,6 +61481,38 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
+      "title": "Program Manager",
+      "url": "https://careers.qualcomm.com/careers/job/446721551275"
+    },
+    {
+      "title": "Marketing Specialist - Integrated Marketing (Dragonwing & Dragonfly)",
+      "url": "https://careers.qualcomm.com/careers/job/446721597384"
+    },
+    {
+      "title": "GPU Research Engineer- AI (San Diego / Boxborough )",
+      "url": "https://careers.qualcomm.com/careers/job/446715273199"
+    },
+    {
+      "title": "GPU HW Research Engineer (San Diego/Boxborough)",
+      "url": "https://careers.qualcomm.com/careers/job/446716191606"
+    },
+    {
+      "title": "CPU Physical Design Engineer, San Diego",
+      "url": "https://careers.qualcomm.com/careers/job/446719090172"
+    },
+    {
+      "title": "Sr Staff or Principal Thermal Engineer, Server Packaging (San Diego)",
+      "url": "https://careers.qualcomm.com/careers/job/446719670502"
+    },
+    {
+      "title": "RF Electromagnetic (EM) Engineer - San Diego",
+      "url": "https://careers.qualcomm.com/careers/job/446720361948"
+    },
+    {
+      "title": "Principal CPU Physical Design Engineer (San Diego, CA)",
+      "url": "https://careers.qualcomm.com/careers/job/446718849543"
+    },
+    {
       "title": "Staff Software Engineer, Linux Device Driver & Host SW (San Diego OR Boulder)",
       "url": "https://careers.qualcomm.com/careers/job/446719948774"
     },
@@ -61494,6 +61531,30 @@
     {
       "title": "Software Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721051165"
+    },
+    {
+      "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
+      "url": "https://careers.qualcomm.com/careers/job/446720740540"
+    },
+    {
+      "title": "Staff Engineer, Device Drivers (San Diego or Boulder, CO)",
+      "url": "https://careers.qualcomm.com/careers/job/446715878664"
+    },
+    {
+      "title": "System Integration & Test Engineer - Top Secret Clearance Preferred (San Diego CA)",
+      "url": "https://careers.qualcomm.com/careers/job/446720174470"
+    },
+    {
+      "title": "#Wireless Firmware Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721161553"
+    },
+    {
+      "title": "Pre-Silicon Validation Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721363946"
+    },
+    {
+      "title": "PCB Designer, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446717263332"
     },
     {
       "title": "FPGA Firmware Engineer / FPGA Design Engineer",
@@ -61572,14 +61633,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446717556726"
     },
     {
-      "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
-      "url": "https://careers.qualcomm.com/careers/job/446720740540"
-    },
-    {
-      "title": "Staff Engineer, Device Drivers (San Diego or Boulder, CO)",
-      "url": "https://careers.qualcomm.com/careers/job/446715878664"
-    },
-    {
       "title": "Engineer, Staff_CE_Device Driver Development",
       "url": "https://careers.qualcomm.com/careers/job/446721162727"
     },
@@ -61594,10 +61647,6 @@
     {
       "title": "Project Analyst",
       "url": "https://careers.qualcomm.com/careers/job/446719899670"
-    },
-    {
-      "title": "System Integration & Test Engineer - Top Secret Clearance Preferred (San Diego CA)",
-      "url": "https://careers.qualcomm.com/careers/job/446720174470"
     },
     {
       "title": "Camera DV Engineer",
@@ -61690,10 +61739,6 @@
     {
       "title": "#Wireless Subsystem Test and Software Tools Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721161405"
-    },
-    {
-      "title": "#Wireless Firmware Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721161553"
     },
     {
       "title": "Modem Software Engineer",
@@ -61828,10 +61873,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446721477865"
     },
     {
-      "title": "Pre-Silicon Validation Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721363946"
-    },
-    {
       "title": "DataCenter Project Analyst",
       "url": "https://careers.qualcomm.com/careers/job/446720134255"
     },
@@ -61874,10 +61915,6 @@
     {
       "title": "Next Gen, High-Speed, Memory and Cache Controller Design Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721410827"
-    },
-    {
-      "title": "PCB Designer, Staff",
-      "url": "https://careers.qualcomm.com/careers/job/446717263332"
     },
     {
       "title": "SOC Power Architecture Engineer",
@@ -64975,5 +65012,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-17T23:24:49"
+  "_last_email_at": "2026-10-18T01:31:39"
 }
