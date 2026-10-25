@@ -16998,10 +16998,6 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922942761"
     },
     {
-      "title": "Legal Counsel, Consumer Credit",
-      "url": "https://paypal.eightfold.ai/careers/job/274922421622"
-    },
-    {
       "title": "Staff Software Engineer",
       "url": "https://paypal.eightfold.ai/careers/job/274922970339"
     },
@@ -17010,16 +17006,20 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922652798"
     },
     {
+      "title": "Sr. Director, Product Delivery - Consumer & Merchant Credit",
+      "url": "https://paypal.eightfold.ai/careers/job/274922258421"
+    },
+    {
+      "title": "Legal Counsel, Consumer Credit",
+      "url": "https://paypal.eightfold.ai/careers/job/274922421622"
+    },
+    {
       "title": "Director, Content Design",
       "url": "https://paypal.eightfold.ai/careers/job/274922421665"
     },
     {
       "title": "Sr Director, Product Growth - U.S. Consumer Credit",
       "url": "https://paypal.eightfold.ai/careers/job/274922525283"
-    },
-    {
-      "title": "Sr. Director, Product Delivery - Consumer & Merchant Credit",
-      "url": "https://paypal.eightfold.ai/careers/job/274922258421"
     },
     {
       "title": "Director, Experience Design",
@@ -40868,12 +40868,28 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549799157590"
     },
     {
-      "title": "Branch Administartor",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800810102"
-    },
-    {
       "title": "Investment Banking M&A Associate – New York",
       "url": "https://morganstanley.eightfold.ai/careers/job/549795500399"
+    },
+    {
+      "title": "Investment Banking Consumer Retail Analyst - New York",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800905447"
+    },
+    {
+      "title": "FCG Sales/Institutional Consultant - Executive Director",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800809086"
+    },
+    {
+      "title": "Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800828962"
+    },
+    {
+      "title": "Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800763663"
+    },
+    {
+      "title": "Branch Administartor",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800810102"
     },
     {
       "title": "Registered Client Service Associate - Bilingual Spanish/English",
@@ -40890,10 +40906,6 @@
     {
       "title": "Investment Banking Technology Vice President or Associate - NYC or Menlo Park, CA",
       "url": "https://morganstanley.eightfold.ai/careers/job/549798119264"
-    },
-    {
-      "title": "Investment Banking Consumer Retail Analyst - New York",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800905447"
     },
     {
       "title": "Regional Control Associate",
@@ -40936,10 +40948,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800863903"
     },
     {
-      "title": "FCG Sales/Institutional Consultant - Executive Director",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800809086"
-    },
-    {
       "title": "Executive Director, Institutional Sales - West Coast",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800256826"
     },
@@ -40954,14 +40962,6 @@
     {
       "title": "Investment Banking Global Power and Energy Group Analyst - New York and/or Houston, TX",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800901114"
-    },
-    {
-      "title": "Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800828962"
-    },
-    {
-      "title": "Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800763663"
     },
     {
       "title": "Associate Service Manager",
@@ -52056,14 +52056,6 @@
       ]
     },
     {
-      "title": "Development Lead",
-      "url": "https://jobs.ashbyhq.com/openai/987c4eb8-819e-4258-a91c-f34ecfbcd5f1",
-      "location": "US - Remote",
-      "countries": [
-        "United States"
-      ]
-    },
-    {
       "title": "Software Engineer, Healthcare",
       "url": "https://jobs.ashbyhq.com/openai/4923fd3e-acf2-4551-91ad-5a92ca81455b",
       "location": "San Francisco",
@@ -52975,6 +52967,14 @@
       "title": "Engineering Technician, Actuators",
       "url": "https://jobs.ashbyhq.com/openai/2986efa0-6d1c-4a1f-a629-13ad86559e24",
       "location": "San Francisco",
+      "countries": [
+        "United States"
+      ]
+    },
+    {
+      "title": "Development Lead",
+      "url": "https://jobs.ashbyhq.com/openai/987c4eb8-819e-4258-a91c-f34ecfbcd5f1",
+      "location": "US - Remote",
       "countries": [
         "United States"
       ]
@@ -68854,6 +68854,46 @@
       "url": "https://careers.qualcomm.com/careers/job/446707518930"
     },
     {
+      "title": "Principal CPU Power Modeling Engineer (San Diego, CA)",
+      "url": "https://careers.qualcomm.com/careers/job/446718849440"
+    },
+    {
+      "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
+      "url": "https://careers.qualcomm.com/careers/job/446720740540"
+    },
+    {
+      "title": "Staff Engineer, Device Drivers (San Diego or Boulder, CO)",
+      "url": "https://careers.qualcomm.com/careers/job/446715878664"
+    },
+    {
+      "title": "System Integration & Test Engineer - Top Secret Clearance Preferred (San Diego CA)",
+      "url": "https://careers.qualcomm.com/careers/job/446720174470"
+    },
+    {
+      "title": "GPU Research Engineer- AI (San Diego / Boxborough )",
+      "url": "https://careers.qualcomm.com/careers/job/446715273199"
+    },
+    {
+      "title": "GPU HW Research Engineer (San Diego/Boxborough)",
+      "url": "https://careers.qualcomm.com/careers/job/446716191606"
+    },
+    {
+      "title": "CPU Physical Design Engineer, San Diego",
+      "url": "https://careers.qualcomm.com/careers/job/446719090172"
+    },
+    {
+      "title": "Sr Staff or Principal Thermal Engineer, Server Packaging (San Diego)",
+      "url": "https://careers.qualcomm.com/careers/job/446719670502"
+    },
+    {
+      "title": "RF Electromagnetic (EM) Engineer - San Diego",
+      "url": "https://careers.qualcomm.com/careers/job/446720361948"
+    },
+    {
+      "title": "Principal CPU Physical Design Engineer (San Diego, CA)",
+      "url": "https://careers.qualcomm.com/careers/job/446718849543"
+    },
+    {
       "title": "Staff Digital Design Engineer GPU Hardware - Athens",
       "url": "https://careers.qualcomm.com/careers/job/446721635059"
     },
@@ -68988,46 +69028,6 @@
     {
       "title": "Modem Firmware Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721301032"
-    },
-    {
-      "title": "Principal CPU Power Modeling Engineer (San Diego, CA)",
-      "url": "https://careers.qualcomm.com/careers/job/446718849440"
-    },
-    {
-      "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
-      "url": "https://careers.qualcomm.com/careers/job/446720740540"
-    },
-    {
-      "title": "Staff Engineer, Device Drivers (San Diego or Boulder, CO)",
-      "url": "https://careers.qualcomm.com/careers/job/446715878664"
-    },
-    {
-      "title": "System Integration & Test Engineer - Top Secret Clearance Preferred (San Diego CA)",
-      "url": "https://careers.qualcomm.com/careers/job/446720174470"
-    },
-    {
-      "title": "GPU Research Engineer- AI (San Diego / Boxborough )",
-      "url": "https://careers.qualcomm.com/careers/job/446715273199"
-    },
-    {
-      "title": "GPU HW Research Engineer (San Diego/Boxborough)",
-      "url": "https://careers.qualcomm.com/careers/job/446716191606"
-    },
-    {
-      "title": "CPU Physical Design Engineer, San Diego",
-      "url": "https://careers.qualcomm.com/careers/job/446719090172"
-    },
-    {
-      "title": "Sr Staff or Principal Thermal Engineer, Server Packaging (San Diego)",
-      "url": "https://careers.qualcomm.com/careers/job/446719670502"
-    },
-    {
-      "title": "RF Electromagnetic (EM) Engineer - San Diego",
-      "url": "https://careers.qualcomm.com/careers/job/446720361948"
-    },
-    {
-      "title": "Principal CPU Physical Design Engineer (San Diego, CA)",
-      "url": "https://careers.qualcomm.com/careers/job/446718849543"
     },
     {
       "title": "Program Analyst – Mixed Signal IP",
