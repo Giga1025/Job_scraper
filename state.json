@@ -17022,20 +17022,20 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922258421"
     },
     {
-      "title": "Legal Counsel, Consumer Credit",
-      "url": "https://paypal.eightfold.ai/careers/job/274922421622"
-    },
-    {
-      "title": "Sr Director, Product Growth - U.S. Consumer Credit",
-      "url": "https://paypal.eightfold.ai/careers/job/274922525283"
-    },
-    {
       "title": "Staff Software Engineer",
       "url": "https://paypal.eightfold.ai/careers/job/274922970339"
     },
     {
       "title": "Director, Head of Core Banking Technology Platforms",
       "url": "https://paypal.eightfold.ai/careers/job/274922652798"
+    },
+    {
+      "title": "Legal Counsel, Consumer Credit",
+      "url": "https://paypal.eightfold.ai/careers/job/274922421622"
+    },
+    {
+      "title": "Sr Director, Product Growth - U.S. Consumer Credit",
+      "url": "https://paypal.eightfold.ai/careers/job/274922525283"
     },
     {
       "title": "Director, Content Design",
@@ -40888,6 +40888,26 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549799157590"
     },
     {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549796852609"
+    },
+    {
+      "title": "Investment Banking Technology Vice President or Associate - NYC or Menlo Park, CA",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549798119264"
+    },
+    {
+      "title": "Regional Control Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800664895"
+    },
+    {
+      "title": "L3 Network Operations Engineer",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800647045"
+    },
+    {
+      "title": "Assoc, Professional, P2, Client Services & Relationship Mgmt WM, NEX : Job Level - Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800790229"
+    },
+    {
       "title": "Investment Banking Consumer Retail Analyst - New York",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800905447"
     },
@@ -40922,26 +40942,6 @@
     {
       "title": "Branch Administartor",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800810102"
-    },
-    {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549796852609"
-    },
-    {
-      "title": "Investment Banking Technology Vice President or Associate - NYC or Menlo Park, CA",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549798119264"
-    },
-    {
-      "title": "Regional Control Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800664895"
-    },
-    {
-      "title": "L3 Network Operations Engineer",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800647045"
-    },
-    {
-      "title": "Assoc, Professional, P2, Client Services & Relationship Mgmt WM, NEX : Job Level - Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800790229"
     },
     {
       "title": "PWM Analyst",
@@ -56277,6 +56277,11 @@
   ],
   "https://boards-api.greenhouse.io/v1/boards/databricks/jobs": [
     {
+      "title": "Hunter Account Executive - Indonesia",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8878066002",
+      "location": "Singapore"
+    },
+    {
       "title": "Sr. Specialist Solutions Architect - Platform Security and Cloud Infrastructure",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8910988002",
       "location": "France"
@@ -61269,11 +61274,6 @@
     {
       "title": "Solutions Architect",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8789416002",
-      "location": "Singapore"
-    },
-    {
-      "title": "Strategic Customer Advisor, APJ",
-      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8479029002",
       "location": "Singapore"
     }
   ],
@@ -68839,6 +68839,14 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
+      "title": "Digital Test Engineer, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446720843333"
+    },
+    {
+      "title": "Sr Hardware Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721326151"
+    },
+    {
       "title": "Hardware Support Engineer - Qualcomm Government Technologies",
       "url": "https://careers.qualcomm.com/careers/job/446718461089"
     },
@@ -68883,10 +68891,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446717133035"
     },
     {
-      "title": "#Hardware Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721143441"
-    },
-    {
       "title": "Hardware Board Design Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446718450965"
     },
@@ -68909,6 +68913,14 @@
     {
       "title": "SOC Design Verification Engineer– Pre-Si/Post-Si Verification",
       "url": "https://careers.qualcomm.com/careers/job/446719823634"
+    },
+    {
+      "title": "SOC Design Verification Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721233001"
+    },
+    {
+      "title": "#Hardware Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721143441"
     },
     {
       "title": "Camera Firmware Engineer",
@@ -69761,10 +69773,6 @@
     {
       "title": "Digital ASIC Design Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446720468640"
-    },
-    {
-      "title": "SOC Design Verification Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721233001"
     },
     {
       "title": "Senior Software Engineer – Edge AI/GenAI & Multimedia",
@@ -73042,5 +73050,19 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-25T05:14:01"
+  "_last_email_at": "2026-10-25T05:14:01",
+  "_left_out_pending": [
+    {
+      "title": "Digital Test Engineer, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446720843333",
+      "reason": "senior (Staff)",
+      "company": "Qualcomm"
+    },
+    {
+      "title": "Sr Hardware Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721326151",
+      "reason": "senior (Sr)",
+      "company": "Qualcomm"
+    }
+  ]
 }
