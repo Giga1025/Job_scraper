@@ -12613,11 +12613,6 @@
       "location": "Bucharest"
     },
     {
-      "title": "Partner Development Manager, Ecosystem Partnerships",
-      "url": "https://stripe.com/jobs/search?gh_jid=8180254",
-      "location": "Atlanta, Chicago, US-Remote"
-    },
-    {
       "title": "People Consultant",
       "url": "https://stripe.com/jobs/search?gh_jid=8262027",
       "location": "Toronto"
@@ -15818,6 +15813,11 @@
       "location": "Sao Paulo"
     },
     {
+      "title": "Partner Development Manager, Ecosystem Partnerships",
+      "url": "https://stripe.com/jobs/search?gh_jid=8180254",
+      "location": "Atlanta, Chicago, US-Remote"
+    },
+    {
       "title": "Legal/ Corporate Compliance Operations Associate",
       "url": "https://stripe.com/jobs/search?gh_jid=8230274",
       "location": "N/A"
@@ -17030,18 +17030,6 @@
       "url": "https://paypal.eightfold.ai/careers/job/274922942761"
     },
     {
-      "title": "Staff Software Engineer",
-      "url": "https://paypal.eightfold.ai/careers/job/274922970339"
-    },
-    {
-      "title": "Director, Head of Core Banking Technology Platforms",
-      "url": "https://paypal.eightfold.ai/careers/job/274922652798"
-    },
-    {
-      "title": "Legal Counsel, Consumer Credit",
-      "url": "https://paypal.eightfold.ai/careers/job/274922421622"
-    },
-    {
       "title": "Director, Experience Design",
       "url": "https://paypal.eightfold.ai/careers/job/274922421535"
     },
@@ -17052,6 +17040,18 @@
     {
       "title": "Sr Director, Product Growth - U.S. Consumer Credit",
       "url": "https://paypal.eightfold.ai/careers/job/274922525283"
+    },
+    {
+      "title": "Staff Software Engineer",
+      "url": "https://paypal.eightfold.ai/careers/job/274922970339"
+    },
+    {
+      "title": "Director, Head of Core Banking Technology Platforms",
+      "url": "https://paypal.eightfold.ai/careers/job/274922652798"
+    },
+    {
+      "title": "Legal Counsel, Consumer Credit",
+      "url": "https://paypal.eightfold.ai/careers/job/274922421622"
     },
     {
       "title": "Director, Content Design",
@@ -32838,6 +32838,14 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Lead Infrastructure Engineer ( SDWAN)- Risk Management",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210778274",
+      "location": "San Francisco, CA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Personalization Product Manager - Vice President",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210772104",
       "location": "New York, NY, United States",
@@ -33454,14 +33462,6 @@
       ]
     },
     {
-      "title": "Associate Banker, 20 Hours, Quincy, MA - North Quincy Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799325",
-      "location": "Quincy, MA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "J.P. Morgan Wealth Management – Market Director of Wealth - The Boroughs, NY",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210702452",
       "location": "Brooklyn, NY, United States",
@@ -33633,6 +33633,14 @@
       "title": "Associate Banker, 30 Hours, South Seattle, WA Area - Multiple Locations",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210781278",
       "location": "Tukwila, WA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 20 Hours, Quincy, MA - North Quincy Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799325",
+      "location": "Quincy, MA, United States",
       "countries": [
         "US"
       ]
@@ -40828,14 +40836,6 @@
       "countries": [
         "US"
       ]
-    },
-    {
-      "title": "Part Time (20 Hours) Associate Banker, Riverwoods Branch, Buffalo Grove, IL",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797770",
-      "location": "Buffalo Grove, IL, United States",
-      "countries": [
-        "US"
-      ]
     }
   ],
   "https://morganstanley.eightfold.ai/careers?location=United%20States": [
@@ -40900,6 +40900,26 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549799157590"
     },
     {
+      "title": "Executive Director, Institutional Sales - West Coast",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800256826"
+    },
+    {
+      "title": "Investment Banking Technology Analyst - New York OR Menlo Park",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799711120"
+    },
+    {
+      "title": "Private Wealth Management Financial Planning Analyst",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549796501441"
+    },
+    {
+      "title": "Associate Service Manager",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549799791835"
+    },
+    {
+      "title": "Parametric - Operations Analyst Cohort, Summer 2027 Grads",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800174740"
+    },
+    {
       "title": "Assoc, Professional, P2, Client Services & Relationship Mgmt WM, NEX : Job Level - Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800790229"
     },
@@ -40944,20 +40964,12 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549796852609"
     },
     {
-      "title": "Executive Director, Institutional Sales - West Coast",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800256826"
-    },
-    {
       "title": "Front Office Java Developer",
       "url": "https://morganstanley.eightfold.ai/careers/job/549797565648"
     },
     {
       "title": "L3 Network Operations Engineer",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800647045"
-    },
-    {
-      "title": "Investment Banking Technology Analyst - New York OR Menlo Park",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799711120"
     },
     {
       "title": "Investment Banking M&A Associate – New York",
@@ -40970,10 +40982,6 @@
     {
       "title": "Branch Administartor",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800810102"
-    },
-    {
-      "title": "Private Wealth Management Financial Planning Analyst",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549796501441"
     },
     {
       "title": "Lead Privilege Access Management Engineer",
@@ -41004,16 +41012,8 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800901114"
     },
     {
-      "title": "Associate Service Manager",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549799791835"
-    },
-    {
       "title": "Field Event Management - Event Program Manager, Assistant Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800740351"
-    },
-    {
-      "title": "Parametric - Operations Analyst Cohort, Summer 2027 Grads",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800174740"
     },
     {
       "title": "Private Wealth Management, Wealth Management Associate",
@@ -45017,11 +45017,6 @@
       "location": "San Francisco, CA | New York City, NY"
     },
     {
-      "title": "Solutions Marketing Lead, Public Sector",
-      "url": "https://job-boards.greenhouse.io/anthropic/jobs/5385586008",
-      "location": "San Francisco, CA | New York City, NY; San Francisco, CA | New York City, NY | Washington, DC"
-    },
-    {
       "title": "Solutions Marketing Manager, Cybersecurity",
       "url": "https://job-boards.greenhouse.io/anthropic/jobs/5420245008",
       "location": "San Francisco, CA; Washington, DC"
@@ -45800,6 +45795,11 @@
       "title": "Senior Manager, Compute Accounting",
       "url": "https://job-boards.greenhouse.io/anthropic/jobs/5441893008",
       "location": "San Francisco, CA | Seattle, WA"
+    },
+    {
+      "title": "Solutions Marketing Lead, Public Sector",
+      "url": "https://job-boards.greenhouse.io/anthropic/jobs/5385586008",
+      "location": "San Francisco, CA | New York City, NY; San Francisco, CA | New York City, NY | Washington, DC"
     },
     {
       "title": "Full-Stack Software Engineer, Reinforcement Learning",
@@ -56289,6 +56289,11 @@
   ],
   "https://boards-api.greenhouse.io/v1/boards/databricks/jobs": [
     {
+      "title": "GTM Talent Sourcer (Contract)",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8546786002",
+      "location": "Singapore"
+    },
+    {
       "title": "Hunter Account Executive - Indonesia",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8878066002",
       "location": "Singapore"
@@ -61282,11 +61287,6 @@
       "title": "Enterprise Account Executive - Federal",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8819012002",
       "location": "Australian Capital Territory, Australia"
-    },
-    {
-      "title": "Solutions Architect",
-      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8789416002",
-      "location": "Singapore"
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/scaleai/jobs": [
@@ -68851,6 +68851,10 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
+      "title": "Analog/Mixed Signal ASIC Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446716371116"
+    },
+    {
       "title": "Hardware Support Engineer - Qualcomm Government Technologies",
       "url": "https://careers.qualcomm.com/careers/job/446718461089"
     },
@@ -68881,6 +68885,50 @@
     {
       "title": "#Wireless Software Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721159585"
+    },
+    {
+      "title": "Graphics Software Engineer, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446718675738"
+    },
+    {
+      "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
+      "url": "https://careers.qualcomm.com/careers/job/446720740540"
+    },
+    {
+      "title": "Principal CPU Power Modeling Engineer (San Diego, CA)",
+      "url": "https://careers.qualcomm.com/careers/job/446718849440"
+    },
+    {
+      "title": "Staff Engineer, Device Drivers (San Diego or Boulder, CO)",
+      "url": "https://careers.qualcomm.com/careers/job/446715878664"
+    },
+    {
+      "title": "System Integration & Test Engineer - Top Secret Clearance Preferred (San Diego CA)",
+      "url": "https://careers.qualcomm.com/careers/job/446720174470"
+    },
+    {
+      "title": "GPU Research Engineer- AI (San Diego / Boxborough )",
+      "url": "https://careers.qualcomm.com/careers/job/446715273199"
+    },
+    {
+      "title": "GPU HW Research Engineer (San Diego/Boxborough)",
+      "url": "https://careers.qualcomm.com/careers/job/446716191606"
+    },
+    {
+      "title": "CPU Physical Design Engineer, San Diego",
+      "url": "https://careers.qualcomm.com/careers/job/446719090172"
+    },
+    {
+      "title": "Sr Staff or Principal Thermal Engineer, Server Packaging (San Diego)",
+      "url": "https://careers.qualcomm.com/careers/job/446719670502"
+    },
+    {
+      "title": "RF Electromagnetic (EM) Engineer - San Diego",
+      "url": "https://careers.qualcomm.com/careers/job/446720361948"
+    },
+    {
+      "title": "Principal CPU Physical Design Engineer (San Diego, CA)",
+      "url": "https://careers.qualcomm.com/careers/job/446718849543"
     },
     {
       "title": "Implementation Timing / STA Design Engineer",
@@ -68927,10 +68975,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446719823634"
     },
     {
-      "title": "Graphics Software Engineer, Staff",
-      "url": "https://careers.qualcomm.com/careers/job/446718675738"
-    },
-    {
       "title": "IPS Hardware Support Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721663221"
     },
@@ -68971,10 +69015,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446721663329"
     },
     {
-      "title": "Qualcomm Government Technologies (QGOV) Engineering Internship – Summer 2027 (San Diego or Boulder) | US CITIZENSHIP REQUIRED",
-      "url": "https://careers.qualcomm.com/careers/job/446720740540"
-    },
-    {
       "title": "RF Product and Bench Test Engineer, Staff",
       "url": "https://careers.qualcomm.com/careers/job/446718350883"
     },
@@ -69013,42 +69053,6 @@
     {
       "title": "Artificial Intelligence for Video Compression - Research Scientist",
       "url": "https://careers.qualcomm.com/careers/job/446707518930"
-    },
-    {
-      "title": "Principal CPU Power Modeling Engineer (San Diego, CA)",
-      "url": "https://careers.qualcomm.com/careers/job/446718849440"
-    },
-    {
-      "title": "Staff Engineer, Device Drivers (San Diego or Boulder, CO)",
-      "url": "https://careers.qualcomm.com/careers/job/446715878664"
-    },
-    {
-      "title": "System Integration & Test Engineer - Top Secret Clearance Preferred (San Diego CA)",
-      "url": "https://careers.qualcomm.com/careers/job/446720174470"
-    },
-    {
-      "title": "GPU Research Engineer- AI (San Diego / Boxborough )",
-      "url": "https://careers.qualcomm.com/careers/job/446715273199"
-    },
-    {
-      "title": "GPU HW Research Engineer (San Diego/Boxborough)",
-      "url": "https://careers.qualcomm.com/careers/job/446716191606"
-    },
-    {
-      "title": "CPU Physical Design Engineer, San Diego",
-      "url": "https://careers.qualcomm.com/careers/job/446719090172"
-    },
-    {
-      "title": "Sr Staff or Principal Thermal Engineer, Server Packaging (San Diego)",
-      "url": "https://careers.qualcomm.com/careers/job/446719670502"
-    },
-    {
-      "title": "RF Electromagnetic (EM) Engineer - San Diego",
-      "url": "https://careers.qualcomm.com/careers/job/446720361948"
-    },
-    {
-      "title": "Principal CPU Physical Design Engineer (San Diego, CA)",
-      "url": "https://careers.qualcomm.com/careers/job/446718849543"
     },
     {
       "title": "WLAN Linux Networking Engineer Staff (Software)",
@@ -73066,5 +73070,23 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-25T20:47:53"
+  "_last_email_at": "2026-10-25T20:47:53",
+  "_left_out_pending": [
+    {
+      "title": "Lead Infrastructure Engineer ( SDWAN)- Risk Management",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210778274",
+      "location": "San Francisco, CA, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Lead)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Analog/Mixed Signal ASIC Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446716371116",
+      "reason": "not software (Analog)",
+      "company": "Qualcomm"
+    }
+  ]
 }
