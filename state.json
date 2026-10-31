@@ -7917,16 +7917,8 @@
       "url": "https://www.metacareers.com/profile/job_details/998357492128826"
     },
     {
-      "title": "AI Research Scientist, Robotics - Meta Superintelligence Labs Menlo Park, CA AI Research Research Artificial Intelligence Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/2058939638096096"
-    },
-    {
       "title": "Data Center Production Operations Engineer Los Lunas, NM ⋅ Henrico, VA ⋅ Temple, TX ⋅ Rayville, LA ⋅ Forest City, NC ⋅ +8 more Infrastructure Data Center Operations",
       "url": "https://www.metacareers.com/profile/job_details/1626919348826835"
-    },
-    {
-      "title": "Research Scientist Intern, Video Recommendations (PhD) Bellevue, WA ⋅ Menlo Park, CA AI Infrastructure AI Research Artificial Intelligence Infrastructure Internship - PhD Research Software Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/932919123033502"
     },
     {
       "title": "Product Content Engineer Los Angeles, CA ⋅ Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Design & User Experience Content Strategy Design",
@@ -7935,6 +7927,22 @@
     {
       "title": "ASIC Engineer, Design Sunnyvale, CA ⋅ Remote, US ⋅ Austin, TX Infrastructure Hardware Engineering",
       "url": "https://www.metacareers.com/profile/job_details/2074478733432625"
+    },
+    {
+      "title": "Production Engineering Sunnyvale, CA ⋅ Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Boston, MA ⋅ +2 more AI Infrastructure Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/7868993783158276"
+    },
+    {
+      "title": "NPI Program Manager Menlo Park, CA ⋅ Fremont, CA AI Infrastructure Infrastructure Hardware Program Management",
+      "url": "https://www.metacareers.com/profile/job_details/1277009131113341"
+    },
+    {
+      "title": "AI Research Scientist, Robotics - Meta Superintelligence Labs Menlo Park, CA AI Research Research Artificial Intelligence Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/2058939638096096"
+    },
+    {
+      "title": "Research Scientist Intern, Video Recommendations (PhD) Bellevue, WA ⋅ Menlo Park, CA AI Infrastructure AI Research Artificial Intelligence Infrastructure Internship - PhD Research Software Engineering",
+      "url": "https://www.metacareers.com/profile/job_details/932919123033502"
     },
     {
       "title": "Software Engineer, Machine Learning - AI Solutions and Automation + Support Menlo Park, CA Software Engineering Engineering",
@@ -8107,10 +8115,6 @@
     {
       "title": "Client Solutions Manager Los Angeles, CA ⋅ Austin, TX ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Boston, MA ⋅ +5 more Sales & Marketing Advertising Technology Sales Client Solutions",
       "url": "https://www.metacareers.com/profile/job_details/3179330068927252"
-    },
-    {
-      "title": "Production Engineering Sunnyvale, CA ⋅ Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Boston, MA ⋅ +2 more AI Infrastructure Engineering",
-      "url": "https://www.metacareers.com/profile/job_details/7868993783158276"
     },
     {
       "title": "Research Scientist Intern, Robotics Burlingame, CA AI Research Internship - PhD Artificial Intelligence Research Machine Learning",
@@ -9327,10 +9331,6 @@
     {
       "title": "Product Content Engineer Los Angeles, CA ⋅ Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Instagram Design & User Experience Content Strategy",
       "url": "https://www.metacareers.com/profile/job_details/816158320844730"
-    },
-    {
-      "title": "NPI Program Manager Menlo Park, CA ⋅ Fremont, CA AI Infrastructure Infrastructure Hardware Program Management",
-      "url": "https://www.metacareers.com/profile/job_details/1277009131113341"
     },
     {
       "title": "Application Engineer, Salesforce Menlo Park, CA Enterprise Engineering Product Management Engineering Product Strategy Program Management",
@@ -12500,6 +12500,22 @@
     }
   ],
   "https://api.lever.co/v0/postings/palantir": [
+    {
+      "title": "Finance Operator",
+      "url": "https://jobs.lever.co/palantir/4c13fdb2-308e-4185-bb6b-105d7bf38d92",
+      "location": "New York, NY",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Finance Operator Intern",
+      "url": "https://jobs.lever.co/palantir/bd7766c4-6aea-4b37-8d47-a8864bb9bd69",
+      "location": "New York, NY",
+      "countries": [
+        "US"
+      ]
+    },
     {
       "title": "Forward Deployed Software Engineer - Germany Forward Deployed",
       "url": "https://jobs.lever.co/palantir/491a0133-b580-45c3-9fd4-2314faf82fb9",
@@ -16927,11 +16943,6 @@
       "location": "United States, US-Remote"
     },
     {
-      "title": "Engagement Manager, Professional Services (SEA/GCN)",
-      "url": "https://stripe.com/jobs/search?gh_jid=8102337",
-      "location": "Singapore"
-    },
-    {
       "title": "Engineering Manager, Accounting Products",
       "url": "https://stripe.com/jobs/search?gh_jid=8234252",
       "location": "Bengaluru, India"
@@ -18977,6 +18988,11 @@
       "location": "Israel"
     },
     {
+      "title": "Engagement Manager, Professional Services (SEA/GCN)",
+      "url": "https://stripe.com/jobs/search?gh_jid=8102337",
+      "location": "Singapore"
+    },
+    {
       "title": "Americas Field Marketing, AI",
       "url": "https://stripe.com/jobs/search?gh_jid=8222219",
       "location": "South San Francisco"
@@ -20427,6 +20443,10 @@
     }
   ],
   "https://paypal.eightfold.ai/careers?location=United%20States": [
+    {
+      "title": "Director, Seller Experience & Productivity",
+      "url": "https://paypal.eightfold.ai/careers/job/274922258428"
+    },
     {
       "title": "Program Manager",
       "url": "https://paypal.eightfold.ai/careers/job/274922956838"
@@ -23383,6 +23403,14 @@
     }
   ],
   "https://www.coinbase.com/careers/positions?location=remote%2520usa%2Cca%2Cny%2Cnc": [
+    {
+      "title": "Customer Success Team Agent II",
+      "url": "https://www.coinbase.com/careers/positions/8334752"
+    },
+    {
+      "title": "Customer Success Team Agent II",
+      "url": "https://www.coinbase.com/careers/positions/8334761"
+    },
     {
       "title": "Staff Analytics Engineer",
       "url": "https://www.coinbase.com/careers/positions/8047150"
@@ -45718,14 +45746,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549799678654"
     },
     {
-      "title": "Product Manager - Assistant Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800828151"
-    },
-    {
-      "title": "Digital Banking Product Manager – Assistant Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800812503"
-    },
-    {
       "title": "Wealth Management Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549801071604"
     },
@@ -45826,10 +45846,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800877327"
     },
     {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549801017869"
-    },
-    {
       "title": "US Indirect Tax Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549801038154"
     },
@@ -45866,16 +45882,32 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800917718"
     },
     {
+      "title": "North American Security Settlements- Analyst/ Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800509309"
+    },
+    {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549798673468"
+    },
+    {
+      "title": "Product Manager - Assistant Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800828151"
+    },
+    {
+      "title": "Digital Banking Product Manager – Assistant Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800812503"
+    },
+    {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549801017869"
+    },
+    {
       "title": "Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800668670"
     },
     {
       "title": "Equity Research – Associate, Biopharma (New York)",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800829720"
-    },
-    {
-      "title": "North American Security Settlements- Analyst/ Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800509309"
     },
     {
       "title": "VEA - Team Manager",
@@ -45908,10 +45940,6 @@
     {
       "title": "Organizational Dashboard Director",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800142283"
-    },
-    {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549798673468"
     },
     {
       "title": "Service Associate",
@@ -79877,5 +79905,45 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-31T15:19:44"
+  "_last_email_at": "2026-10-31T15:19:44",
+  "_left_out_pending": [
+    {
+      "title": "Finance Operator",
+      "url": "https://jobs.lever.co/palantir/4c13fdb2-308e-4185-bb6b-105d7bf38d92",
+      "location": "New York, NY",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Finance)",
+      "company": "Palantir"
+    },
+    {
+      "title": "Finance Operator Intern",
+      "url": "https://jobs.lever.co/palantir/bd7766c4-6aea-4b37-8d47-a8864bb9bd69",
+      "location": "New York, NY",
+      "countries": [
+        "US"
+      ],
+      "reason": "internship (Intern)",
+      "company": "Palantir"
+    },
+    {
+      "title": "Director, Seller Experience & Productivity",
+      "url": "https://paypal.eightfold.ai/careers/job/274922258428",
+      "reason": "senior (Director)",
+      "company": "PayPal"
+    },
+    {
+      "title": "Customer Success Team Agent II",
+      "url": "https://www.coinbase.com/careers/positions/8334752",
+      "reason": "not engineering (Customer Success)",
+      "company": "Coinbase"
+    },
+    {
+      "title": "Customer Success Team Agent II",
+      "url": "https://www.coinbase.com/careers/positions/8334761",
+      "reason": "not engineering (Customer Success)",
+      "company": "Coinbase"
+    }
+  ]
 }
