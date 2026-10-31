@@ -1,10 +1,6 @@
 {
   "https://apply.careers.microsoft.com/careers?location=United+States&filter_seniority=Entry&sort_by=timestamp": [
     {
-      "title": "Principal Software Engineer, ML & Distributed Systems",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556952147"
-    },
-    {
       "title": "Construction Project Engineer",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393557046201"
     },
@@ -43,6 +39,10 @@
     {
       "title": "Finance Manager, Search, Ads, News + Edge",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393557044863"
+    },
+    {
+      "title": "Principal Software Engineer, ML & Distributed Systems",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556952147"
     },
     {
       "title": "Data Science - Forward Deployed Engineer: PhD Internship Opportunities",
@@ -37696,6 +37696,14 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Asset Management - Private Equity Investor Relations - Associate",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210779863",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Vice President of Guest Experience & Partnerships on the Lounge team",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803354",
       "location": "New York, NY, United States",
@@ -37995,14 +38003,6 @@
       "title": "Software Engineer III - Full Stack",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801844",
       "location": "San Francisco, CA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Data Product Analyst - Senior Associate",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802302",
-      "location": "Columbus, OH, United States",
       "countries": [
         "US"
       ]
@@ -38491,6 +38491,14 @@
       "title": "Finance & Business Management-Associate",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210780862",
       "location": "Jersey City, NJ, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Data Product Analyst - Senior Associate",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802302",
+      "location": "Columbus, OH, United States",
       "countries": [
         "US"
       ]
@@ -45686,14 +45694,6 @@
       "countries": [
         "US"
       ]
-    },
-    {
-      "title": "Associate Banker, 30 Hours, New Iberia, LA - Admiral Doyle Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801419",
-      "location": "New Iberia, LA, United States",
-      "countries": [
-        "US"
-      ]
     }
   ],
   "https://morganstanley.eightfold.ai/careers?location=United%20States": [
@@ -45846,16 +45846,8 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800877327"
     },
     {
-      "title": "US Indirect Tax Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549801038154"
-    },
-    {
       "title": "Commodities Compliance Professional",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800618510"
-    },
-    {
-      "title": "Senior L3 Network Operation Engineer - Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800457371"
     },
     {
       "title": "Consulting Group Analyst",
@@ -45878,6 +45870,42 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800420175"
     },
     {
+      "title": "Product Manager - Assistant Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800828151"
+    },
+    {
+      "title": "Digital Banking Product Manager – Assistant Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800812503"
+    },
+    {
+      "title": "Private Wealth Management Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800974738"
+    },
+    {
+      "title": "Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800316071"
+    },
+    {
+      "title": "Business Development Manager",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800999720"
+    },
+    {
+      "title": "Investment Banking Real Estate Analyst - New York",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549801017404"
+    },
+    {
+      "title": "Market Risk - XVA (Risk Management) : Job Level - Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800863137"
+    },
+    {
+      "title": "US Indirect Tax Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549801038154"
+    },
+    {
+      "title": "Senior L3 Network Operation Engineer - Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800457371"
+    },
+    {
       "title": "Registered Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800917718"
     },
@@ -45888,14 +45916,6 @@
     {
       "title": "Registered Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549798673468"
-    },
-    {
-      "title": "Product Manager - Assistant Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800828151"
-    },
-    {
-      "title": "Digital Banking Product Manager – Assistant Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800812503"
     },
     {
       "title": "Registered Client Service Associate",
@@ -45926,10 +45946,6 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800708209"
     },
     {
-      "title": "Private Wealth Management Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800974738"
-    },
-    {
       "title": "Machine Learning, Assistant Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549799201782"
     },
@@ -45942,28 +45958,12 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800142283"
     },
     {
-      "title": "Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800316071"
-    },
-    {
-      "title": "Business Development Manager",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800999720"
-    },
-    {
       "title": "Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800966346"
     },
     {
-      "title": "Investment Banking Real Estate Analyst - New York",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549801017404"
-    },
-    {
       "title": "Registered Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549801013958"
-    },
-    {
-      "title": "Market Risk - XVA (Risk Management) : Job Level - Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800863137"
     },
     {
       "title": "Fixed Income Division - Vice President, AI Engineer - Agentic Solutions (Vice President)",
@@ -52331,14 +52331,6 @@
       ]
     },
     {
-      "title": "Events Designer, Business Marketing",
-      "url": "https://jobs.ashbyhq.com/openai/9711a982-851c-4f55-a5ae-080ea4bad520",
-      "location": "San Francisco",
-      "countries": [
-        "United States"
-      ]
-    },
-    {
       "title": "Software Engineer, Physical Engineering",
       "url": "https://jobs.ashbyhq.com/openai/2c646ef9-6f93-4124-9d51-964d2c5aa783",
       "location": "San Francisco",
@@ -53096,14 +53088,6 @@
     {
       "title": "Machine Learning Engineer, Implicit Signals",
       "url": "https://jobs.ashbyhq.com/openai/a01fc9ed-de08-4326-9206-4ee3f08000dc",
-      "location": "San Francisco",
-      "countries": [
-        "United States"
-      ]
-    },
-    {
-      "title": "Machine Learning Engineer, Growth",
-      "url": "https://jobs.ashbyhq.com/openai/70042d81-4db6-4c5c-bdb2-76c133ee2917",
       "location": "San Francisco",
       "countries": [
         "United States"
@@ -58579,6 +58563,22 @@
     {
       "title": "Content Marketing Manager, Demand Generation",
       "url": "https://jobs.ashbyhq.com/openai/67c67c36-e710-4f21-bd9c-759eb72cfabf",
+      "location": "San Francisco",
+      "countries": [
+        "United States"
+      ]
+    },
+    {
+      "title": "Events Designer, Business Marketing",
+      "url": "https://jobs.ashbyhq.com/openai/9711a982-851c-4f55-a5ae-080ea4bad520",
+      "location": "San Francisco",
+      "countries": [
+        "United States"
+      ]
+    },
+    {
+      "title": "Machine Learning Engineer, Growth",
+      "url": "https://jobs.ashbyhq.com/openai/70042d81-4db6-4c5c-bdb2-76c133ee2917",
       "location": "San Francisco",
       "countries": [
         "United States"
@@ -75306,6 +75306,10 @@
       "url": "https://careers.qualcomm.com/careers/job/446718521922"
     },
     {
+      "title": "Graphics System/Silicon Validation Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721331002"
+    },
+    {
       "title": "Demand Analyst",
       "url": "https://careers.qualcomm.com/careers/job/446721139803"
     },
@@ -75468,10 +75472,6 @@
     {
       "title": "Senior IPS Hardware Support Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721663329"
-    },
-    {
-      "title": "Graphics System/Silicon Validation Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721331002"
     },
     {
       "title": "Support Engineer / Hardware Lab & Board Rework Engineer",
@@ -79944,6 +79944,16 @@
       "url": "https://www.coinbase.com/careers/positions/8334761",
       "reason": "not engineering (Customer Success)",
       "company": "Coinbase"
+    },
+    {
+      "title": "Asset Management - Private Equity Investor Relations - Associate",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210779863",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "not engineering (Relations)",
+      "company": "JPMorgan Chase"
     }
   ]
 }
