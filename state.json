@@ -15279,6 +15279,11 @@
   ],
   "https://boards-api.greenhouse.io/v1/boards/stripe/jobs": [
     {
+      "title": "Deal Strategist, APAC",
+      "url": "https://stripe.com/jobs/search?gh_jid=8336062",
+      "location": "Singapore"
+    },
+    {
       "title": "Product Manager, Terminal Payments",
       "url": "https://stripe.com/jobs/search?gh_jid=8327254",
       "location": "Toronto, Canada"
@@ -30804,6 +30809,10 @@
   ],
   "https://circle.wd1.myworkdayjobs.com/Circle": [
     {
+      "title": "Senior Solutions Engineer II, Payments, EMEA",
+      "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/London---remote-first-in-UK/Senior-Solutions-Engineer-II--Payments--EMEA_JR101198"
+    },
+    {
       "title": "Staff Data Analyst",
       "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/New-York-City---remote-first-in-US/Staff-Data-Analyst_JR101195"
     },
@@ -30872,16 +30881,16 @@
       "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/San-Francisco---remote-first-in-US/Special-Counsel--Transactions--M-A-and-Bank-Partnerships-_JR101171-1"
     },
     {
-      "title": "Principal Product Manager, Arc Consumer",
-      "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/San-Francisco---remote-first-in-US/Senior-Principal-Product-Manager_JR100476"
-    },
-    {
       "title": "Principal Product Manager, Core Network",
       "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/Bangalore---remote-first-in-India/Principal-Product-Manager--Core-Network_JR101117"
     },
     {
       "title": "Senior Accountant",
       "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/London---remote-first-in-UK/Senior-Accountant_JR101146"
+    },
+    {
+      "title": "Principal Product Manager, Arc Consumer",
+      "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/San-Francisco---remote-first-in-US/Senior-Principal-Product-Manager_JR100476"
     },
     {
       "title": "Senior Software Engineer - CLO",
@@ -45866,16 +45875,56 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800618510"
     },
     {
-      "title": "Government and Political Activities Compliance (GPAC) Officer, Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800692699"
-    },
-    {
       "title": "Product Manager - Assistant Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800828151"
     },
     {
       "title": "Digital Banking Product Manager – Assistant Vice President",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800812503"
+    },
+    {
+      "title": "Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800316071"
+    },
+    {
+      "title": "Market Risk - XVA (Risk Management) : Job Level - Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800863137"
+    },
+    {
+      "title": "North American Security Settlements- Analyst/ Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800509309"
+    },
+    {
+      "title": "Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800966346"
+    },
+    {
+      "title": "Senior L3 Network Operation Engineer - Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800457371"
+    },
+    {
+      "title": "VEA - Team Manager",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800161746"
+    },
+    {
+      "title": "Vice President, Bank Compliance – Institutional Business and Regulation W Coverage",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800210157"
+    },
+    {
+      "title": "Wealth Management Analyst",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549801017010"
+    },
+    {
+      "title": "US Indirect Tax Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549801038154"
+    },
+    {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800917718"
+    },
+    {
+      "title": "Government and Political Activities Compliance (GPAC) Officer, Vice President",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800692699"
     },
     {
       "title": "WM Operations- Client Reporting Operations- Associate",
@@ -45894,44 +45943,16 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549800974738"
     },
     {
-      "title": "Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800316071"
-    },
-    {
-      "title": "Market Risk - XVA (Risk Management) : Job Level - Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800863137"
-    },
-    {
-      "title": "North American Security Settlements- Analyst/ Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800509309"
-    },
-    {
       "title": "Registered Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549798673468"
-    },
-    {
-      "title": "Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800966346"
-    },
-    {
-      "title": "Senior L3 Network Operation Engineer - Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800457371"
     },
     {
       "title": "Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800668670"
     },
     {
-      "title": "VEA - Team Manager",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800161746"
-    },
-    {
       "title": "Digital Direct Margins Operations- Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549799566374"
-    },
-    {
-      "title": "Vice President, Bank Compliance – Institutional Business and Regulation W Coverage",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800210157"
     },
     {
       "title": "Machine Learning, Assistant Vice President",
@@ -45950,24 +45971,12 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549801016553"
     },
     {
-      "title": "Wealth Management Analyst",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549801017010"
-    },
-    {
       "title": "Business Development Manager",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800999720"
     },
     {
       "title": "Investment Banking Real Estate Analyst - New York",
       "url": "https://morganstanley.eightfold.ai/careers/job/549801017404"
-    },
-    {
-      "title": "US Indirect Tax Vice President",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549801038154"
-    },
-    {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800917718"
     },
     {
       "title": "Registered Client Service Associate",
@@ -62037,6 +62046,26 @@
   ],
   "https://boards-api.greenhouse.io/v1/boards/databricks/jobs": [
     {
+      "title": "Account Executive - Digital Native",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8880398002",
+      "location": "Seoul, South Korea"
+    },
+    {
+      "title": "Account Executive - Strategic Core",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8880402002",
+      "location": "United States"
+    },
+    {
+      "title": "Enterprise Account Executive - Hunter (New Logo)",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8910864002",
+      "location": "Seoul, South Korea"
+    },
+    {
+      "title": "Sr. Forward Deployment Strategist",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8922941002",
+      "location": "Singapore"
+    },
+    {
       "title": "Named Hunter Account Executive - Singapore",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8916466002",
       "location": "Singapore"
@@ -66557,6 +66586,11 @@
       "location": "Bellevue, Washington; Seattle, Washington; Washington, D.C."
     },
     {
+      "title": "Specialist Solutions Architect - Data Warehousing",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8785057002",
+      "location": "Seoul, South Korea"
+    },
+    {
       "title": "Sr. Delivery Partner Manager, FDE",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8611106002",
       "location": "Central - United States; Northeast - United States; Southeast - United States"
@@ -66740,11 +66774,6 @@
       "title": "Revenue Accounting Manager",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8788152002",
       "location": "Mountain View, California; San Francisco, California"
-    },
-    {
-      "title": "Specialist Solutions Architect - Data Warehousing",
-      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8785057002",
-      "location": "Seoul, South Korea"
     },
     {
       "title": "Sr. Engineering Manager - Customer Experience Intelligence (CXI)",
@@ -67015,26 +67044,6 @@
       "title": "Recruiter, Field Engineering & FDE",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8771700002",
       "location": "Belgrade, Serbia; London, United Kingdom"
-    },
-    {
-      "title": "Sr. Recruiter, Field Engineering & FDE",
-      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8771706002",
-      "location": "London, United Kingdom"
-    },
-    {
-      "title": "Sr. Solutions Architect",
-      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8782816002",
-      "location": "Central - United States; Remote - Texas"
-    },
-    {
-      "title": "Staff Security Software Engineer - Agentic Security Engineering",
-      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=7932280002",
-      "location": "United States"
-    },
-    {
-      "title": "Emerging Enterprise Account Executive",
-      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=7716357002",
-      "location": "United States"
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/scaleai/jobs": [
@@ -73602,11 +73611,6 @@
       "location": "Hybrid"
     },
     {
-      "title": "Software Engineer, AI Agents",
-      "url": "https://boards.greenhouse.io/cloudflare/jobs/7831810?gh_jid=7831810",
-      "location": "In-Office"
-    },
-    {
       "title": "Software Engineer, CDN Configuration Group",
       "url": "https://boards.greenhouse.io/cloudflare/jobs/8188899?gh_jid=8188899",
       "location": "Hybrid"
@@ -73909,6 +73913,11 @@
     {
       "title": "Technical Support Engineer, Zero Trust",
       "url": "https://boards.greenhouse.io/cloudflare/jobs/8229998?gh_jid=8229998",
+      "location": "In-Office"
+    },
+    {
+      "title": "Software Engineer, AI Agents",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/7831810?gh_jid=7831810",
       "location": "In-Office"
     },
     {
@@ -79921,79 +79930,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-10-31T15:19:44",
-  "_left_out_pending": [
-    {
-      "title": "Finance Operator",
-      "url": "https://jobs.lever.co/palantir/4c13fdb2-308e-4185-bb6b-105d7bf38d92",
-      "location": "New York, NY",
-      "countries": [
-        "US"
-      ],
-      "reason": "not engineering (Finance)",
-      "company": "Palantir"
-    },
-    {
-      "title": "Finance Operator Intern",
-      "url": "https://jobs.lever.co/palantir/bd7766c4-6aea-4b37-8d47-a8864bb9bd69",
-      "location": "New York, NY",
-      "countries": [
-        "US"
-      ],
-      "reason": "internship (Intern)",
-      "company": "Palantir"
-    },
-    {
-      "title": "Director, Seller Experience & Productivity",
-      "url": "https://paypal.eightfold.ai/careers/job/274922258428",
-      "reason": "senior (Director)",
-      "company": "PayPal"
-    },
-    {
-      "title": "Customer Success Team Agent II",
-      "url": "https://www.coinbase.com/careers/positions/8334752",
-      "reason": "not engineering (Customer Success)",
-      "company": "Coinbase"
-    },
-    {
-      "title": "Customer Success Team Agent II",
-      "url": "https://www.coinbase.com/careers/positions/8334761",
-      "reason": "not engineering (Customer Success)",
-      "company": "Coinbase"
-    },
-    {
-      "title": "Asset Management - Private Equity Investor Relations - Associate",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210779863",
-      "location": "New York, NY, United States",
-      "countries": [
-        "US"
-      ],
-      "reason": "not engineering (Relations)",
-      "company": "JPMorgan Chase"
-    },
-    {
-      "title": "Senior Delivery Consultant, Professional Services - SAP",
-      "url": "https://www.amazon.jobs/en/jobs/10593984/senior-delivery-consultant-professional-services-sap",
-      "reason": "senior (Senior)",
-      "company": "Amazon"
-    },
-    {
-      "title": "Software Engineer: Security & Identity Intern Opportunities for University Students, Redmond",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556922930",
-      "reason": "internship (Intern)",
-      "company": "Microsoft — US Entry Level"
-    },
-    {
-      "title": "Senior iOS App Development Engineer - Services Special Project",
-      "url": "https://jobs.apple.com/en-us/details/200692779-0836/senior-ios-app-development-engineer-services-special-project?team=SFTWR",
-      "reason": "senior (Senior)",
-      "company": "Apple"
-    },
-    {
-      "title": "Lease Manager",
-      "url": "https://jobs.apple.com/en-us/details/200691770-3749/lease-manager?team=CORSV",
-      "reason": "senior (Manager)",
-      "company": "Apple"
-    }
-  ]
+  "_last_email_at": "2026-11-01T16:02:00"
 }
