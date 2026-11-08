@@ -11959,10 +11959,6 @@
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco-Metro---Remote/Senior-Director--Technical-Product-Management---AI-Quality---Evaluation_JR367328"
     },
     {
-      "title": "AI Product Associate Analyst, Early Talent",
-      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Illinois---Chicago/AI-Product-Associate-Analyst--Early-Talent_JR367622-2"
-    },
-    {
       "title": "Senior Solution Consultant",
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Senior-Solution-Consultant_JR366536"
     },
@@ -11973,10 +11969,6 @@
     {
       "title": "Sr. Security GRC Analyst, Forward Deployed Assurance",
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Washington---Bellevue/Sr-Security-GRC-Analyst--Forward-Deployed-Assurance_JR366368"
-    },
-    {
-      "title": "Security GRC Lead, Governance Engineering",
-      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Washington---Bellevue/Security-GRC-Lead--Governance-Engineering_JR363970"
     },
     {
       "title": "Security Governance Engineer - Secure, Build & Change",
@@ -11993,6 +11985,22 @@
     {
       "title": "Enterprise Account Executive, Agentforce & Data 360",
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Enterprise-Account-Executive--Agentforce_JR297781"
+    },
+    {
+      "title": "Productivity Manager",
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Productivity-Manager_JR365318"
+    },
+    {
+      "title": "Productivity Senior Manager",
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Productivity-Senior-Manager_JR365316-1"
+    },
+    {
+      "title": "AI Product Associate Analyst, Early Talent",
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Illinois---Chicago/AI-Product-Associate-Analyst--Early-Talent_JR367622-2"
+    },
+    {
+      "title": "Security GRC Lead, Governance Engineering",
+      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Washington---Bellevue/Security-GRC-Lead--Governance-Engineering_JR363970"
     },
     {
       "title": "Senior Software Engineer (LMTS), Backend – Enterprise Productivity",
@@ -12541,14 +12549,6 @@
     {
       "title": "Sr Industry Product Marketing Manager (Financial Services)",
       "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Illinois---Chicago/Sr-Industry-Product-Marketing-Manager--Financial-Services-_JR358103"
-    },
-    {
-      "title": "Productivity Manager",
-      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Productivity-Manager_JR365318"
-    },
-    {
-      "title": "Productivity Senior Manager",
-      "url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Productivity-Senior-Manager_JR365316-1"
     },
     {
       "title": "Software Engineer, Full Stack & AI-Native Development (MTS)",
@@ -49426,12 +49426,12 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549801217933"
     },
     {
-      "title": "Client Relationship Analyst",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549801204206"
-    },
-    {
       "title": "AI Full Stack Engineer (Prime Brokerage Technology)",
       "url": "https://morganstanley.eightfold.ai/careers/job/549798643526"
+    },
+    {
+      "title": "Client Relationship Analyst",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549801204206"
     },
     {
       "title": "Registered Client Relationship Analyst",
@@ -64471,6 +64471,11 @@
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/xai/jobs": [
+    {
+      "title": "Lead Engineer, AI Infrastructure (C++, C)",
+      "url": "https://job-boards.greenhouse.io/xai/jobs/5288098007",
+      "location": "Palo Alto, CA; Seattle, WA"
+    },
     {
       "title": "Events Lead",
       "url": "https://job-boards.greenhouse.io/xai/jobs/5287988007",
@@ -80444,6 +80449,30 @@
       "url": "https://careers.qualcomm.com/careers/job/446721161154"
     },
     {
+      "title": "Analog/Mixed Signal ASIC Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446716371116"
+    },
+    {
+      "title": "GPU Compiler QA",
+      "url": "https://careers.qualcomm.com/careers/job/446716337611"
+    },
+    {
+      "title": "Hardware Platform Architect",
+      "url": "https://careers.qualcomm.com/careers/job/446717026616"
+    },
+    {
+      "title": "Video Research Engineer (Multiple Levels)",
+      "url": "https://careers.qualcomm.com/careers/job/446716320059"
+    },
+    {
+      "title": "GPU Kernel Development Engineer (Multiple Levels Available)",
+      "url": "https://careers.qualcomm.com/careers/job/446715939731"
+    },
+    {
+      "title": "Memory Designer",
+      "url": "https://careers.qualcomm.com/careers/job/446716319290"
+    },
+    {
       "title": "Ambient Compute System Architecture and Power Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446719837521"
     },
@@ -80470,26 +80499,6 @@
     {
       "title": "SoC Modeling Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446719161124"
-    },
-    {
-      "title": "Analog/Mixed Signal ASIC Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446716371116"
-    },
-    {
-      "title": "GPU Compiler QA",
-      "url": "https://careers.qualcomm.com/careers/job/446716337611"
-    },
-    {
-      "title": "Hardware Platform Architect",
-      "url": "https://careers.qualcomm.com/careers/job/446717026616"
-    },
-    {
-      "title": "Video Research Engineer (Multiple Levels)",
-      "url": "https://careers.qualcomm.com/careers/job/446716320059"
-    },
-    {
-      "title": "GPU Kernel Development Engineer (Multiple Levels Available)",
-      "url": "https://careers.qualcomm.com/careers/job/446715939731"
     },
     {
       "title": "Component Engineer, Staff",
@@ -81226,10 +81235,6 @@
     {
       "title": "Near-Memory Compute System Validation Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721450006"
-    },
-    {
-      "title": "Memory Designer",
-      "url": "https://careers.qualcomm.com/careers/job/446716319290"
     },
     {
       "title": "GPU HLM Engineer",
@@ -85780,6 +85785,13 @@
       "url": "https://jobs.ashbyhq.com/snowflake/ba140960-361c-4357-8a8e-e4825f0d200b",
       "reason": "senior (Senior)",
       "company": "Snowflake"
+    },
+    {
+      "title": "Lead Engineer, AI Infrastructure (C++, C)",
+      "url": "https://job-boards.greenhouse.io/xai/jobs/5288098007",
+      "location": "Palo Alto, CA; Seattle, WA",
+      "reason": "senior (Lead)",
+      "company": "xAI (Grok)"
     }
   ]
 }
