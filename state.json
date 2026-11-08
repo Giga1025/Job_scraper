@@ -41,10 +41,6 @@
       "url": "https://apply.careers.microsoft.com/careers/job/1970393556866699"
     },
     {
-      "title": "Software Engineering - Commercial Engineering & AI (CEAI)",
-      "url": "https://apply.careers.microsoft.com/careers/job/1970393556914839"
-    },
-    {
       "title": "Data Center Critical Environment Mechanical Engineer",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393557044804"
     },
@@ -83,6 +79,10 @@
     {
       "title": "Construction Project Engineer",
       "url": "https://apply.careers.microsoft.com/careers/job/1970393557046201"
+    },
+    {
+      "title": "Software Engineering - Commercial Engineering & AI (CEAI)",
+      "url": "https://apply.careers.microsoft.com/careers/job/1970393556914839"
     },
     {
       "title": "Software Engineer",
@@ -5738,6 +5738,14 @@
     }
   ],
   "https://www.amazon.jobs/en/search?base_query=&loc_query=United+States&sort=recent": [
+    {
+      "title": "Work Based Learning Program Data Center Operations Technician",
+      "url": "https://www.amazon.jobs/en/jobs/10599428/work-based-learning-program-data-center-operations-technician"
+    },
+    {
+      "title": "Work Based Learning Program Data Center Operations Technician",
+      "url": "https://www.amazon.jobs/en/jobs/10599427/work-based-learning-program-data-center-operations-technician"
+    },
     {
       "title": "Engineering Operation Technician",
       "url": "https://www.amazon.jobs/en/jobs/10599421/engineering-operation-technician"
@@ -22713,12 +22721,12 @@
       "url": "https://block.xyz/careers/jobs/5121335008"
     },
     {
-      "title": "Enterprise Account Executive, Commerce Remote Seattle, WA, US",
-      "url": "https://block.xyz/careers/jobs/5424124008"
-    },
-    {
       "title": "Enterprise Account Executive, Commerce Remote New York, NY, US",
       "url": "https://block.xyz/careers/jobs/5424134008"
+    },
+    {
+      "title": "Enterprise Account Executive, Commerce Remote Seattle, WA, US",
+      "url": "https://block.xyz/careers/jobs/5424124008"
     },
     {
       "title": "Enterprise Account Executive, Australia Remote Sydney, Australia",
@@ -41340,6 +41348,38 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Relationship Manager I - Officer",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806469",
+      "location": "Cincinnati, OH, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Business Relationship Manager I - Officer",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806895",
+      "location": "Providence, RI, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Business Relationship Manager Senior Deepening - Vice President",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807279",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Business Relationship Manager I - Officer",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807307",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Associate Banker, 40 Hours, Muncie, IN - Tillotson Square Branch",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806482",
       "location": "Muncie, IN, United States",
@@ -41708,14 +41748,6 @@
       ]
     },
     {
-      "title": "Associate Banker, 20 Hours, Sebring, FL - Sebring Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805692",
-      "location": "Sebring, FL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Client Relationship Manager - VP - Workplace Solutions",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210773410",
       "location": "Jersey City, NJ, United States",
@@ -42012,30 +42044,6 @@
       ]
     },
     {
-      "title": "1643898: Loan Closing Origination Specialist III (LSLO03)",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805644",
-      "location": "Chicago, IL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Fraud Analyst",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805653",
-      "location": "Plano, TX, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Senior Product Delivery Associate-Workflow Services Aurora",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805789",
-      "location": "Newark, DE, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Hiring Event - Part Time Associate Banker Santa Clarita  West (30 Hours)",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210783766",
       "location": "Valencia, CA, United States",
@@ -42135,6 +42143,38 @@
       "title": "Americas Capital Markets Business Management, Associate",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800893",
       "location": "NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 20 Hours, Sebring, FL - Sebring Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805692",
+      "location": "Sebring, FL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "1643898: Loan Closing Origination Specialist III (LSLO03)",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805644",
+      "location": "Chicago, IL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Fraud Analyst",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805653",
+      "location": "Plano, TX, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Senior Product Delivery Associate-Workflow Services Aurora",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805789",
+      "location": "Newark, DE, United States",
       "countries": [
         "US"
       ]
@@ -49306,38 +49346,6 @@
       "countries": [
         "US"
       ]
-    },
-    {
-      "title": "Relationship Banker - Portland South Market - West Linn, OR and Surrounding Areas",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804073",
-      "location": "West Linn, OR, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Associate Relationship Banker - Carmel By The Sea Branch - Carmel, CA",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804473",
-      "location": "Carmel, CA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "JPMorgan Wealth Management-Practice Management Consultant-NY Boroughs",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804728",
-      "location": "Brooklyn, NY, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Lead Software Engineer - Java Backend Lead +AWS",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210784421",
-      "location": "Plano, TX, United States",
-      "countries": [
-        "US"
-      ]
     }
   ],
   "https://morganstanley.eightfold.ai/careers?location=United%20States": [
@@ -49418,12 +49426,12 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549801217933"
     },
     {
-      "title": "Registered Client Relationship Analyst",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549800667608"
-    },
-    {
       "title": "AI Full Stack Engineer (Prime Brokerage Technology)",
       "url": "https://morganstanley.eightfold.ai/careers/job/549798643526"
+    },
+    {
+      "title": "Registered Client Relationship Analyst",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549800667608"
     },
     {
       "title": "Director - Digital Assets Cybersecurity (Internal Audit)",
@@ -72710,6 +72718,10 @@
   ],
   "https://careers.snowflake.com/us/en/search-results?keywords=&sortBy=Most%20recent": [
     {
+      "title": "Senior Product Manager: Extensible Compute",
+      "url": "https://jobs.ashbyhq.com/snowflake/ba140960-361c-4357-8a8e-e4825f0d200b"
+    },
+    {
       "title": "Senior Solution Engineer, Partnerships - Brazil",
       "url": "https://jobs.ashbyhq.com/snowflake/f5f6e36e-4e6f-49ec-938c-396d038b41e7"
     },
@@ -72734,10 +72746,6 @@
       "url": "https://jobs.ashbyhq.com/snowflake/8d740569-d700-454a-9242-18c5488a7f19"
     },
     {
-      "title": "Partner Sales Director - VAR",
-      "url": "https://jobs.ashbyhq.com/snowflake/261c675f-e1a7-4f38-9349-45d80c7b1a73"
-    },
-    {
       "title": "Product Management Intern (Summer 2027)",
       "url": "https://jobs.ashbyhq.com/snowflake/322b82f6-4b18-4f86-ae34-007f55c4bdbf"
     },
@@ -72748,6 +72756,10 @@
     {
       "title": "Account Executive - Acquisition",
       "url": "https://jobs.ashbyhq.com/snowflake/21407c17-7ba8-4381-a825-2681afbbcdd4"
+    },
+    {
+      "title": "Partner Sales Director - VAR",
+      "url": "https://jobs.ashbyhq.com/snowflake/261c675f-e1a7-4f38-9349-45d80c7b1a73"
     },
     {
       "title": "Account Executive, Commercial",
@@ -80371,10 +80383,6 @@
   ],
   "https://careers.qualcomm.com/careers?start=0&location=United+States&sort_by=distance&filter_include_remote=0&filter_seniority=Entry": [
     {
-      "title": "Component Engineer, Staff",
-      "url": "https://careers.qualcomm.com/careers/job/446721716989"
-    },
-    {
       "title": "Automation Developer Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721803210"
     },
@@ -80431,6 +80439,34 @@
       "url": "https://careers.qualcomm.com/careers/job/446721161154"
     },
     {
+      "title": "SoC Modeling Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719161124"
+    },
+    {
+      "title": "Analog/Mixed Signal ASIC Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446716371116"
+    },
+    {
+      "title": "GPU Compiler QA",
+      "url": "https://careers.qualcomm.com/careers/job/446716337611"
+    },
+    {
+      "title": "Hardware Platform Architect",
+      "url": "https://careers.qualcomm.com/careers/job/446717026616"
+    },
+    {
+      "title": "Video Research Engineer (Multiple Levels)",
+      "url": "https://careers.qualcomm.com/careers/job/446716320059"
+    },
+    {
+      "title": "GPU Kernel Development Engineer (Multiple Levels Available)",
+      "url": "https://careers.qualcomm.com/careers/job/446715939731"
+    },
+    {
+      "title": "Component Engineer, Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446721716989"
+    },
+    {
       "title": "Modem System Test Engineer – 6G/5G Air Interface",
       "url": "https://careers.qualcomm.com/careers/job/446721807877"
     },
@@ -80441,10 +80477,6 @@
     {
       "title": "Next-Gen System Cache ASIC Digital Design Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721413542"
-    },
-    {
-      "title": "SoC Modeling Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719161124"
     },
     {
       "title": "Pre-Silicon Validation Engineer",
@@ -80577,22 +80609,6 @@
     {
       "title": "CPU Post-Silicon Validation Engineer - Multiple Levels",
       "url": "https://careers.qualcomm.com/careers/job/446717307122"
-    },
-    {
-      "title": "Analog/Mixed Signal ASIC Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446716371116"
-    },
-    {
-      "title": "GPU Compiler QA",
-      "url": "https://careers.qualcomm.com/careers/job/446716337611"
-    },
-    {
-      "title": "Hardware Platform Architect",
-      "url": "https://careers.qualcomm.com/careers/job/446717026616"
-    },
-    {
-      "title": "Video Research Engineer (Multiple Levels)",
-      "url": "https://careers.qualcomm.com/careers/job/446716320059"
     },
     {
       "title": "Calibration Engineer, Associate",
@@ -80841,10 +80857,6 @@
     {
       "title": "Analog/Mixed Signal ASIC Design Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446717888640"
-    },
-    {
-      "title": "GPU Kernel Development Engineer (Multiple Levels Available)",
-      "url": "https://careers.qualcomm.com/careers/job/446715939731"
     },
     {
       "title": "Senior AI Performance Architect",
@@ -85704,5 +85716,65 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-11-07T20:52:20"
+  "_last_email_at": "2026-11-07T20:52:20",
+  "_left_out_pending": [
+    {
+      "title": "Work Based Learning Program Data Center Operations Technician",
+      "url": "https://www.amazon.jobs/en/jobs/10599428/work-based-learning-program-data-center-operations-technician",
+      "reason": "not engineering (Operations)",
+      "company": "Amazon"
+    },
+    {
+      "title": "Work Based Learning Program Data Center Operations Technician",
+      "url": "https://www.amazon.jobs/en/jobs/10599427/work-based-learning-program-data-center-operations-technician",
+      "reason": "not engineering (Operations)",
+      "company": "Amazon"
+    },
+    {
+      "title": "Relationship Manager I - Officer",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806469",
+      "location": "Cincinnati, OH, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Manager)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Business Relationship Manager I - Officer",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806895",
+      "location": "Providence, RI, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Manager)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Business Relationship Manager Senior Deepening - Vice President",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807279",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Manager)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Business Relationship Manager I - Officer",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807307",
+      "location": "New York, NY, United States",
+      "countries": [
+        "US"
+      ],
+      "reason": "senior (Manager)",
+      "company": "JPMorgan Chase"
+    },
+    {
+      "title": "Senior Product Manager: Extensible Compute",
+      "url": "https://jobs.ashbyhq.com/snowflake/ba140960-361c-4357-8a8e-e4825f0d200b",
+      "reason": "senior (Senior)",
+      "company": "Snowflake"
+    }
+  ]
 }
