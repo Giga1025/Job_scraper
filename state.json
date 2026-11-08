@@ -1737,6 +1737,14 @@
   ],
   "https://jobs.apple.com/en-us/search?location=united-states-USA&sort=newest": [
     {
+      "title": "Machine Learning System Software Engineer",
+      "url": "https://jobs.apple.com/en-us/details/200693933-3956/machine-learning-system-software-engineer?team=HRDWR"
+    },
+    {
+      "title": "Wireless Software Engineer, Wireless Technologies & Ecosystems",
+      "url": "https://jobs.apple.com/en-us/details/200687778-0836/wireless-software-engineer-wireless-technologies-ecosystems?team=SFTWR"
+    },
+    {
       "title": "Agent Development Engineer, Customer Systems",
       "url": "https://jobs.apple.com/en-us/details/200662678-0836/agent-development-engineer-customer-systems?team=SFTWR"
     },
@@ -1805,16 +1813,16 @@
       "url": "https://jobs.apple.com/en-us/details/200693356-3749/workplace-design-standards-content-manager?team=CORSV"
     },
     {
+      "title": "US - Specialist: Seasonal, Part-time",
+      "url": "https://jobs.apple.com/en-us/details/114438158/us-specialist-seasonal-part-time?team=APPST"
+    },
+    {
       "title": "Engineering Program Manager, Responsible AI, Safety",
       "url": "https://jobs.apple.com/en-us/details/200693967-0836/engineering-program-manager-responsible-ai-safety?team=SFTWR"
     },
     {
       "title": "Engineering Program Manager, Responsible AI, Safety",
       "url": "https://jobs.apple.com/en-us/details/200693967-3337/engineering-program-manager-responsible-ai-safety?team=SFTWR"
-    },
-    {
-      "title": "US - Specialist: Seasonal, Part-time",
-      "url": "https://jobs.apple.com/en-us/details/114438158/us-specialist-seasonal-part-time?team=APPST"
     },
     {
       "title": "Hardware System Engineer - AirPods System Technologies",
@@ -5727,14 +5735,6 @@
     {
       "title": "Ergonomics Product Design Engineering Program Manager, Vision Products Group",
       "url": "https://jobs.apple.com/en-us/details/200688827-3749/ergonomics-product-design-engineering-program-manager-vision-products-group?team=HRDWR"
-    },
-    {
-      "title": "Module Engineering Project Specialist",
-      "url": "https://jobs.apple.com/en-us/details/200688498-0836/module-engineering-project-specialist?team=HRDWR"
-    },
-    {
-      "title": "Producer, Executive Reviews",
-      "url": "https://jobs.apple.com/en-us/details/200688166-0836/producer-executive-reviews?team=SFTWR"
     }
   ],
   "https://www.amazon.jobs/en/search?base_query=&loc_query=United+States&sort=recent": [
@@ -41352,6 +41352,38 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Trading Services Associate I",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796516",
+      "location": "Newark, DE, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Embedded Payments Product Solutions Architect-Executive Director",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806532",
+      "location": "Chicago, IL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Product Solutions-Tokenization, Reporting & Vault API's-Payments-Vice President",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806887",
+      "location": "Tampa, FL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Relationship Banker SB Icon Buckhead, Atlanta",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807130",
+      "location": "Atlanta, GA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Relationship Manager I - Officer",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806469",
       "location": "Cincinnati, OH, United States",
@@ -41744,14 +41776,6 @@
       ]
     },
     {
-      "title": "Full Time (40 Hours) Associate Banker, Washington Thornton Branch, Thornton, CO",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805537",
-      "location": "Thornton, CO, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Client Relationship Manager - VP - Workplace Solutions",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210773410",
       "location": "Jersey City, NJ, United States",
@@ -42024,30 +42048,6 @@
       ]
     },
     {
-      "title": "Associate Banker, 40 Hours, Seattle, WA - Roosevelt and NE 64th Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805327",
-      "location": "Seattle, WA, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Associate Banker, 30 Hours, Sanibel, FL - Sanibel Island Branch",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805478",
-      "location": "Sanibel, FL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Business Relationship Manager I - Officer",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805555",
-      "location": "Davie, FL, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Hiring Event - Part Time Associate Banker Santa Clarita  West (30 Hours)",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210783766",
       "location": "Valencia, CA, United States",
@@ -42147,6 +42147,38 @@
       "title": "Americas Capital Markets Business Management, Associate",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800893",
       "location": "NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Full Time (40 Hours) Associate Banker, Washington Thornton Branch, Thornton, CO",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805537",
+      "location": "Thornton, CO, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 40 Hours, Seattle, WA - Roosevelt and NE 64th Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805327",
+      "location": "Seattle, WA, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Associate Banker, 30 Hours, Sanibel, FL - Sanibel Island Branch",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805478",
+      "location": "Sanibel, FL, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Business Relationship Manager I - Officer",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805555",
+      "location": "Davie, FL, United States",
       "countries": [
         "US"
       ]
@@ -49318,38 +49350,6 @@
       "countries": [
         "US"
       ]
-    },
-    {
-      "title": "Data Scientist - Sr Associate",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805101",
-      "location": "Plano, TX, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Lead Software Engineer - Fullstack Java",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803115",
-      "location": "Columbus, OH, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Sr. Lead Software Engineer",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803206",
-      "location": "Columbus, OH, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
-      "title": "Private Client Banker - Tanasbourne Branch - Hillsboro, OR",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803669",
-      "location": "Hillsboro, OR, United States",
-      "countries": [
-        "US"
-      ]
     }
   ],
   "https://morganstanley.eightfold.ai/careers?location=United%20States": [
@@ -51662,6 +51662,11 @@
   ],
   "https://boards-api.greenhouse.io/v1/boards/anthropic/jobs": [
     {
+      "title": "Research Engineer, Cybersecurity RL",
+      "url": "https://job-boards.greenhouse.io/anthropic/jobs/5459191008",
+      "location": "San Francisco, CA | New York City, NY"
+    },
+    {
       "title": "Brand Strategy Lead, Brand Architecture & Naming",
       "url": "https://job-boards.greenhouse.io/anthropic/jobs/5475321008",
       "location": "San Francisco, CA | New York City, NY"
@@ -53973,11 +53978,6 @@
     },
     {
       "title": "Research Engineer, Cybersecurity RL (Reinforcement Learning)",
-      "url": "https://job-boards.greenhouse.io/anthropic/jobs/5025624008",
-      "location": "San Francisco, CA | New York City, NY"
-    },
-    {
-      "title": "Research Engineer, Cybersecurity RL (Reinforcement Learning)",
       "url": "https://job-boards.greenhouse.io/anthropic/jobs/5412334008",
       "location": "Zürich, CH"
     },
@@ -55034,6 +55034,11 @@
     {
       "title": "Learning & Education Specialist",
       "url": "https://job-boards.greenhouse.io/anthropic/jobs/5462661008",
+      "location": "San Francisco, CA | New York City, NY"
+    },
+    {
+      "title": "Research Engineer, Cybersecurity RL (Reinforcement Learning)",
+      "url": "https://job-boards.greenhouse.io/anthropic/jobs/5025624008",
       "location": "San Francisco, CA | New York City, NY"
     },
     {
@@ -72763,12 +72768,12 @@
       "url": "https://jobs.ashbyhq.com/snowflake/da2d8c93-5d33-4fdc-8510-08126d3df5eb"
     },
     {
-      "title": "Account Executive - Acquisition",
-      "url": "https://jobs.ashbyhq.com/snowflake/21407c17-7ba8-4381-a825-2681afbbcdd4"
-    },
-    {
       "title": "Partner Sales Director - VAR",
       "url": "https://jobs.ashbyhq.com/snowflake/261c675f-e1a7-4f38-9349-45d80c7b1a73"
+    },
+    {
+      "title": "Account Executive - Acquisition",
+      "url": "https://jobs.ashbyhq.com/snowflake/21407c17-7ba8-4381-a825-2681afbbcdd4"
     },
     {
       "title": "Account Executive, Commercial",
@@ -80453,6 +80458,30 @@
       "url": "https://careers.qualcomm.com/careers/job/446721161154"
     },
     {
+      "title": "Ambient Compute System Architecture and Power Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719837521"
+    },
+    {
+      "title": "Machine Learning R&D",
+      "url": "https://careers.qualcomm.com/careers/job/446719838414"
+    },
+    {
+      "title": "Video DV Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719722609"
+    },
+    {
+      "title": "SOC Design Verification Engineer-Staff",
+      "url": "https://careers.qualcomm.com/careers/job/446719823591"
+    },
+    {
+      "title": "Security Specialist",
+      "url": "https://careers.qualcomm.com/careers/job/446719727512"
+    },
+    {
+      "title": "#Systems SoC Test Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446719874307"
+    },
+    {
       "title": "Program Manager - IPS",
       "url": "https://careers.qualcomm.com/careers/job/446721638793"
     },
@@ -80501,28 +80530,12 @@
       "url": "https://careers.qualcomm.com/careers/job/446716319290"
     },
     {
-      "title": "Ambient Compute System Architecture and Power Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719837521"
-    },
-    {
       "title": "System Integration & Test Engineer - Top Secret Clearance Preferred (San Diego CA)",
       "url": "https://careers.qualcomm.com/careers/job/446720174470"
     },
     {
       "title": "SOC Power Architecture Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446719802797"
-    },
-    {
-      "title": "Machine Learning R&D",
-      "url": "https://careers.qualcomm.com/careers/job/446719838414"
-    },
-    {
-      "title": "Video DV Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719722609"
-    },
-    {
-      "title": "SOC Design Verification Engineer-Staff",
-      "url": "https://careers.qualcomm.com/careers/job/446719823591"
     },
     {
       "title": "SoC Modeling Engineer",
@@ -80933,10 +80946,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446721159585"
     },
     {
-      "title": "Security Specialist",
-      "url": "https://careers.qualcomm.com/careers/job/446719727512"
-    },
-    {
       "title": "Artificial Intelligence for Video Compression - Research Scientist",
       "url": "https://careers.qualcomm.com/careers/job/446707518930"
     },
@@ -81319,10 +81328,6 @@
     {
       "title": "Modem Integration & Test Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446719948366"
-    },
-    {
-      "title": "#Systems SoC Test Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446719874307"
     },
     {
       "title": "Computer Vision Systems Engineer",
@@ -85735,5 +85740,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-11-08T18:49:46"
+  "_last_email_at": "2026-11-08T22:50:08"
 }
