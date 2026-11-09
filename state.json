@@ -5739,6 +5739,14 @@
   ],
   "https://www.amazon.jobs/en/search?base_query=&loc_query=United+States&sort=recent": [
     {
+      "title": "Staff Pharmacist , Amazon Pharmacy",
+      "url": "https://www.amazon.jobs/en/jobs/10599483/staff-pharmacist-amazon-pharmacy"
+    },
+    {
+      "title": "Overnight Staff Pharmacist , Amazon Pharmacy",
+      "url": "https://www.amazon.jobs/en/jobs/10599482/overnight-staff-pharmacist-amazon-pharmacy"
+    },
+    {
       "title": "System Integration Engineer, Nitro Team",
       "url": "https://www.amazon.jobs/en/jobs/10599442/system-integration-engineer-nitro-team"
     },
@@ -17523,6 +17531,11 @@
   ],
   "https://boards-api.greenhouse.io/v1/boards/stripe/jobs": [
     {
+      "title": "Business Development Manager, Agentic Commerce",
+      "url": "https://stripe.com/jobs/search?gh_jid=7524334",
+      "location": "San Francisco, CA"
+    },
+    {
       "title": "Account Executive, SMB Grower (French speaking)",
       "url": "https://stripe.com/jobs/search?gh_jid=8250475",
       "location": "Toronto, Canada"
@@ -22516,11 +22529,6 @@
       "title": "Partner Development Manager (Banks)",
       "url": "https://stripe.com/jobs/search?gh_jid=7289456",
       "location": "London - United Kingdom"
-    },
-    {
-      "title": "Software Engineer, Revenue and Financial Automation",
-      "url": "https://stripe.com/jobs/search?gh_jid=8076616",
-      "location": "N/A"
     }
   ],
   "https://block.xyz/careers?locations=United%20States": [
@@ -22725,12 +22733,12 @@
       "url": "https://block.xyz/careers/jobs/5121335008"
     },
     {
-      "title": "Enterprise Account Executive, Commerce Remote Seattle, WA, US",
-      "url": "https://block.xyz/careers/jobs/5424124008"
-    },
-    {
       "title": "Enterprise Account Executive, Commerce Remote New York, NY, US",
       "url": "https://block.xyz/careers/jobs/5424134008"
+    },
+    {
+      "title": "Enterprise Account Executive, Commerce Remote Seattle, WA, US",
+      "url": "https://block.xyz/careers/jobs/5424124008"
     },
     {
       "title": "Enterprise Account Executive, Australia Remote Sydney, Australia",
@@ -34015,12 +34023,16 @@
       "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/London---remote-first-in-UK/Director--Partner-Manager--Enterprise--EMEA_JR101177"
     },
     {
-      "title": "Senior Accountant",
-      "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/London---remote-first-in-UK/Senior-Accountant_JR101146"
-    },
-    {
       "title": "Partner Development Coordinator",
       "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/San-Francisco---remote-first-in-US/Partner-Development-Coordinator_JR101167"
+    },
+    {
+      "title": "Engineering Manager, Identity & Access Platform",
+      "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/San-Francisco---remote-first-in-US/Engineering-Manager--Identity---Access-Platform_JR101170"
+    },
+    {
+      "title": "Senior Accountant",
+      "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/London---remote-first-in-UK/Senior-Accountant_JR101146"
     },
     {
       "title": "Principal Product Manager, Core Network",
@@ -34045,10 +34057,6 @@
     {
       "title": "Senior Software Engineer - CLO",
       "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/San-Francisco---remote-first-in-US/Senior-Site-Reliability-Engineer---CLO_JR101103"
-    },
-    {
-      "title": "Engineering Manager, Identity & Access Platform",
-      "url": "https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/San-Francisco---remote-first-in-US/Engineering-Manager--Identity---Access-Platform_JR101170"
     },
     {
       "title": "Principal Product Manager",
@@ -34513,6 +34521,12 @@
     }
   ],
   "https://www.citadel.com/career-sitemap.xml": [
+    {
+      "title": "Citadel Securities 2027 US PhD Summit",
+      "url": "https://www.citadel.com/careers/details/citadel-securities-2027-us-phd-summit/",
+      "location": "",
+      "countries": []
+    },
     {
       "title": "Full Stack Software Engineer",
       "url": "https://www.citadel.com/careers/details/full-stack-software-engineer/",
@@ -35005,6 +35019,12 @@
     }
   ],
   "https://www.citadelsecurities.com/career-sitemap.xml": [
+    {
+      "title": "Citadel Securities 2027 US PhD Summit",
+      "url": "https://www.citadelsecurities.com/careers/details/citadel-securities-2027-us-phd-summit/",
+      "location": "",
+      "countries": []
+    },
     {
       "title": "Cs Trading Platform Software Engineer Jose Cs",
       "url": "https://www.citadelsecurities.com/careers/details/cs-trading-platform-software-engineer-jose-cs/",
@@ -41352,6 +41372,14 @@
   ],
   "https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_1001,limit=100,locationId=300000000289738,sortBy=POSTING_DATES_DESC": [
     {
+      "title": "Project Management Associate I",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807257",
+      "location": "Columbus, OH, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
       "title": "Trading Services Associate I",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796516",
       "location": "Newark, DE, United States",
@@ -41768,14 +41796,6 @@
       ]
     },
     {
-      "title": "Private Client Banker- Kirby, Houston ,TX",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805325",
-      "location": "Houston, TX, United States",
-      "countries": [
-        "US"
-      ]
-    },
-    {
       "title": "Client Relationship Manager - VP - Workplace Solutions",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210773410",
       "location": "Jersey City, NJ, United States",
@@ -42147,6 +42167,14 @@
       "title": "Americas Capital Markets Business Management, Associate",
       "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800893",
       "location": "NY, United States",
+      "countries": [
+        "US"
+      ]
+    },
+    {
+      "title": "Private Client Banker- Kirby, Houston ,TX",
+      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805325",
+      "location": "Houston, TX, United States",
       "countries": [
         "US"
       ]
@@ -49342,14 +49370,6 @@
       "countries": [
         "US"
       ]
-    },
-    {
-      "title": "Institutional Investment Solutions Analyst",
-      "url": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804947",
-      "location": "New York, NY, United States",
-      "countries": [
-        "US"
-      ]
     }
   ],
   "https://morganstanley.eightfold.ai/careers?location=United%20States": [
@@ -49430,6 +49450,10 @@
       "url": "https://morganstanley.eightfold.ai/careers/job/549801217933"
     },
     {
+      "title": "Registered Client Service Associate",
+      "url": "https://morganstanley.eightfold.ai/careers/job/549801091622"
+    },
+    {
       "title": "Registered Client Relationship Analyst",
       "url": "https://morganstanley.eightfold.ai/careers/job/549800667608"
     },
@@ -49504,10 +49528,6 @@
     {
       "title": "Client Service Associate",
       "url": "https://morganstanley.eightfold.ai/careers/job/549801201687"
-    },
-    {
-      "title": "Registered Client Service Associate",
-      "url": "https://morganstanley.eightfold.ai/careers/job/549801091622"
     },
     {
       "title": "Investment Banking Healthcare Vice President – New York or San Francisco",
@@ -56223,6 +56243,14 @@
     }
   ],
   "https://api.ashbyhq.com/posting-api/job-board/openai": [
+    {
+      "title": "Manager, Forward Deployed Engineering - Munich",
+      "url": "https://jobs.ashbyhq.com/openai/5d5b2256-ee0f-4ba6-a983-d62d0d70515d",
+      "location": "Munich, Germany",
+      "countries": [
+        "Germany"
+      ]
+    },
     {
       "title": "Civil & Structural Architect, Power Generation",
       "url": "https://jobs.ashbyhq.com/openai/1a475859-21e3-45fc-9e93-8763aa1d0992",
@@ -64469,14 +64497,6 @@
       "countries": [
         "United States"
       ]
-    },
-    {
-      "title": "Applied AI Engineer, Quants",
-      "url": "https://jobs.ashbyhq.com/openai/6d8facff-ce1d-4069-884b-dc1177cc1a06",
-      "location": "London, UK",
-      "countries": [
-        "United Kingdom"
-      ]
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/xai/jobs": [
@@ -66552,6 +66572,11 @@
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/databricks/jobs": [
+    {
+      "title": "Evergreen Solutions Architect",
+      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=7827370002",
+      "location": "Tokyo, Japan"
+    },
     {
       "title": "Senior Software Engineer - Backend Infrastructure",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=7647294002",
@@ -71546,11 +71571,6 @@
       "title": "Senior Specialist Solutions Engineer - Platform Security and Cloud Infrastructure",
       "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8687202002",
       "location": "Amsterdam, Netherlands"
-    },
-    {
-      "title": "Solutions Architect - Benelux Fungible",
-      "url": "https://databricks.com/company/careers/open-positions/job?gh_jid=8746185002",
-      "location": "Amsterdam, Netherlands"
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/scaleai/jobs": [
@@ -72768,12 +72788,12 @@
       "url": "https://jobs.ashbyhq.com/snowflake/da2d8c93-5d33-4fdc-8510-08126d3df5eb"
     },
     {
-      "title": "Partner Sales Director - VAR",
-      "url": "https://jobs.ashbyhq.com/snowflake/261c675f-e1a7-4f38-9349-45d80c7b1a73"
-    },
-    {
       "title": "Account Executive - Acquisition",
       "url": "https://jobs.ashbyhq.com/snowflake/21407c17-7ba8-4381-a825-2681afbbcdd4"
+    },
+    {
+      "title": "Partner Sales Director - VAR",
+      "url": "https://jobs.ashbyhq.com/snowflake/261c675f-e1a7-4f38-9349-45d80c7b1a73"
     },
     {
       "title": "Account Executive, Commercial",
@@ -73513,6 +73533,11 @@
     }
   ],
   "https://boards-api.greenhouse.io/v1/boards/datadog/jobs": [
+    {
+      "title": "Senior Sales Engineer",
+      "url": "https://careers.datadoghq.com/detail/8334640/?gh_jid=8334640",
+      "location": "Melbourne, Australia"
+    },
     {
       "title": "Technical Escalations Engineer 2 (Web Platform)",
       "url": "https://careers.datadoghq.com/detail/8351509/?gh_jid=8351509",
@@ -80406,10 +80431,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446721803210"
     },
     {
-      "title": "Digital Hardware Engineer, Senior",
-      "url": "https://careers.qualcomm.com/careers/job/446721689446"
-    },
-    {
       "title": "Data Center SoC Power & Limits Architect",
       "url": "https://careers.qualcomm.com/careers/job/446719161121"
     },
@@ -80456,6 +80477,34 @@
     {
       "title": "#Digital Hardware Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721161154"
+    },
+    {
+      "title": "Camera Systems Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721365985"
+    },
+    {
+      "title": "#Wireless Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721161408"
+    },
+    {
+      "title": "#Backend Software Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721162271"
+    },
+    {
+      "title": "#RF Test Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721159320"
+    },
+    {
+      "title": "GPU Design Implementation Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721348988"
+    },
+    {
+      "title": "Next Gen, High-Speed, Memory and Cache Controller Design Engineer",
+      "url": "https://careers.qualcomm.com/careers/job/446721410827"
+    },
+    {
+      "title": "Digital Hardware Engineer, Senior",
+      "url": "https://careers.qualcomm.com/careers/job/446721689446"
     },
     {
       "title": "Ambient Compute System Architecture and Power Engineer",
@@ -80730,10 +80779,6 @@
       "url": "https://careers.qualcomm.com/careers/job/446718674553"
     },
     {
-      "title": "Camera Systems Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721365985"
-    },
-    {
       "title": "Modem Systems Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721016647"
     },
@@ -80792,18 +80837,6 @@
     {
       "title": "#Wireless S/w Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721159541"
-    },
-    {
-      "title": "#Wireless Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721161408"
-    },
-    {
-      "title": "#Backend Software Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721162271"
-    },
-    {
-      "title": "#RF Test Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721159320"
     },
     {
       "title": "#Wireless Subsystem Test and Software Tools Engineer",
@@ -80888,10 +80921,6 @@
     {
       "title": "High-Speed Analog & Mixed-Signal PHY Design Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446721524516"
-    },
-    {
-      "title": "GPU Design Implementation Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721348988"
     },
     {
       "title": "SoC Power Validation Engineer",
@@ -81356,10 +81385,6 @@
     {
       "title": "IPS Hardware Support Technician/Engineer",
       "url": "https://careers.qualcomm.com/careers/job/446720924663"
-    },
-    {
-      "title": "Next Gen, High-Speed, Memory and Cache Controller Design Engineer",
-      "url": "https://careers.qualcomm.com/careers/job/446721410827"
     },
     {
       "title": "Technical Program Manager – GSOC Agentic Execution Enablement",
@@ -85740,5 +85765,5 @@
       "location": "San Mateo, CA, United States"
     }
   ],
-  "_last_email_at": "2026-11-08T22:50:08"
+  "_last_email_at": "2026-11-09T02:37:54"
 }
