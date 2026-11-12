@@ -201,10 +201,13 @@ A posting both links show is emailed once, under that name, whichever entry find
 when both pages link it the same way or with the same Greenhouse, Ashby or Lever job id (a
 job the two pages link differently can be listed twice). The order of the entries doesn't
 matter, and a new entry's first run, which records what its page lists without emailing,
-never hides a posting from the other entry. Entries count as the same company when their
-names match ignoring case, punctuation and endings like "Inc", and their filters
-(`keyword_filters`, `us_only`) are the same. A paused entry still counts, so what it already
-emailed isn't sent again by the other.
+never hides a posting from the other entry; nor does one entry's own filter (`keyword_filters`,
+`us_only`) leaving out a posting without listing it. Entries count as the same company when
+their names match ignoring case, punctuation and endings like "Inc". A paused entry still
+counts, so what it already emailed isn't sent again by the other. (state.json marks each
+posting an entry emailed or listed as left out with `"reported": true`; postings saved before
+November 2026 have no mark, so a newly added entry may email one of those once more rather
+than risk hiding it.)
 
 ### How to figure out `link_selector` and `wait_for`
 

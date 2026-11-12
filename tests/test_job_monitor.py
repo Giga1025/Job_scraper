@@ -637,8 +637,38 @@ class SameCompanyTests(MonitorTestCase):
         self.pages[URL] = self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
         _, reported = self.run_monitor([target(url=self.ALL), target()], email=WORKING_EMAIL)
         self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
-        self.assertTrue(all(j[jm.BASELINE_MARK] for j in self.saved_state()[self.ALL]))
-        self.assertNotIn(jm.BASELINE_MARK, self.saved_state()[URL][0])
+        self.assertNotIn(jm.REPORTED_MARK, self.saved_state()[self.ALL][0])  # only recorded
+        self.assertTrue(self.saved_state()[URL][0][jm.REPORTED_MARK])        # emailed
+
+    def test_postings_saved_before_this_check_existed_hide_nothing(self):
+        # A state.json from before: no marks, so it can't say which postings were emailed.
+        jm.save_state({URL: [{"title": "PhD Software Engineer", "url": "https://acme.example/jobs/phd-software-engineer"}]})
+        self.pages[URL] = page(*jobs_named("PhD Software Engineer"))
+        self.pages[self.ALL] = page(*jobs_named("Data Engineer"))
+        targets = [target(), target(url=self.ALL)]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)  # the new entry's first check
+        self.assertEqual(reported, {})
+        self.pages[self.ALL] = page(*jobs_named("Data Engineer", "PhD Software Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["PhD Software Engineer"]})
+
+    def test_a_company_wide_id_in_ashby_links_is_not_a_posting_id(self):
+        org = "f7d8749a-72d6-407c-bf98-292ea630c73a"
+        job1, job2 = "0e7ecf76-1111-4a2b-9c3d-000000000001", "0e7ecf76-2222-4a2b-9c3d-000000000002"
+
+        def ashby_page(*jobs):
+            return "".join(f'<a href="https://jobs.ashbyhq.com/{board}/{jid}/application">{title}</a>'
+                           for board, jid, title in jobs)
+
+        self.mark_known(URL, self.ALL)
+        targets = [target(link_selector="a[href*='ashbyhq']"), target(url=self.ALL, link_selector="a[href*='ashbyhq']")]
+        self.pages[URL] = ashby_page((org, job1, "Software Engineer 2"))
+        self.pages[self.ALL] = ashby_page()
+        self.run_monitor(targets, email=WORKING_EMAIL)
+        # A different posting on the same board is new; the same posting under its board name is not.
+        self.pages[self.ALL] = ashby_page((org, job2, "Software Engineer 3"), ("acme", job1, "Software Engineer 2"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Software Engineer 3"]})
 
     def test_the_existing_entry_failing_while_the_new_one_starts_loses_nothing(self):
         self.mark_known(URL)
@@ -662,7 +692,7 @@ class SameCompanyTests(MonitorTestCase):
         _, reported = self.run_monitor([target(enabled=False), target(url=self.ALL)], email=WORKING_EMAIL)
         self.assertEqual(reported, {})
 
-    def test_entries_with_other_us_only_stay_apart(self):
+    def test_a_posting_skipped_as_outside_the_us_is_still_emailed_by_an_entry_that_wants_it(self):
         # The us_only entry records the London posting without emailing it; an entry for the
         # same company that wants every location still emails it.
         worldwide = "https://boards-api.greenhouse.io/v1/boards/acme-worldwide/jobs"
@@ -688,13 +718,14 @@ class SameCompanyTests(MonitorTestCase):
         _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
         self.assertEqual(reported, {})
 
-    def test_other_companies_and_entries_with_other_filters_stay_apart(self):
+    def test_a_posting_another_entry_filtered_out_unseen_is_still_emailed(self):
         other = "https://other.example/careers"
         self.mark_known(URL, self.ALL, other)
         self.pages[URL] = page(*jobs_named("Backend Engineer"))
         self.pages[self.ALL] = self.pages[other] = page()
         # The first entry only shows titles with "Intern", so it records Backend Engineer
-        # without showing it: the second entry must still email it when it lists it.
+        # without showing it: the second entry must still email it when it lists it. (Another
+        # company listing the same title is unaffected.)
         targets = [target(keyword_filters=["Intern"]), target(url=self.ALL), target(name="Other", url=other)]
         _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
         self.assertEqual(reported, {})
@@ -705,7 +736,7 @@ class SameCompanyTests(MonitorTestCase):
     def test_the_shipped_config_groups_only_the_two_uber_entries(self):
         config = json.loads((REPO_DIR / "config_all.json").read_text())
         targets = [t for t in config["targets"] if not t.get("_section")]
-        siblings = jm._sibling_urls(targets, config.get("keyword_filters", []), bool(config.get("us_only")))
+        siblings = jm._sibling_urls(targets)
         uber = {t["url"] for t in targets if t.get("name") == "Uber"}
         self.assertEqual(len(uber), 2)
         self.assertEqual(siblings, {url: uber - {url} for url in uber})
@@ -821,7 +852,9 @@ class DetectionTests(MonitorTestCase):
             ok, reported = self.run_monitor(targets)
         self.assertTrue(ok)
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
-        self.assertEqual(self.saved_state(), {URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst"}]})
+        # (marked as reported, for any other entry for the same company: see SameCompanyTests)
+        self.assertEqual(self.saved_state(), {URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst",
+                                                     jm.REPORTED_MARK: True}]})
         self.assertTrue(any("Broken" in line for line in logs.output))
 
     def test_failed_fetch_leaves_saved_jobs_alone(self):
