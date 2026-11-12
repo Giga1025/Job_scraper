@@ -31,6 +31,8 @@ import tempfile
 import time
 import html as html_lib
 import xml.etree.ElementTree as ET
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -74,12 +76,14 @@ PENDING_LEFT_OUT_KEY = "_left_out_pending"  # left-out postings not yet listed i
 LAST_EMAIL_KEY = "_last_email_at"           # when an email last went out (ISO time)
 ALERT_POOL_KEY = "_alerts_pending"          # matching postings not yet emailed
 LEFT_OUT_LOG_KEY = "_left_out_log"          # left-out postings of the last few days (for left_out.md)
+BOARDS_KEY = "_boards"                      # company job boards found through the feeds: when checked, ETags, boards not found
 
 LEFT_OUT_LOG_DAYS = 7         # how far back left_out.md goes
 LEFT_OUT_EMAIL_LIMIT = 25     # left-out postings listed in an email (the rest are counted)
 EMAIL_DUE_TOLERANCE_MINUTES = 10  # a batch due at 2h may go out at 1h50 (runs come every 30 min)
 REPORTED_MARK = "reported"  # on postings a company entry found new for you: how they were shown
 SHOWN_AS_MATCH, SHOWN_AS_LEFT_OUT = "match", "left out"  # (queued for the email / for its left-out list)
+GREENHOUSE_JOB_KEY = "gh_job"  # on Greenhouse postings: the job's id, shared by its postings on every board
 
 # A state.json temp file older than this was left by a monitor killed mid-save.
 STALE_TEMP_FILE_SECONDS = 600
@@ -248,7 +252,29 @@ def ensure_config(config_override: str | None = None):
     global _active_config_file
     _active_config_file = hashlib.sha256(os.fsencode(os.path.realpath(active_config_path))).hexdigest()[:16]
     log.info(f"Using config file: {active_config_path.name}")
-    return load_json(active_config_path)
+    return load_config(active_config_path)
+
+
+def load_config(path: Path) -> dict:
+    """A config file, with the entries of the files listed under its "target_files" (paths
+    relative to it, e.g. targets/big_tech.json) added after its own "targets". Each such
+    file holds a list of entries, or an object with them under "targets"."""
+    config = load_json(path)
+    files = config.get("target_files") if isinstance(config, dict) else None
+    if not files:
+        return config
+    targets = list(config.get("targets") or [])
+    for name in files:
+        file_path = Path(name) if Path(name).is_absolute() else Path(path).parent / name
+        entries = load_json(file_path)
+        if isinstance(entries, dict):
+            entries = entries.get("targets")
+        if not isinstance(entries, list):
+            log.error(f"{file_path} (listed under target_files in {Path(path).name}) is missing "
+                      f"or has no list of targets; stopping rather than checking only part of them.")
+            sys.exit(2)
+        targets.extend(entries)
+    return {**config, "targets": targets}
 
 
 def _read_state() -> dict | None:
@@ -396,6 +422,7 @@ def save_state(
     alerts_add: list[dict] | None = None,
     alerts_shown: set[str] | None = None,
     left_out_log_add: list[dict] | None = None,
+    boards: dict | None = None,
 ):
     """Write these targets' entries to state.json, keeping all other targets as they are on disk.
 
@@ -426,6 +453,8 @@ def save_state(
         log_changed = _update_left_out_log(state, left_out_log_add)
         if last_email:
             state[LAST_EMAIL_KEY] = last_email
+        if boards is not None:
+            state[BOARDS_KEY] = boards
         save_json(STATE_PATH, state)
         page = left_out_page_path()
         if log_changed or (state.get(LEFT_OUT_LOG_KEY) and not page.exists()):
@@ -867,8 +896,9 @@ def _query_values(query: dict, *names: str) -> list[str]:
     return [v for name in names for v in query.get(name, []) if v]
 
 
-def fetch_greenhouse_api_jobs(url: str) -> list[dict] | None:
+def fetch_greenhouse_api_jobs(url: str, get_json=None) -> list[dict] | None:
     """https://boards-api.greenhouse.io/v1/boards/<board>/jobs[?departments[]=<id or name>&offices[]=...]"""
+    get_json = get_json or _get_json
     parsed = urlparse(url)
     match = re.match(r"^/v1/boards/([^/]+)/jobs/?$", parsed.path)
     if not match:
@@ -878,7 +908,7 @@ def fetch_greenhouse_api_jobs(url: str) -> list[dict] | None:
     want_departments = {v.lower() for v in _query_values(query, "departments[]", "departments", "department")}
     want_offices = {v.lower() for v in _query_values(query, "offices[]", "offices", "office")}
     params = {"content": "true"} if (want_departments or want_offices) else None
-    data = _get_json(f"https://boards-api.greenhouse.io/v1/boards/{match.group(1)}/jobs", params)
+    data = get_json(f"https://boards-api.greenhouse.io/v1/boards/{match.group(1)}/jobs", params)
     postings = data.get("jobs") if isinstance(data, dict) else None
     if not isinstance(postings, list):
         return None
@@ -895,16 +925,22 @@ def fetch_greenhouse_api_jobs(url: str) -> list[dict] | None:
             continue
         if not matches(post, "departments", want_departments) or not matches(post, "offices", want_offices):
             continue
-        jobs.append({
+        job = {
             "title": _to_text(post["title"])[:200],
             "url": _to_text(post["absolute_url"]),
             "location": _to_text((post.get("location") or {}).get("name")),
-        })
+        }
+        internal = post.get("internal_job_id")
+        if isinstance(internal, (int, str)) and not isinstance(internal, bool) and str(internal).isdigit():
+            # The same for every posting of one job, on any of the company's boards.
+            job[GREENHOUSE_JOB_KEY] = str(internal)
+        jobs.append(job)
     return _dedupe_jobs(jobs)
 
 
-def fetch_ashby_api_jobs(url: str) -> list[dict] | None:
+def fetch_ashby_api_jobs(url: str, get_json=None) -> list[dict] | None:
     """https://api.ashbyhq.com/posting-api/job-board/<board>[?department=<name>&team=<name>]"""
+    get_json = get_json or _get_json
     parsed = urlparse(url)
     match = re.match(r"^/posting-api/job-board/([^/]+)/?$", parsed.path)
     if not match:
@@ -913,7 +949,7 @@ def fetch_ashby_api_jobs(url: str) -> list[dict] | None:
     query = parse_qs(parsed.query)
     want_departments = {v.lower() for v in _query_values(query, "department")}
     want_teams = {v.lower() for v in _query_values(query, "team")}
-    data = _get_json(f"https://api.ashbyhq.com/posting-api/job-board/{match.group(1)}")
+    data = get_json(f"https://api.ashbyhq.com/posting-api/job-board/{match.group(1)}")
     postings = data.get("jobs") if isinstance(data, dict) else None
     if not isinstance(postings, list):
         return None
@@ -944,8 +980,10 @@ def fetch_ashby_api_jobs(url: str) -> list[dict] | None:
     return _dedupe_jobs(jobs)
 
 
-def fetch_lever_api_jobs(url: str) -> list[dict] | None:
-    """https://api.lever.co/v0/postings/<company>[?location=...&department=...&team=...&commitment=...]"""
+def fetch_lever_api_jobs(url: str, get_json=None) -> list[dict] | None:
+    """https://api.lever.co/v0/postings/<company>[?location=...&department=...&team=...&commitment=...]
+    (or api.eu.lever.co for Lever's European boards)"""
+    get_json = get_json or _get_json
     parsed = urlparse(url)
     match = re.match(r"^/v0/postings/([^/]+)/?$", parsed.path)
     if not match:
@@ -953,7 +991,8 @@ def fetch_lever_api_jobs(url: str) -> list[dict] | None:
         return None
     params = [(k, v) for k, vs in parse_qs(parsed.query).items() if k != "mode" for v in vs]
     params.append(("mode", "json"))
-    data = _get_json(f"https://api.lever.co/v0/postings/{match.group(1)}", params)
+    host = "api.eu.lever.co" if parsed.netloc.lower() == "api.eu.lever.co" else "api.lever.co"
+    data = get_json(f"https://{host}/v0/postings/{match.group(1)}", params)
     if not isinstance(data, list):
         return None
     jobs = []
@@ -1313,6 +1352,240 @@ def job_keys(url: str) -> set[tuple]:
     elif not keys:
         keys |= {(host, n) for n in re.findall(r"(?<!\d)\d{7,}(?!\d)", parsed.path)}
     return keys
+
+
+# ===================================================================
+# Company job boards found through the feeds (a config entry with "mode": "boards")
+# ===================================================================
+# The companies in the new-grad feeds mostly post on Greenhouse, Ashby or Lever. Their
+# whole boards are checked too (every "every_hours"), each as a target of its own named
+# after the company, so roles the feeds never list are found. Boards are fetched in
+# parallel (Lever one at a time) with the ETag from the last check, so a board that
+# hasn't changed answers "304 Not Modified" with no body.
+BOARD_WORKERS = 8
+LEVER_WORKERS = 3            # Lever boards are read at most this many at a time,
+LEVER_DELAY_SECONDS = 0.5    # each reader pausing this long between boards
+BOARD_MISSING_RETRY_HOURS = 24  # a board that answers 404 is tried again a day later
+_GREENHOUSE_BOARD_HOST = re.compile(r"^(?:job-)?boards(?:\.[a-z]{2,3})?\.greenhouse\.io$")
+_BOARD_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+
+
+def board_api_url(job_url) -> tuple[str, str] | None:
+    """(platform, the board's job-board API URL) for a posting link on Greenhouse, Ashby
+    or Lever, else None (also for a link that isn't a valid URL)."""
+    try:
+        parsed = urlparse(str(job_url or "").strip())
+    except ValueError:  # e.g. "https://[x": one bad row in a list mustn't stop the run
+        return None
+    host = parsed.netloc.lower().removeprefix("www.")
+    parts = [p for p in parsed.path.split("/") if p]
+    if _GREENHOUSE_BOARD_HOST.match(host):  # incl. job-boards.eu.greenhouse.io: same API
+        slug = (parse_qs(parsed.query).get("for") or [""])[0] if parts[:1] == ["embed"] else (parts[:1] or [""])[0]
+        platform, api, slug = "greenhouse", "https://boards-api.greenhouse.io/v1/boards/{}/jobs", slug.lower()
+    elif host == "jobs.ashbyhq.com":
+        platform, api, slug = "ashby", "https://api.ashbyhq.com/posting-api/job-board/{}", (parts[:1] or [""])[0]
+    elif host in ("jobs.lever.co", "jobs.eu.lever.co"):
+        api_host = "api.eu.lever.co" if host == "jobs.eu.lever.co" else "api.lever.co"
+        platform, api, slug = "lever", f"https://{api_host}/v0/postings/{{}}", (parts[:1] or [""])[0].lower()
+    else:
+        return None
+    return (platform, api.format(slug)) if _BOARD_SLUG.match(slug) else None
+
+
+def _url_key(url) -> str:
+    """A URL without its query, for comparing board URLs: "https://host/path", lower-case."""
+    parsed = urlparse(str(url or "").strip().lower())
+    return f"{parsed.scheme}://{parsed.netloc}{parsed.path.rstrip('/')}"
+
+
+def _board_page(api_url: str) -> str:
+    """The job-board page people visit, for a board's API URL."""
+    parts = urlparse(api_url).path.rstrip("/").split("/")
+    host = urlparse(api_url).netloc
+    if host.endswith("greenhouse.io"):
+        return f"https://job-boards.greenhouse.io/{parts[-2]}"
+    if host.endswith("ashbyhq.com"):
+        return f"https://jobs.ashbyhq.com/{parts[-1]}"
+    return f"https://{'jobs.eu.lever.co' if host == 'api.eu.lever.co' else 'jobs.lever.co'}/{parts[-1]}"
+
+
+def _board_platform(api_url: str) -> str:
+    host = urlparse(api_url).netloc
+    return "greenhouse" if host.endswith("greenhouse.io") else "ashby" if host.endswith("ashbyhq.com") else "lever"
+
+
+def grow_board_registry(known: dict, links, via: str, today: str) -> int:
+    """Add the boards these (link, company) pairs point to, if new. known maps a board's
+    _url_key to {"url", "name", "added", "via"}; a board, once in, stays. Returns how many
+    were added."""
+    names: dict[str, Counter] = {}
+    urls: dict[str, str] = {}
+    for link, company in links:
+        board = board_api_url(link)
+        if not board:
+            continue
+        key = _url_key(board[1])
+        if key in known:
+            continue
+        urls.setdefault(key, board[1])
+        names.setdefault(key, Counter())
+        if str(company or "").strip():
+            names[key][str(company).strip()] += 1
+    for key in sorted(urls):
+        slug = urls[key].rstrip("/").split("/")[-2 if "greenhouse" in key else -1]
+        name = names[key].most_common(1)[0][0] if names[key] else slug
+        known[key] = {"url": urls[key], "name": name, "added": today, "via": via}
+    return len(urls)
+
+
+def read_company_list(item: dict, etags: dict) -> list[tuple] | None:
+    """(link, company) pairs from a list used only to find companies (SimplifyJobs'
+    listings.json format), or None if it hasn't changed since the last read (or failed)."""
+    url = item.get("url")
+    outcome: dict = {}
+    data = _board_get_json(etags.get(url), outcome)(url, timeout=120)
+    if outcome.get("status") == 304:
+        return None
+    if not isinstance(data, list):
+        log.warning(f"  [boards] Could not read {item.get('name') or url} ({outcome.get('status')})")
+        return None
+    etags[url] = outcome.get("etag")
+    return [(row.get("url"), row.get("company_name")) for row in data if isinstance(row, dict)]
+
+
+def _board_get_json(etag: str | None, outcome: dict):
+    """A _get_json for one board: sends its saved ETag and notes the HTTP status and new ETag."""
+    def get(url, params=None, timeout=30):
+        headers = {**HEADERS, "If-None-Match": etag} if etag else HEADERS
+        try:
+            resp = requests.get(url, params=params, headers=headers, timeout=timeout)
+        except Exception as exc:
+            outcome["status"] = f"error ({exc.__class__.__name__})"
+            return None
+        outcome["status"] = resp.status_code
+        if resp.status_code != 200:
+            return None
+        outcome["etag"] = resp.headers.get("ETag") or resp.headers.get("etag")
+        try:
+            return resp.json()
+        except ValueError:
+            outcome["status"] = "error (not JSON)"
+            return None
+    return get
+
+
+def fetch_boards(boards: list[dict], etags: dict) -> dict[str, tuple]:
+    """Fetch these boards. Returns {url: (status, jobs, etag)}, status being "ok" (jobs is
+    the list), "unchanged" (304), "missing" (404) or "failed"."""
+    def one(board):
+        outcome: dict = {}
+        try:
+            jobs = job_board_api_reader(board["url"])[1](board["url"], get_json=_board_get_json(etags.get(board["url"]), outcome))
+        except Exception as exc:
+            jobs, outcome["status"] = None, f"error ({exc.__class__.__name__})"
+        status = outcome.get("status")
+        if status == 304:
+            return "unchanged", None, None
+        if status == 404:
+            return "missing", None, None
+        if jobs is None:
+            log.debug(f"  [boards] {board['name']}: {status}")
+            return "failed", None, None
+        return "ok", jobs, outcome.get("etag")
+
+    lever = [b for b in boards if _board_platform(b["url"]) == "lever"]
+    others = [b for b in boards if _board_platform(b["url"]) != "lever"]
+    results: dict[str, tuple] = {}
+
+    def lever_reader(share):
+        for i, board in enumerate(share):
+            if i:
+                time.sleep(LEVER_DELAY_SECONDS)
+            results[board["url"]] = one(board)
+
+    with ThreadPoolExecutor(max_workers=BOARD_WORKERS + LEVER_WORKERS) as pool:
+        lever_done = [pool.submit(lever_reader, lever[i::LEVER_WORKERS]) for i in range(LEVER_WORKERS)]
+        for board, result in zip(others, pool.map(one, others)):
+            results[board["url"]] = result
+        for done in lever_done:
+            done.result()
+    return results
+
+
+def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: bool) -> list[dict]:
+    """Grow the board registry (meta["known"]) and return a target for each board in it,
+    except boards the config already has an entry for.
+
+    The registry grows from the feeds' saved postings (every run), the boards the entry
+    lists under "companies", and, when the boards are due, the lists under
+    "find_companies_in" (read only if they changed)."""
+    today = datetime.now().date().isoformat()
+    known = meta["known"]
+    for target in targets:
+        rows = state.get(target.get("url")) if target.get("mode") == "feed" else None
+        if isinstance(rows, list):
+            grow_board_registry(known, ((r.get("url"), r.get("company")) for r in rows if isinstance(r, dict)),
+                                target.get("name") or "a feed", today)
+    extra = [b for b in entry.get("companies") or [] if isinstance(b, dict)]
+    grow_board_registry(known, ((b.get("link"), b.get("name")) for b in extra), "your list", today)
+    if due:
+        for item in entry.get("find_companies_in") or []:
+            if isinstance(item, dict) and item.get("url"):
+                links = read_company_list(item, meta["list_etags"])
+                if links:
+                    added = grow_board_registry(known, links, item.get("name") or item["url"], today)
+                    log.info(f"  [boards] {item.get('name') or item['url']}: {added} new company board(s)")
+
+    platforms = set(entry.get("platforms") or ("greenhouse", "ashby", "lever"))
+    skip = {_url_key(t.get("url")) for t in targets if t.get("url")}
+    skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
+    tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
+    skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
+    return [{"name": info["name"], "url": info["url"], "mode": "api", "_board": True,
+             "_tech_titles": tech, "_skip_titles": skip_titles, "_compact": True, "_quiet": True}
+            for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
+            if key not in skip and _board_platform(info["url"]) in platforms
+            and _entry_key(info.get("name")) not in skip_companies]
+
+
+def boards_due(entry: dict, meta: dict) -> bool:
+    try:
+        every = float(entry.get("every_hours", 1))
+    except (TypeError, ValueError):
+        every = 1.0
+    return entry.get("enabled", True) is not False and \
+        _hours_since(meta.get("checked_at")) >= every - EMAIL_DUE_TOLERANCE_MINUTES / 60
+
+
+def format_boards_page(meta: dict, checked: list[dict]) -> str:
+    """boards.md: every company job board the monitor checks."""
+    counts = Counter(_board_platform(b["url"]) for b in checked)
+    checked_keys = {_url_key(b["url"]) for b in checked}
+    missing = {_url_key(u) for u in meta.get("missing") or {}}
+    rows = sorted((info for key, info in meta["known"].items() if key in checked_keys),
+                  key=lambda i: (str(i.get("name")).lower(), i["url"]))
+    lines = [
+        "# Company job boards the monitor checks",
+        "",
+        "Checked about every hour for tech roles. A company is added the first time one of the lists "
+        "the monitor reads links to its Greenhouse, Ashby or Lever board, and stays from then on. To add "
+        "one yourself, add it under `companies` in targets/startups.json.",
+        "",
+        f"{len(rows)} boards: {counts['greenhouse']} Greenhouse, {counts['ashby']} Ashby, {counts['lever']} Lever."
+        + (f" {len(missing & checked_keys)} weren't found at the last try (tried again daily)." if missing & checked_keys else ""),
+        "",
+        "| Company | Board | Added | Found in |",
+        "|---|---|---|---|",
+    ]
+    for info in rows:
+        flag = " (not found lately)" if _url_key(info["url"]) in missing else ""
+        lines.append(f"| {_md_escape(info.get('name'))} | [{_board_platform(info['url']).title()}]({_board_page(info['url'])}){flag} "
+                     f"| {_md_escape(info.get('added'))} | {_md_escape(info.get('via'))} |")
+    return "\n".join(lines) + "\n"
+
+
+def boards_page_path() -> Path:
+    return STATE_PATH.with_name("boards.md")
 
 
 def job_board_api_reader(url: str):
@@ -2259,19 +2532,33 @@ def check_target(
     us_only: bool = False,
 ) -> tuple[list[dict], list[dict]]:
     """Scrape one target, record what it lists in state (as seen), and return its new
-    jobs split into (matches, left out by the filters; copies carrying a "reason")."""
+    jobs split into (matches, left out by the filters; copies carrying a "reason").
+
+    Company job boards (see plan_boards) come with their postings already fetched
+    ("_prefetched"), only tech titles wanted ("_tech_titles") minus gig-work titles
+    ("_skip_titles"), a compact record (the link only) and quiet logging."""
     name = target["name"]
     url = target["url"]
     mode = target.get("mode", "html")
+    quiet = bool(target.get("_quiet"))
+    say = log.debug if quiet else log.info
 
-    log.info(f"Checking: {name}")
-    log.info(f"  URL: {url}")
-    log.info(f"  Mode: {mode}")
+    say(f"Checking: {name}")
+    say(f"  URL: {url}")
+    say(f"  Mode: {mode}")
 
     def fetch():
+        if "_prefetched" in target:
+            return target["_prefetched"]
         if mode == "feed":
             return fetch_feed_jobs(target)
         return fetch_target_jobs(url, mode, target.get("link_selector", ""), target.get("wait_for", ""))
+
+    def to_record(jobs):
+        if not target.get("_compact"):
+            return jobs
+        return [{"url": job["url"], **({GREENHOUSE_JOB_KEY: job[GREENHOUSE_JOB_KEY]} if job.get(GREENHOUSE_JOB_KEY) else {})}
+                for job in jobs]
 
     current_jobs = fetch()
     if current_jobs is None:
@@ -2286,14 +2573,14 @@ def check_target(
         if not current_jobs:
             # Some sites render an empty list now and then. An empty baseline would
             # make the next good check alert everything the target lists, so look again.
-            log.info("  [baseline] First check found no jobs; checking once more.")
+            say("  [baseline] First check found no jobs; checking once more.")
             current_jobs = fetch()
             if current_jobs is None:
                 return [], []
         # First check of this target: record what's already listed without
         # alerting, so adding a target doesn't email every job it has.
-        state[url] = merge_jobs_new_first([], current_jobs, STATE_RETENTION_PER_TARGET)
-        log.info(
+        state[url] = merge_jobs_new_first([], to_record(current_jobs), STATE_RETENTION_PER_TARGET)
+        say(
             f"  [baseline] First check: recorded {len(current_jobs)} job(s). "
             f"New postings will be alerted from the next run."
         )
@@ -2305,18 +2592,28 @@ def check_target(
     if target.get("us_only", us_only):
         outside = [j for j in new_jobs if is_outside_us(j)]
         if outside:
-            log.info(f"  [location] Skipped {len(outside)} new posting(s) outside the US")
+            say(f"  [location] Skipped {len(outside)} new posting(s) outside the US")
             new_jobs = [j for j in new_jobs if not is_outside_us(j)]
+    tech, skip = target.get("_tech_titles"), target.get("_skip_titles")
+    if tech is not None or skip is not None:
+        def wanted(job):
+            title = _title_core(job["title"])
+            return (tech is None or tech.search(title)) and not (skip and skip.search(title))
+        other = [j for j in new_jobs if not wanted(j)]
+        if other:
+            say(f"  [tech] Skipped {len(other)} new posting(s) that aren't tech roles")
+            new_jobs = [j for j in new_jobs if wanted(j)]
     new_jobs, left_out = split_new_jobs(new_jobs, target.get("keyword_filters", default_keywords), role_patterns)
 
+    where = f" ({name})" if quiet else ""
     if new_jobs:
-        log.info(f"  [new] {len(new_jobs)} NEW posting(s)!")
+        log.info(f"  [new]{where} {len(new_jobs)} NEW posting(s)!")
     else:
-        log.info(f"  No new postings since last check.")
+        say(f"  No new postings since last check.")
     if left_out:
-        log.info(f"  [filtered] {len(left_out)} new posting(s) left out by the filters")
+        log.info(f"  [filtered]{where} {len(left_out)} new posting(s) left out by the filters")
 
-    state[url] = merge_jobs_new_first(previous_jobs, current_jobs, STATE_RETENTION_PER_TARGET)
+    state[url] = merge_jobs_new_first(previous_jobs, to_record(current_jobs), STATE_RETENTION_PER_TARGET)
     return new_jobs, left_out
 
 
@@ -2339,7 +2636,36 @@ def run(config_override: str | None = None) -> bool:
     # (recorded as seen, not emailed). Unknown locations are kept.
     us_only = bool(config.get("us_only", False))
     targets = [t for t in config["targets"] if isinstance(t, dict) and not t.get("_section")]
+    board_entries = [t for t in targets if t.get("mode") == "boards"]
+    targets = [t for t in targets if t.get("mode") != "boards"]
     feed_urls = {t.get("url") for t in targets if t.get("mode") == "feed"}
+    # Company job boards found through the feeds: listed every run (so postings they queued
+    # stay this config's), fetched only when due.
+    board_meta = _board_meta(state)
+    loaded_board_meta = copy.deepcopy(board_meta)
+    board_targets, boards_now, fetched = [], False, {}
+    boards_on = bool(board_entries) and board_entries[0].get("enabled", True) is not False
+    if board_entries:
+        if len(board_entries) > 1:
+            log.warning('Only the first "boards" entry in the config is used.')
+        if not boards_on:
+            log.info(f"Paused (\"enabled\": false): {board_entries[0].get('name') or 'company job boards'}")
+        try:
+            boards_now = boards_due(board_entries[0], board_meta)
+            board_targets = plan_boards(board_entries[0], targets, state, board_meta, boards_now)
+        except Exception:
+            # The boards are extra: a problem with them mustn't stop everything else.
+            log.exception("  Could not plan the company job boards, skipping them this run")
+            board_targets, boards_now = [], False
+    # All boards when due; boards new to the registry right away (their silent first check).
+    to_fetch = [b for b in board_targets if boards_on and (boards_now or b["url"] not in state)
+                and _hours_since(board_meta["missing"].get(b["url"])) >= BOARD_MISSING_RETRY_HOURS]
+    if to_fetch:
+        log.info(f"Checking {len(to_fetch)} of {len(board_targets)} company job boards"
+                 f"{'' if boards_now else ' (new ones)'}...")
+        fetched = fetch_boards(to_fetch, {u: e for u, e in board_meta["etags"].items() if u in state})
+    targets = targets + board_targets
+    board_urls = {b["url"] for b in board_targets}
     siblings = _sibling_urls(targets)
     # The postings waiting to be emailed are shared with any other config using the same
     # state.json; each config takes only those found by its own targets: the same link, or
@@ -2361,6 +2687,12 @@ def run(config_override: str | None = None) -> bool:
         if target.get("enabled", True) is False:
             log.info(f"Paused (\"enabled\": false): {name}")
             continue
+        is_board = bool(target.get("_board"))
+        if is_board:
+            status, board_jobs, etag = fetched.get(url) or (None, None, None)
+            if status != "ok":
+                continue  # not due, unchanged since the last check, or not readable now
+            target = {**target, "_prefetched": [{**job, "company": name} for job in board_jobs]}
 
         # One broken target (bad selector, unexpected API response) must not
         # stop the remaining targets from being checked, saved and emailed.
@@ -2373,8 +2705,17 @@ def run(config_override: str | None = None) -> bool:
             continue
         if first_check and url in state:
             first_checks.add(url)
+        if is_board:
+            # Saved only now: if checking it failed, the next run must read it again.
+            if etag:
+                board_meta["etags"][url] = etag
+            else:
+                board_meta["etags"].pop(url, None)
         if is_feed:
-            new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls) for jobs in (new_jobs, left_out))
+            new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls, board_urls) for jobs in (new_jobs, left_out))
+        elif is_board:
+            # A board's left-out postings aren't listed (see below), so only its matches are checked.
+            new_jobs, left_out = _drop_repeats(new_jobs, state, url, feed_urls, board_urls, match_titles=False), []
         elif siblings.get(url):
             found = len(new_jobs) + len(left_out)
             # Another entry listing a posting as left out doesn't stop this one emailing it.
@@ -2387,11 +2728,14 @@ def run(config_override: str | None = None) -> bool:
         for job in new_jobs:
             new_matches.append({**job, "group": _group_name(job, name, is_feed), "source": url, "source_name": name,
                                 "source_config": this_config})
-        if show_left_out:
+        # A company job board's left-out postings (mostly senior roles and internships at
+        # hundreds of companies) are only counted, so they don't flood the left-out list.
+        list_left_out = show_left_out and not is_board
+        if list_left_out:
             new_left_out.extend({**job, "group": _group_name(job, name, is_feed)} for job in left_out)
         if not is_feed:
             _mark_reported(state, url, new_jobs, SHOWN_AS_MATCH)
-            if show_left_out:
+            if list_left_out:
                 _mark_reported(state, url, left_out, SHOWN_AS_LEFT_OUT)
 
     # Every posting found is recorded as seen right away; the ones to email wait in pools
@@ -2402,7 +2746,15 @@ def run(config_override: str | None = None) -> bool:
     changed = {url: jobs for url, jobs in state.items() if not url.startswith("_") and loaded_state.get(url) != jobs}
     baselines = {url: jobs for url, jobs in changed.items() if url in first_checks}
     updates = {url: jobs for url, jobs in changed.items() if url not in baselines}
-    record = dict(alerts_add=new_matches, pending_add=new_left_out, left_out_log_add=new_left_out)
+    if fetched or boards_now:
+        _finish_board_check(board_meta, fetched, board_urls, full=boards_now)
+    if board_entries:
+        page = format_boards_page(board_meta, board_targets)
+        if not boards_page_path().exists() or boards_page_path().read_text(encoding="utf-8") != page:
+            save_text(boards_page_path(), page)
+    boards_changed = board_meta != loaded_board_meta
+    record = dict(alerts_add=new_matches, pending_add=new_left_out, left_out_log_add=new_left_out,
+                  boards=board_meta if boards_changed else None)
 
     pooled = [p for p in state.get(ALERT_POOL_KEY) or []
               if "source" not in p or p["source"] in own_urls
@@ -2413,7 +2765,7 @@ def run(config_override: str | None = None) -> bool:
     alerts_due = bool(alerts) and hours_since_email >= email_every_hours - EMAIL_DUE_TOLERANCE_MINUTES / 60
     digest_due = bool(pending) and hours_since_email >= digest_hours
     if not alerts_due and not digest_due:
-        if changed or new_matches or new_left_out:
+        if changed or new_matches or new_left_out or boards_changed:
             save_state(updates, baselines, **record)
         if alerts:
             log.info(f"{len(alerts)} matching posting(s) waiting for the next email "
@@ -2442,10 +2794,37 @@ def run(config_override: str | None = None) -> bool:
         pending_shown={compute_job_id(p) for p in pending},
         alerts_shown={compute_job_id(p) for p in alerts},
         left_out_log_add=pending,  # everything the email summarised is on left_out.md
+        boards=board_meta if boards_changed else None,
         # Needed to space out emails and digests; configs using neither don't record it.
         last_email=datetime.now().isoformat(timespec="seconds") if show_left_out or email_every_hours else None,
     )
     return True
+
+
+def _board_meta(state: dict) -> dict:
+    """A copy of what state.json keeps about the company job boards."""
+    meta = state.get(BOARDS_KEY) if isinstance(state.get(BOARDS_KEY), dict) else {}
+    def part(key):
+        return copy.deepcopy(meta[key]) if isinstance(meta.get(key), dict) else {}
+    return {"checked_at": meta.get("checked_at"), "known": part("known"), "etags": part("etags"),
+            "list_etags": part("list_etags"), "missing": part("missing")}
+
+
+def _finish_board_check(meta: dict, fetched: dict, board_urls: set, full: bool):
+    """Note this check of the company job boards in meta (full: all were due), and log it."""
+    now = datetime.now().isoformat(timespec="seconds")
+    for url, (status, _, _) in fetched.items():
+        if status == "missing":
+            meta["missing"][url] = now
+        elif status in ("ok", "unchanged"):
+            meta["missing"].pop(url, None)
+    if full:
+        meta["checked_at"] = now
+    meta["etags"] = {u: e for u, e in meta["etags"].items() if u in board_urls}
+    meta["missing"] = {u: t for u, t in meta["missing"].items() if u in board_urls}
+    counts = Counter(status for status, _, _ in fetched.values())
+    log.info(f"[boards] {counts['ok']} read, {counts['unchanged']} unchanged since the last check, "
+             f"{counts['missing']} not found, {counts['failed']} could not be read this time.")
 
 
 def _group_name(job: dict, target_name: str, is_feed: bool) -> str:
@@ -2461,34 +2840,47 @@ def _title_key(title) -> str:
 FEED_TITLE_MATCH_DAYS = 14
 
 
-def _drop_repeats(jobs: list[dict], state: dict, current_url: str, feed_urls: set) -> list[dict]:
-    """A feed's new postings minus those already recorded: by any target (same link, or
-    the same job number under another link, see job_keys), including this feed under an
-    earlier link; or by another feed in the last two weeks with the same company and title
-    (feeds link the same job differently)."""
+def _drop_repeats(jobs: list[dict], state: dict, current_url: str, feed_urls: set,
+                  board_urls=frozenset(), match_titles: bool = True) -> list[dict]:
+    """A feed's (or company job board's) new postings minus those already recorded: by any
+    target (same link, or the same job number under another link, see job_keys), including
+    this one under an earlier link; or, with match_titles, by another feed in the last two
+    weeks with the same company and title (feeds link the same job differently).
+
+    What another company job board (board_urls) recorded without showing you (its first
+    check, a non-tech title, a posting outside the US) doesn't count: the feeds list postings
+    a day or two late, so a board's first check would otherwise hide them.
+
+    A Greenhouse posting of a job you've already been shown (the same GREENHOUSE_JOB_KEY,
+    e.g. the same role on a company's main and campus boards) isn't new either."""
     if not jobs:
         return jobs
     batch_ids = {compute_job_id(j) for j in jobs}
     cutoff = (datetime.now() - timedelta(days=FEED_TITLE_MATCH_DAYS)).date().isoformat()
-    known_ids, known_keys, known_titles = set(), set(), set()
+    known_ids, known_keys, known_titles, shown_jobs = set(), set(), set(), set()
     for url, seen in state.items():
         if url.startswith("_") or not isinstance(seen, list):
             continue
         for job in seen:
             if not isinstance(job, dict) or not job.get("url"):
                 continue
+            if url in board_urls and url != current_url and not job.get(REPORTED_MARK):
+                continue
             job_id = compute_job_id(job)
             if url == current_url and job_id in batch_ids:
                 continue  # these new postings themselves (already merged into this feed's list)
             known_ids.add(job_id)
             known_keys |= job_keys(job["url"])
-            if url in feed_urls and url != current_url and str(job.get("first_seen", "")) >= cutoff:
+            if job.get(REPORTED_MARK) and job.get(GREENHOUSE_JOB_KEY):
+                shown_jobs.add(str(job[GREENHOUSE_JOB_KEY]))
+            if match_titles and url in feed_urls and url != current_url and str(job.get("first_seen", "")) >= cutoff:
                 known_titles.add((company_key(job.get("company")), _title_key(job.get("title"))))
     fresh = []
     for job in jobs:
         keys = job_keys(job["url"])
         title = (company_key(job.get("company")), _title_key(job.get("title")))
-        if compute_job_id(job) in known_ids or keys & known_keys or title in known_titles:
+        if compute_job_id(job) in known_ids or keys & known_keys or title in known_titles \
+                or (job.get(GREENHOUSE_JOB_KEY) and str(job[GREENHOUSE_JOB_KEY]) in shown_jobs):
             continue
         fresh.append(job)
         known_keys |= keys  # the same job twice in this batch (two links) is listed once

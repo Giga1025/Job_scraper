@@ -1,0 +1,70 @@
+{
+  "_help": "Startups, unicorns and mid-size companies on Greenhouse, Ashby or Lever. The whole job board of each is checked about every hour (every_hours) for tech roles. Besides the companies listed here, every company that the new-grad lists (targets/new_grad_lists.json) or the lists under find_companies_in link to is added automatically and stays; boards.md on the monitor-state branch lists all of them. To add one yourself, add {\"name\": ..., \"link\": ...} under companies, with a link to its board or any of its postings. Companies under skip_companies are never checked, and titles with a skip_titles word (gig work like AI training or data labeling) are dropped; keep that list to words that don't also name engineering work (\"annotator\", not \"annotation\"). \"enabled\": false pauses all of the boards.",
+  "targets": [
+    {
+      "_section": "═══════ STARTUP AND MID-SIZE COMPANY JOB BOARDS ═══════"
+    },
+    {
+      "name": "Company job boards",
+      "mode": "boards",
+      "every_hours": 1,
+      "platforms": ["greenhouse", "ashby", "lever"],
+      "find_companies_in": [
+        {"name": "SimplifyJobs Internships", "url": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json"}
+      ],
+      "skip_companies": ["Prolific", "Innodata"],
+      "skip_titles": ["trainer", "trainers", "tutor", "tutors", "annotator", "annotators", "rater", "raters", "labeler", "labelers", "participant", "participants", "fluent", "fluency", "speakers", "expert", "experts", "contractor", "freelance", "part time"],
+      "tech_titles": ["software", "swe", "sde", "sdet", "developer", "programmer", "full stack", "back end", "product engineer", "founding engineer", "machine learning", "ml", "mle", "ai", "artificial intelligence", "deep learning", "reinforcement learning", "llm", "llms", "nlp", "computer vision", "perception", "autonomy", "robotics", "forward deployed", "fde", "infrastructure", "infra", "platform engineer", "platform engineering", "cloud", "devops", "sre", "site reliability", "distributed systems", "systems software", "inference", "pre training", "post training", "training infrastructure", "member of technical staff", "technical staff", "mts", "research engineer", "research scientist", "researcher", "ai research", "ml research", "applied scientist", "data scientist", "data science", "data engineer", "data engineering", "data platform", "data infrastructure", "analytics engineer", "database", "security engineer", "application security", "product security", "compiler", "kernel", "gpu", "cuda", "performance engineer", "firmware", "embedded", "mobile", "ios", "android", "quant", "quantitative developer", "quantitative researcher", "new grad", "new graduate", "university grad", "early career", "entry level"],
+      "companies": [
+        {"name": "Figma", "link": "https://job-boards.greenhouse.io/figma"},
+        {"name": "Vercel", "link": "https://job-boards.greenhouse.io/vercel"},
+        {"name": "Brex", "link": "https://job-boards.greenhouse.io/brex"},
+        {"name": "Airtable", "link": "https://job-boards.greenhouse.io/airtable"},
+        {"name": "Chime", "link": "https://job-boards.greenhouse.io/chime"},
+        {"name": "Gusto", "link": "https://job-boards.greenhouse.io/gusto"},
+        {"name": "Faire", "link": "https://job-boards.greenhouse.io/faire"},
+        {"name": "Flexport", "link": "https://job-boards.greenhouse.io/flexport"},
+        {"name": "Samsara", "link": "https://job-boards.greenhouse.io/samsara"},
+        {"name": "Cockroach Labs", "link": "https://job-boards.greenhouse.io/cockroachlabs"},
+        {"name": "Grafana Labs", "link": "https://job-boards.greenhouse.io/grafanalabs"},
+        {"name": "Warp", "link": "https://job-boards.greenhouse.io/warp"},
+        {"name": "Tailscale", "link": "https://job-boards.greenhouse.io/tailscale"},
+        {"name": "CoreWeave", "link": "https://job-boards.greenhouse.io/coreweave"},
+        {"name": "Fivetran", "link": "https://job-boards.greenhouse.io/fivetran"},
+        {"name": "Discord", "link": "https://job-boards.greenhouse.io/discord"},
+        {"name": "Instacart", "link": "https://job-boards.greenhouse.io/instacart"},
+        {"name": "Ramp", "link": "https://jobs.ashbyhq.com/ramp"},
+        {"name": "Supabase", "link": "https://jobs.ashbyhq.com/supabase"},
+        {"name": "Cognition", "link": "https://jobs.ashbyhq.com/cognition"},
+        {"name": "Modal", "link": "https://jobs.ashbyhq.com/modal"},
+        {"name": "Baseten", "link": "https://jobs.ashbyhq.com/baseten"},
+        {"name": "Anyscale", "link": "https://jobs.ashbyhq.com/anyscale"},
+        {"name": "Pinecone", "link": "https://jobs.ashbyhq.com/pinecone"},
+        {"name": "LangChain", "link": "https://jobs.ashbyhq.com/langchain"},
+        {"name": "Abridge", "link": "https://jobs.ashbyhq.com/abridge"},
+        {"name": "Linear", "link": "https://jobs.ashbyhq.com/linear"},
+        {"name": "Benchling", "link": "https://jobs.ashbyhq.com/benchling"},
+        {"name": "Skydio", "link": "https://jobs.ashbyhq.com/skydio"},
+        {"name": "Saronic", "link": "https://jobs.ashbyhq.com/saronic"},
+        {"name": "Vanta", "link": "https://jobs.ashbyhq.com/vanta"},
+        {"name": "Drata", "link": "https://jobs.ashbyhq.com/drata"},
+        {"name": "Temporal", "link": "https://jobs.ashbyhq.com/temporal"},
+        {"name": "ClickHouse", "link": "https://jobs.ashbyhq.com/clickhouse"},
+        {"name": "Warp", "link": "https://jobs.ashbyhq.com/warp"},
+        {"name": "Sentry", "link": "https://jobs.ashbyhq.com/sentry"},
+        {"name": "PostHog", "link": "https://jobs.ashbyhq.com/posthog"},
+        {"name": "Character.AI", "link": "https://jobs.ashbyhq.com/character"},
+        {"name": "Suno", "link": "https://jobs.ashbyhq.com/suno"},
+        {"name": "Luma AI", "link": "https://jobs.ashbyhq.com/lumaai"},
+        {"name": "Physical Intelligence", "link": "https://jobs.ashbyhq.com/physicalintelligence"},
+        {"name": "World Labs", "link": "https://jobs.ashbyhq.com/worldlabs"},
+        {"name": "Reflection AI", "link": "https://jobs.ashbyhq.com/reflectionai"},
+        {"name": "Lambda", "link": "https://jobs.ashbyhq.com/lambda"},
+        {"name": "Etched", "link": "https://jobs.ashbyhq.com/etched"},
+        {"name": "Hex", "link": "https://jobs.ashbyhq.com/hex"},
+        {"name": "Airbyte", "link": "https://jobs.ashbyhq.com/airbyte"},
+        {"name": "Weaviate", "link": "https://jobs.ashbyhq.com/weaviate"}
+      ]
+    }
+  ]
+}

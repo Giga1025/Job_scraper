@@ -28,3 +28,7 @@ cisco_page.html
 
 # state.json lock, temp and set-aside corrupt copies
 state.json.*
+
+# Pages the monitor writes next to state.json (kept on the monitor-state branch)
+left_out.md
+boards.md
