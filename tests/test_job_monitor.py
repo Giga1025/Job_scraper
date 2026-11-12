@@ -1760,6 +1760,19 @@ class EmailBatchTests(MonitorTestCase):
         _, reported = self.run_batched()
         self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
 
+    @unittest.skipUnless(sys.platform.startswith("linux"), "only Linux allows folder names that aren't UTF-8")
+    def test_a_config_folder_whose_name_is_not_utf8_still_saves_waiting_postings(self):
+        folder = os.fsdecode(b"caf\xe9")
+        (self.tmp / folder).mkdir()
+        self.mark_known(URL)
+        self.last_email(hours_ago=0.5)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        ok, _ = self.run_batched(config_file=f"{folder}/config.json")
+        self.assertTrue(ok)
+        pool = self.saved_state()[jm.ALERT_POOL_KEY]
+        self.assertEqual([p["title"] for p in pool], ["Backend Engineer"])
+        self.assertRegex(pool[0]["source_config"], r"^[0-9a-f]{16}$")
+
     def test_another_config_with_an_entry_of_the_same_name_leaves_this_configs_alerts_alone(self):
         other = "https://other.example/careers"
         self.mark_known(URL, other)

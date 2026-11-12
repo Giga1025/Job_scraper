@@ -211,8 +211,9 @@ def save_text(path: Path, text: str):
         raise
 
 
-# The config file this run uses (set by ensure_config): postings waiting for its email are
-# marked with it, so another config sharing state.json never takes them by name (see run()).
+# A fingerprint of the config file this run uses (set by ensure_config): postings waiting for
+# its email are marked with it, so another config sharing state.json never takes them by name
+# (see run()). A hash, so state.json holds plain ASCII and no local folder names.
 _active_config_file = ""
 
 
@@ -245,7 +246,7 @@ def ensure_config(config_override: str | None = None):
                 f"To use it, run with --config {CONFIG_PATH.name}."
             )
     global _active_config_file
-    _active_config_file = os.path.realpath(active_config_path)
+    _active_config_file = hashlib.sha256(os.fsencode(os.path.realpath(active_config_path))).hexdigest()[:16]
     log.info(f"Using config file: {active_config_path.name}")
     return load_json(active_config_path)
 
