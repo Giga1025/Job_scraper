@@ -78,7 +78,8 @@ LEFT_OUT_LOG_KEY = "_left_out_log"          # left-out postings of the last few 
 LEFT_OUT_LOG_DAYS = 7         # how far back left_out.md goes
 LEFT_OUT_EMAIL_LIMIT = 25     # left-out postings listed in an email (the rest are counted)
 EMAIL_DUE_TOLERANCE_MINUTES = 10  # a batch due at 2h may go out at 1h50 (runs come every 30 min)
-REPORTED_MARK = "reported"  # set on postings a company entry showed you (emailed, or listed as left out)
+REPORTED_MARK = "reported"  # on postings a company entry found new for you: how they were shown
+SHOWN_AS_MATCH, SHOWN_AS_LEFT_OUT = "match", "left out"  # (queued for the email / for its left-out list)
 
 # A state.json temp file older than this was left by a monitor killed mid-save.
 STALE_TEMP_FILE_SECONDS = 600
@@ -2333,8 +2334,11 @@ def run(config_override: str | None = None) -> bool:
     feed_urls = {t.get("url") for t in targets if t.get("mode") == "feed"}
     siblings = _sibling_urls(targets)
     # The postings waiting to be emailed are shared with any other config using the same
-    # state.json; each config takes only those found by its own targets.
+    # state.json; each config takes only those found by its own targets: the same link, or
+    # the same name, so a posting still waiting when an entry's link is edited (or when one
+    # of a company's several entries is removed) is still emailed.
     own_urls = {t.get("url") for t in targets}
+    own_names = {_entry_key(t.get("name")) for t in targets if t.get("url")} - {""}
     new_matches: list[dict] = []
     new_left_out: list[dict] = []
     first_checks: set[str] = set()
@@ -2364,17 +2368,21 @@ def run(config_override: str | None = None) -> bool:
             new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls) for jobs in (new_jobs, left_out))
         elif siblings.get(url):
             found = len(new_jobs) + len(left_out)
-            new_jobs, left_out = (_drop_seen_by(jobs, state, siblings[url]) for jobs in (new_jobs, left_out))
+            # Another entry listing a posting as left out doesn't stop this one emailing it.
+            new_jobs = _drop_seen_by(new_jobs, state, siblings[url], (SHOWN_AS_MATCH,))
+            left_out = _drop_seen_by(left_out, state, siblings[url], (SHOWN_AS_MATCH, SHOWN_AS_LEFT_OUT))
             if found > len(new_jobs) + len(left_out):
                 log.info(f"  [same company] {found - len(new_jobs) - len(left_out)} of them were already "
                          f"found through another {name} entry")
         # "group" is the heading the posting is listed under in emails.
         for job in new_jobs:
-            new_matches.append({**job, "group": _group_name(job, name, is_feed), "source": url})
+            new_matches.append({**job, "group": _group_name(job, name, is_feed), "source": url, "source_name": name})
         if show_left_out:
             new_left_out.extend({**job, "group": _group_name(job, name, is_feed)} for job in left_out)
         if not is_feed:
-            _mark_reported(state, url, new_jobs + (left_out if show_left_out else []))
+            _mark_reported(state, url, new_jobs, SHOWN_AS_MATCH)
+            if show_left_out:
+                _mark_reported(state, url, left_out, SHOWN_AS_LEFT_OUT)
 
     # Every posting found is recorded as seen right away; the ones to email wait in pools
     # in state.json until an email lists them. Save only the targets this run changed,
@@ -2386,7 +2394,8 @@ def run(config_override: str | None = None) -> bool:
     updates = {url: jobs for url, jobs in changed.items() if url not in baselines}
     record = dict(alerts_add=new_matches, pending_add=new_left_out, left_out_log_add=new_left_out)
 
-    pooled = [p for p in state.get(ALERT_POOL_KEY) or [] if "source" not in p or p["source"] in own_urls]
+    pooled = [p for p in state.get(ALERT_POOL_KEY) or []
+              if "source" not in p or p["source"] in own_urls or _entry_key(p.get("source_name")) in own_names]
     alerts = _dedupe_jobs(pooled + new_matches)
     pending = _dedupe_jobs(list(state.get(PENDING_LEFT_OUT_KEY) or []) + new_left_out)
     hours_since_email = _hours_since(state.get(LAST_EMAIL_KEY))
@@ -2475,17 +2484,29 @@ def _drop_repeats(jobs: list[dict], state: dict, current_url: str, feed_urls: se
     return fresh
 
 
+def _entry_key(name) -> str:
+    """An entry's name reduced for comparison, in any script: case, punctuation, spaces and
+    endings like "Inc" ignored ("ACME, Inc." -> "acme"). Empty if the name has no letters or
+    digits."""
+    text = unicodedata.normalize("NFKC", str(name or "")).casefold().replace("&", " and ")
+    words = re.sub(r"[\W_]+", " ", text).split()
+    while len(words) > 1 and words[-1] in _COMPANY_SUFFIXES:
+        words.pop()
+    return "".join(words)
+
+
 def _sibling_urls(targets: list[dict]) -> dict[str, set[str]]:
     """For each company entry, the URLs of the other entries for the same company (the same
-    name, ignoring case, punctuation and suffixes like "Inc"). A company can be checked
-    through several links (say its new-grad page and its full US list), and a posting one of
-    them has already shown you isn't new under another (see _drop_seen_by). Paused entries
-    stay in their company's group, so what they showed before isn't emailed again."""
+    name, see _entry_key). A company can be checked through several links (say its new-grad
+    page and its full US list), and a posting one of them has already shown you isn't new
+    under another (see _drop_seen_by). Paused entries stay in their company's group, so what
+    they showed before isn't emailed again."""
     groups: dict[str, set[str]] = {}
     for t in targets:
-        if t.get("mode") == "feed" or not t.get("name") or not t.get("url"):
+        key = _entry_key(t.get("name"))
+        if t.get("mode") == "feed" or not key or not t.get("url"):
             continue
-        groups.setdefault(company_key(t["name"]), set()).add(t["url"])
+        groups.setdefault(key, set()).add(t["url"])
     return {url: urls - {url} for urls in groups.values() if len(urls) > 1 for url in urls}
 
 
@@ -2499,19 +2520,24 @@ def _posting_ids(url: str) -> set[tuple]:
     return {key for key in job_keys(url) if key[0] == "gh" or (key[0] == "uuid" and ats)}
 
 
-def _mark_reported(state: dict, url: str, jobs: list[dict]):
-    """Mark the postings this entry showed you (emailed, or listed as left out) in its saved
-    list, so another entry for the same company knows not to show them again."""
+def _mark_reported(state: dict, url: str, jobs: list[dict], shown_as: str):
+    """Mark, in this entry's saved list, the postings it found new for you and how they are
+    shown (SHOWN_AS_MATCH: queued for the email; SHOWN_AS_LEFT_OUT: for its left-out list),
+    so another entry for the same company doesn't show them again. The mark is set when the
+    posting is queued; the queue itself delivers it (even after a failed email, or this
+    entry's link being edited)."""
     ids = {compute_job_id(j) for j in jobs}
     if ids and isinstance(state.get(url), list):
-        state[url] = [{**j, REPORTED_MARK: True} if isinstance(j, dict) and isinstance(j.get("url"), str)
-                      and compute_job_id(j) in ids else j for j in state[url]]
+        state[url] = [{**j, REPORTED_MARK: shown_as}
+                      if isinstance(j, dict) and isinstance(j.get("url"), str) and compute_job_id(j) in ids
+                      else j for j in state[url]]
 
 
-def _drop_seen_by(jobs: list[dict], state: dict, urls) -> list[dict]:
-    """These new postings minus those that one of these targets (another entry for the same
-    company) has already shown you, emailed or listed as left out (marked REPORTED_MARK):
-    the same link, or the same posting id under another link (_posting_ids).
+def _drop_seen_by(jobs: list[dict], state: dict, urls, shown_as) -> list[dict]:
+    """These new postings minus those one of these targets (another entry for the same
+    company) has already found new for you and marked as shown in one of these ways
+    (REPORTED_MARK in shown_as): the same link, or the same posting id under another link
+    (_posting_ids).
 
     Only marked postings count. What an entry recorded without showing you (at its first
     check, skipped by its own filters, or saved before this check existed) hides nothing, so
@@ -2524,7 +2550,7 @@ def _drop_seen_by(jobs: list[dict], state: dict, urls) -> list[dict]:
     for url in urls:
         seen = state.get(url)
         for job in seen if isinstance(seen, list) else []:
-            if isinstance(job, dict) and isinstance(job.get("url"), str) and job.get(REPORTED_MARK):
+            if isinstance(job, dict) and isinstance(job.get("url"), str) and job.get(REPORTED_MARK) in shown_as:
                 known_ids.add(compute_job_id(job))
                 known_keys |= _posting_ids(job["url"])
     return [j for j in jobs if compute_job_id(j) not in known_ids and not _posting_ids(j["url"]) & known_keys]

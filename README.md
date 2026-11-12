@@ -202,12 +202,13 @@ when both pages link it the same way or with the same Greenhouse, Ashby or Lever
 job the two pages link differently can be listed twice). The order of the entries doesn't
 matter, and a new entry's first run, which records what its page lists without emailing,
 never hides a posting from the other entry; nor does one entry's own filter (`keyword_filters`,
-`us_only`) leaving out a posting without listing it. Entries count as the same company when
-their names match ignoring case, punctuation and endings like "Inc". A paused entry still
-counts, so what it already emailed isn't sent again by the other. (state.json marks each
-posting an entry emailed or listed as left out with `"reported": true`; postings saved before
-November 2026 have no mark, so a newly added entry may email one of those once more rather
-than risk hiding it.)
+`us_only`) leaving out a posting without listing it, and a posting one entry only listed as
+left out is still emailed by another whose filters let it through. Entries count as the same
+company when their names match ignoring case, punctuation and endings like "Inc" (in any
+script). A paused entry still counts, so what it already emailed isn't sent again by the
+other. (state.json marks each posting an entry found for you with `"reported": "match"` or
+`"reported": "left out"`; postings saved before November 2026 have no mark, so a newly added
+entry may email one of those once more rather than risk hiding it.)
 
 ### How to figure out `link_selector` and `wait_for`
 
@@ -443,7 +444,10 @@ the `schedule:` lines from `.github/workflows/job-monitor.yml`.
 - **Watch another page of a company:** add a second entry with the same `name` (see
   "Several links for one company" under Target Configuration). Its first run records what it
   lists without emailing; from then on its new postings are emailed, except ones the
-  company's other entry already emailed (or listed as left out).
+  company's other entry already found for you.
+- **Edit an entry's link:** fine at any time. The new link's first run records what it lists
+  without emailing, and postings the old link found that are still waiting for the next email
+  are still sent, as long as the entry keeps its `name`.
 
 ### Working on the code from your computer
 
