@@ -596,13 +596,85 @@ class SameCompanyTests(MonitorTestCase):
         self.assertEqual(len(self.emails_sent()), 2)
 
     def test_found_by_both_in_one_run_it_is_listed_once_and_so_is_a_left_out_one(self):
+        # The two pages link each job differently (same Greenhouse job id), so only the
+        # same-company check can tell they are the same posting.
         self.mark_known(URL, self.ALL)
-        both = page(*jobs_named("Backend Engineer", "Senior Backend Engineer"))
-        self.pages[URL] = self.pages[self.ALL] = both
+        self.pages[URL] = page(("backend?gh_jid=7712345", "Backend Engineer"),
+                               ("senior-backend?gh_jid=7799999", "Senior Backend Engineer"))
+        self.pages[self.ALL] = page(("7712345?gh_jid=7712345", "Backend Engineer"),
+                                    ("7799999?gh_jid=7799999", "Senior Backend Engineer"))
         _, reported = self.run_monitor([target(), target(url=self.ALL)], email=WORKING_EMAIL,
                                        role_filter=REPO_ROLE_FILTER)
         self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
         self.assertEqual(self.left_out, {"Acme": ["Senior Backend Engineer"]})
+
+    def test_a_left_out_posting_is_not_listed_again_by_another_entry(self):
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer", "Senior Backend Engineer"))
+        self.pages[self.ALL] = page()
+        targets = [target(), target(url=self.ALL)]
+        self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(self.left_out, {"Acme": ["Senior Backend Engineer"]})
+        self.pages[self.ALL] = page(*jobs_named("Senior Backend Engineer", "Data Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual((reported, self.left_out), ({"Acme": ["Data Engineer"]}, {}))
+
+    def test_a_shared_number_that_is_not_a_posting_id_does_not_count(self):
+        # Apple-style links: one role number, a different posting per city.
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(("200694453-0157/gpu-performance-engineer", "GPU Performance Engineer"))
+        self.pages[self.ALL] = page()
+        targets = [target(), target(url=self.ALL)]
+        self.run_monitor(targets, email=WORKING_EMAIL)
+        self.pages[self.ALL] = page(("200694453-1242/gpu-performance-engineer", "GPU Performance Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["GPU Performance Engineer"]})
+
+    def test_a_new_entry_listed_first_hides_nothing_from_the_existing_one(self):
+        # The new entry's first check records the posting silently; the existing entry,
+        # checked after it in the same run, must still email it.
+        self.mark_known(URL)
+        self.pages[URL] = self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor([target(url=self.ALL), target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.assertTrue(all(j[jm.BASELINE_MARK] for j in self.saved_state()[self.ALL]))
+        self.assertNotIn(jm.BASELINE_MARK, self.saved_state()[URL][0])
+
+    def test_the_existing_entry_failing_while_the_new_one_starts_loses_nothing(self):
+        self.mark_known(URL)
+        self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
+        targets = [target(), target(url=self.ALL)]
+        with self.assertLogs(jm.log, "ERROR"):
+            _, reported = self.run_monitor(targets, email=WORKING_EMAIL)  # no page at URL: it fails
+        self.assertEqual(reported, {})
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)  # and only once
+        self.assertEqual(reported, {})
+
+    def test_a_paused_entry_still_counts_for_its_company(self):
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[self.ALL] = page()
+        self.run_monitor([target(), target(url=self.ALL)], email=WORKING_EMAIL)
+        self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor([target(enabled=False), target(url=self.ALL)], email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+
+    def test_entries_with_other_us_only_stay_apart(self):
+        # The us_only entry records the London posting without emailing it; an entry for the
+        # same company that wants every location still emails it.
+        worldwide = "https://boards-api.greenhouse.io/v1/boards/acme-worldwide/jobs"
+        self.mark_known(GH_API, worldwide)
+        self.pages[GH_API] = json.dumps(GREENHOUSE_PAYLOAD)
+        self.pages[worldwide] = json.dumps({"jobs": []})
+        targets = [target(url=GH_API, mode="api"), target(url=worldwide, mode="api", us_only=False)]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL, us_only=True)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer", "ML Engineer"]})
+        self.pages[worldwide] = json.dumps({"jobs": GREENHOUSE_PAYLOAD["jobs"][1:2]})  # the London one
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL, us_only=True)
+        self.assertEqual(reported, {"Acme": ["Data Engineer"]})
 
     def test_the_same_job_number_under_another_link_counts(self):
         other_site = "https://jobs.acme-careers.example/search"

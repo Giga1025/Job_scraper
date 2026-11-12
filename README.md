@@ -197,9 +197,14 @@ Each target has these fields:
 
 **Several links for one company:** add one entry per link and give them the same `name`
 (Uber, for example, has one entry for its University team and one for all its US openings).
-A posting both links show is emailed once, whichever finds it first, and is listed under that
-name. Entries count as the same company when their names match ignoring case, punctuation
-and endings like "Inc", and their filters (`keyword_filters`, `us_only`) are the same.
+A posting both links show is emailed once, under that name, whichever entry finds it first,
+when both pages link it the same way or with the same Greenhouse, Ashby or Lever job id (a
+job the two pages link differently can be listed twice). The order of the entries doesn't
+matter, and a new entry's first run, which records what its page lists without emailing,
+never hides a posting from the other entry. Entries count as the same company when their
+names match ignoring case, punctuation and endings like "Inc", and their filters
+(`keyword_filters`, `us_only`) are the same. A paused entry still counts, so what it already
+emailed isn't sent again by the other.
 
 ### How to figure out `link_selector` and `wait_for`
 
@@ -435,7 +440,7 @@ the `schedule:` lines from `.github/workflows/job-monitor.yml`.
 - **Watch another page of a company:** add a second entry with the same `name` (see
   "Several links for one company" under Target Configuration). Its first run records what it
   lists without emailing; from then on its new postings are emailed, except ones the
-  company's other entry already found.
+  company's other entry already emailed (or listed as left out).
 
 ### Working on the code from your computer
 

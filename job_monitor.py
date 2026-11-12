@@ -78,6 +78,7 @@ LEFT_OUT_LOG_KEY = "_left_out_log"          # left-out postings of the last few 
 LEFT_OUT_LOG_DAYS = 7         # how far back left_out.md goes
 LEFT_OUT_EMAIL_LIMIT = 25     # left-out postings listed in an email (the rest are counted)
 EMAIL_DUE_TOLERANCE_MINUTES = 10  # a batch due at 2h may go out at 1h50 (runs come every 30 min)
+BASELINE_MARK = "baseline"  # set on postings a company entry recorded at its first check
 
 # A state.json temp file older than this was left by a monitor killed mid-save.
 STALE_TEMP_FILE_SECONDS = 600
@@ -2275,7 +2276,12 @@ def check_target(
                 return [], []
         # First check of this target: record what's already listed without
         # alerting, so adding a target doesn't email every job it has.
-        state[url] = merge_jobs_new_first([], current_jobs, STATE_RETENTION_PER_TARGET)
+        recorded = merge_jobs_new_first([], current_jobs, STATE_RETENTION_PER_TARGET)
+        if mode != "feed":
+            # Marked, so that another entry for the same company doesn't take them for
+            # postings that have already been reported (see _drop_seen_by).
+            recorded = [{**job, BASELINE_MARK: True} for job in recorded]
+        state[url] = recorded
         log.info(
             f"  [baseline] First check: recorded {len(current_jobs)} job(s). "
             f"New postings will be alerted from the next run."
@@ -2469,8 +2475,10 @@ def _sibling_urls(targets: list[dict], default_keywords, us_only: bool) -> dict[
     """For each company entry, the URLs of the other entries for the same company: the same
     name (ignoring case, punctuation and suffixes like "Inc") and the same filters. A company
     can be checked through several links (say its new-grad page and its full US list), and a
-    posting one of them has already recorded isn't new under another. Entries whose filters
-    differ are kept apart: one of them may have recorded a posting without showing it."""
+    posting one of them has already reported isn't new under another. Entries whose filters
+    differ are kept apart: one of them may have recorded a posting without showing it.
+    Paused entries stay in their company's group, so what they reported before isn't
+    emailed again by the others."""
     groups: dict[tuple, set[str]] = {}
     for t in targets:
         if t.get("mode") == "feed" or not t.get("name") or not t.get("url"):
@@ -2481,23 +2489,31 @@ def _sibling_urls(targets: list[dict], default_keywords, us_only: bool) -> dict[
     return {url: urls - {url} for urls in groups.values() if len(urls) > 1 for url in urls}
 
 
-def _drop_seen_by(jobs: list[dict], state: dict, urls) -> list[dict]:
-    """These new postings minus those already recorded under any of these targets (the same
-    link, or the same job number under another link; see job_keys).
+def _posting_ids(url: str) -> set[tuple]:
+    """The job numbers in a link that name exactly one posting: a Greenhouse job id or an
+    Ashby/Lever posting id. (Other numbers job_keys finds can be shared: Apple uses one
+    number for a role in several cities, and a Workday requisition can be posted twice.)"""
+    return {key for key in job_keys(url) if key[0] in ("gh", "uuid")}
 
-    A posting recorded by another entry's first check (its silent baseline) counts as seen
-    too, so one posted in the seconds between two entries' checks of the run that adds the
-    second entry is not emailed, as with any posting listed at a first check."""
+
+def _drop_seen_by(jobs: list[dict], state: dict, urls) -> list[dict]:
+    """These new postings minus those that one of these targets (another entry for the same
+    company) has already found new, and so emailed or listed as left out: the same link, or
+    the same posting id under another link (see _posting_ids).
+
+    Postings an entry only recorded at its first check (marked BASELINE_MARK) don't count:
+    nobody was told about them, so whichever entry finds them new still emails them, whatever
+    the order of the entries, and even if the other entry failed or was paused that run."""
     if not jobs:
         return jobs
     known_ids, known_keys = set(), set()
     for url in urls:
         seen = state.get(url)
         for job in seen if isinstance(seen, list) else []:
-            if isinstance(job, dict) and job.get("url"):
+            if isinstance(job, dict) and isinstance(job.get("url"), str) and not job.get(BASELINE_MARK):
                 known_ids.add(compute_job_id(job))
-                known_keys |= job_keys(job["url"])
-    return [j for j in jobs if compute_job_id(j) not in known_ids and not job_keys(j["url"]) & known_keys]
+                known_keys |= _posting_ids(job["url"])
+    return [j for j in jobs if compute_job_id(j) not in known_ids and not _posting_ids(j["url"]) & known_keys]
 
 
 def _dedupe_jobs(jobs: list[dict]) -> list[dict]:
