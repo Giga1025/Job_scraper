@@ -164,7 +164,7 @@ class MonitorTestCase(unittest.TestCase):
     def fake_post(self, url, *args, **kwargs):
         raise jm.requests.ConnectionError(f"no fake page for {url}")
 
-    def run_monitor(self, targets, email=None, keyword_filters=None, **config_extra):
+    def run_monitor(self, targets, email=None, keyword_filters=None, config_file="config.json", **config_extra):
         """Run one monitor cycle. Returns (run() result, {target name: [new titles]}).
         Titles listed in the email's left-out section end up in self.left_out."""
         config = {
@@ -173,7 +173,7 @@ class MonitorTestCase(unittest.TestCase):
             "targets": targets,
             **config_extra,
         }
-        config_path = self.tmp / "config.json"
+        config_path = self.tmp / config_file
         config_path.write_text(json.dumps(config))
 
         reported = {}
@@ -568,6 +568,285 @@ class PausedTargetTests(MonitorTestCase):
         self.assertEqual(paused, ["Tesla", "Atlassian"])
 
 
+class SameCompanyTests(MonitorTestCase):
+    """A company checked through several entries (same name), e.g. its new-grad page and its
+    full US list: each posting is emailed once, whichever entry finds it first."""
+
+    ALL = "https://acme.example/careers/all"
+
+    def test_a_posting_found_through_one_entry_is_not_new_under_another(self):
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[self.ALL] = page()
+        targets = [target(), target(url=self.ALL)]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        # Next run the full list shows it too (and something new): only the new one is emailed.
+        self.pages[self.ALL] = page(*jobs_named("Backend Engineer", "Data Engineer"))
+        with self.assertLogs(jm.log, "INFO") as logs:
+            _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Data Engineer"]})
+        self.assertIn("[same company] 1 of them were already found through another Acme entry", "\n".join(logs.output))
+        self.assertEqual(len(self.saved_state()[self.ALL]), 2)  # still recorded under the second entry
+        # And the other way round: the first entry showing it later doesn't email it again.
+        self.pages[URL] = page(*jobs_named("Backend Engineer", "Data Engineer"))
+        self.emails_attempted = 0
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual((reported, self.emails_attempted), ({}, 0))
+        self.assertEqual(len(self.emails_sent()), 2)
+
+    def test_found_by_both_in_one_run_it_is_listed_once_and_so_is_a_left_out_one(self):
+        # The two pages link each job differently (same Greenhouse job id), so only the
+        # same-company check can tell they are the same posting.
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(("backend?gh_jid=7712345", "Backend Engineer"),
+                               ("senior-backend?gh_jid=7799999", "Senior Backend Engineer"))
+        self.pages[self.ALL] = page(("7712345?gh_jid=7712345", "Backend Engineer"),
+                                    ("7799999?gh_jid=7799999", "Senior Backend Engineer"))
+        _, reported = self.run_monitor([target(), target(url=self.ALL)], email=WORKING_EMAIL,
+                                       role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.assertEqual(self.left_out, {"Acme": ["Senior Backend Engineer"]})
+
+    def test_a_left_out_posting_is_not_listed_again_by_another_entry(self):
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer", "Senior Backend Engineer"))
+        self.pages[self.ALL] = page()
+        targets = [target(), target(url=self.ALL)]
+        self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(self.left_out, {"Acme": ["Senior Backend Engineer"]})
+        self.pages[self.ALL] = page(*jobs_named("Senior Backend Engineer", "Data Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual((reported, self.left_out), ({"Acme": ["Data Engineer"]}, {}))
+
+    def test_a_shared_number_that_is_not_a_posting_id_does_not_count(self):
+        # Apple-style links: one role number, a different posting per city.
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(("200694453-0157/gpu-performance-engineer", "GPU Performance Engineer"))
+        self.pages[self.ALL] = page()
+        targets = [target(), target(url=self.ALL)]
+        self.run_monitor(targets, email=WORKING_EMAIL)
+        self.pages[self.ALL] = page(("200694453-1242/gpu-performance-engineer", "GPU Performance Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["GPU Performance Engineer"]})
+
+    def test_a_new_entry_listed_first_hides_nothing_from_the_existing_one(self):
+        # The new entry's first check records the posting silently; the existing entry,
+        # checked after it in the same run, must still email it.
+        self.mark_known(URL)
+        self.pages[URL] = self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor([target(url=self.ALL), target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.assertNotIn(jm.REPORTED_MARK, self.saved_state()[self.ALL][0])  # only recorded
+        self.assertEqual(self.saved_state()[URL][0][jm.REPORTED_MARK], jm.SHOWN_AS_MATCH)  # emailed
+
+    def test_postings_saved_before_this_check_existed_hide_nothing(self):
+        # A state.json from before: no marks, so it can't say which postings were emailed.
+        jm.save_state({URL: [{"title": "PhD Software Engineer", "url": "https://acme.example/jobs/phd-software-engineer"}]})
+        self.pages[URL] = page(*jobs_named("PhD Software Engineer"))
+        self.pages[self.ALL] = page(*jobs_named("Data Engineer"))
+        targets = [target(), target(url=self.ALL)]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)  # the new entry's first check
+        self.assertEqual(reported, {})
+        self.pages[self.ALL] = page(*jobs_named("Data Engineer", "PhD Software Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["PhD Software Engineer"]})
+
+    def test_a_company_wide_id_in_ashby_links_is_not_a_posting_id(self):
+        org = "f7d8749a-72d6-407c-bf98-292ea630c73a"
+        job1, job2 = "0e7ecf76-1111-4a2b-9c3d-000000000001", "0e7ecf76-2222-4a2b-9c3d-000000000002"
+
+        def ashby_page(*jobs):
+            return "".join(f'<a href="https://jobs.ashbyhq.com/{board}/{jid}/application">{title}</a>'
+                           for board, jid, title in jobs)
+
+        self.mark_known(URL, self.ALL)
+        targets = [target(link_selector="a[href*='ashbyhq']"), target(url=self.ALL, link_selector="a[href*='ashbyhq']")]
+        self.pages[URL] = ashby_page((org, job1, "Software Engineer 2"))
+        self.pages[self.ALL] = ashby_page()
+        self.run_monitor(targets, email=WORKING_EMAIL)
+        # A different posting on the same board is new; the same posting under its board name is not.
+        self.pages[self.ALL] = ashby_page((org, job2, "Software Engineer 3"), ("acme", job1, "Software Engineer 2"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Software Engineer 3"]})
+
+    def test_the_existing_entry_failing_while_the_new_one_starts_loses_nothing(self):
+        self.mark_known(URL)
+        self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
+        targets = [target(), target(url=self.ALL)]
+        with self.assertLogs(jm.log, "ERROR"):
+            _, reported = self.run_monitor(targets, email=WORKING_EMAIL)  # no page at URL: it fails
+        self.assertEqual(reported, {})
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)  # and only once
+        self.assertEqual(reported, {})
+
+    def test_a_paused_entry_still_counts_for_its_company(self):
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[self.ALL] = page()
+        self.run_monitor([target(), target(url=self.ALL)], email=WORKING_EMAIL)
+        self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor([target(enabled=False), target(url=self.ALL)], email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+
+    def test_a_posting_skipped_as_outside_the_us_is_still_emailed_by_an_entry_that_wants_it(self):
+        # The us_only entry records the London posting without emailing it; an entry for the
+        # same company that wants every location still emails it.
+        worldwide = "https://boards-api.greenhouse.io/v1/boards/acme-worldwide/jobs"
+        self.mark_known(GH_API, worldwide)
+        self.pages[GH_API] = json.dumps(GREENHOUSE_PAYLOAD)
+        self.pages[worldwide] = json.dumps({"jobs": []})
+        targets = [target(url=GH_API, mode="api"), target(url=worldwide, mode="api", us_only=False)]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL, us_only=True)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer", "ML Engineer"]})
+        self.pages[worldwide] = json.dumps({"jobs": GREENHOUSE_PAYLOAD["jobs"][1:2]})  # the London one
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL, us_only=True)
+        self.assertEqual(reported, {"Acme": ["Data Engineer"]})
+
+    def test_the_same_job_number_under_another_link_counts(self):
+        other_site = "https://jobs.acme-careers.example/search"
+        self.mark_known(URL, other_site)
+        self.pages[URL] = page(("backend?gh_jid=7712345", "Backend Engineer"))
+        self.pages[other_site] = page()
+        targets = [target(), target(name="ACME, Inc.", url=other_site)]  # same company, written differently
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.pages[other_site] = page(("7712345?gh_jid=7712345", "Backend Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+
+    def test_a_posting_another_entry_filtered_out_unseen_is_still_emailed(self):
+        other = "https://other.example/careers"
+        self.mark_known(URL, self.ALL, other)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[self.ALL] = self.pages[other] = page()
+        # The first entry only shows titles with "Intern", so it records Backend Engineer
+        # without showing it: the second entry must still email it when it lists it. (Another
+        # company listing the same title is unaffected.)
+        targets = [target(keyword_filters=["Intern"]), target(url=self.ALL), target(name="Other", url=other)]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+        self.pages[self.ALL] = self.pages[other] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"], "Other": ["Backend Engineer"]})
+
+    def last_email(self, hours_ago):
+        jm.save_state({}, last_email=(datetime.now() - timedelta(hours=hours_ago)).isoformat(timespec="seconds"))
+
+    def test_a_left_out_listing_by_one_entry_does_not_stop_another_emailing_it(self):
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[self.ALL] = page()
+        targets = [target(keyword_filters=["Intern"]), target(url=self.ALL)]  # the first only wants interns
+        self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(self.left_out, {"Acme": ["Backend Engineer"]})
+        self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_a_posting_another_entry_emailed_is_not_listed_as_left_out_again(self):
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page()
+        self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
+        targets = [target(keyword_filters=["Intern"]), target(url=self.ALL)]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.pages[URL] = page(*jobs_named("Backend Engineer", "Data Engineer"))
+        self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        # No new match, so no email yet: the left-out list waiting for the next one has only the new title.
+        self.assertEqual([p["title"] for p in self.saved_state()[jm.PENDING_LEFT_OUT_KEY]], ["Data Engineer"])
+
+    def test_a_left_out_posting_never_shown_is_listed_once_left_outs_are_shown(self):
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(*jobs_named("Senior Backend Engineer"))
+        self.pages[self.ALL] = page()
+        targets = [target(), target(url=self.ALL)]
+        self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, show_filtered=False)
+        self.pages[self.ALL] = page(*jobs_named("Senior Backend Engineer", "Backend Engineer"))
+        self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, show_filtered=True)
+        self.assertEqual(self.left_out, {"Acme": ["Senior Backend Engineer"]})
+
+    def test_a_waiting_posting_is_emailed_after_its_entrys_link_is_edited(self):
+        edited = URL + "?team=University"
+        self.mark_known(URL)
+        self.last_email(hours_ago=1)
+        self.pages[URL] = self.pages[edited] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor([target()], email=WORKING_EMAIL, email_every_hours=2)
+        self.assertEqual(self.emails_attempted, 0)  # waiting for the 2-hour email
+        self.last_email(hours_ago=3)
+        _, reported = self.run_monitor([target(url=edited)], email=WORKING_EMAIL, email_every_hours=2)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_a_waiting_posting_is_emailed_after_the_entry_that_found_it_is_removed(self):
+        self.mark_known(URL, self.ALL)
+        self.last_email(hours_ago=1)
+        self.pages[URL] = page(("backend?gh_jid=7712345", "Backend Engineer"))
+        self.pages[self.ALL] = page(("7712345?gh_jid=7712345", "Backend Engineer"))
+        self.run_monitor([target(), target(url=self.ALL)], email=WORKING_EMAIL, email_every_hours=2)
+        self.assertEqual(self.emails_attempted, 0)  # found by the first entry, waiting; the second dropped it
+        self.last_email(hours_ago=3)
+        _, reported = self.run_monitor([target(url=self.ALL)], email=WORKING_EMAIL, email_every_hours=2)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_after_a_failed_email_the_posting_goes_out_once(self):
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[self.ALL] = page()
+        targets = [target(), target(url=self.ALL)]
+        FakeSMTP.fail_with = smtplib.SMTPAuthenticationError(535, b"bad password")
+        ok, _ = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertFalse(ok)
+        FakeSMTP.fail_with = None
+        self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual((reported, len(self.emails_sent())), ({}, 1))
+
+    def test_a_batched_posting_goes_out_once_when_due(self):
+        self.mark_known(URL, self.ALL)
+        self.last_email(hours_ago=1)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[self.ALL] = page()
+        targets = [target(), target(url=self.ALL)]
+        self.run_monitor(targets, email=WORKING_EMAIL, email_every_hours=2)
+        self.pages[self.ALL] = page(*jobs_named("Backend Engineer"))
+        self.last_email(hours_ago=3)
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL, email_every_hours=2)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.assertEqual(len(self.emails_sent()), 1)
+
+    def test_names_in_any_script_are_compared_and_empty_ones_never_grouped(self):
+        names = ["字节跳动", "抖音", "メルカリ Japan", "楽天 Japan", "字节跳动 ", "🙂", "🙂", "ACME, Inc.", "acme"]
+        targets = [target(name=n, url=f"https://jobs.example/{i}") for i, n in enumerate(names)]
+        self.assertEqual(jm._sibling_urls(targets), {
+            "https://jobs.example/0": {"https://jobs.example/4"}, "https://jobs.example/4": {"https://jobs.example/0"},
+            "https://jobs.example/7": {"https://jobs.example/8"}, "https://jobs.example/8": {"https://jobs.example/7"}})
+
+    def test_job_ids_in_ashby_and_lever_links(self):
+        u1, org = "0e7ecf76-1111-4a2b-9c3d-000000000001", "f7d8749a-72d6-407c-bf98-292ea630c73a"
+        same = ["https://jobs.lever.co/acme/" + u1, "https://jobs.lever.co/acme/" + u1 + "/apply",
+                "https://jobs.eu.lever.co/acme/" + u1.upper() + "/apply?lever-source=LinkedIn",
+                "https://jobs.ashbyhq.com/acme/" + u1, "https://jobs.ashbyhq.com/" + org + "/" + u1 + "/application"]
+        for link in same:
+            self.assertEqual(jm.job_keys(link), {("uuid", u1)}, link)
+            self.assertEqual(jm._posting_ids(link), {("uuid", u1)}, link)
+        # Elsewhere a UUID still matches feed rows (job_keys) but isn't taken as one posting's id.
+        self.assertEqual(jm.job_keys("https://careers.example/jobs/" + u1), {("uuid", u1)})
+        self.assertEqual(jm._posting_ids("https://careers.example/jobs/" + u1), set())
+
+    def test_the_shipped_config_groups_only_the_two_uber_entries(self):
+        config = json.loads((REPO_DIR / "config_all.json").read_text())
+        targets = [t for t in config["targets"] if not t.get("_section")]
+        siblings = jm._sibling_urls(targets)
+        uber = {t["url"] for t in targets if t.get("name") == "Uber"}
+        self.assertEqual(len(uber), 2)
+        self.assertEqual(siblings, {url: uber - {url} for url in uber})
+
+
 class DetectionTests(MonitorTestCase):
     def test_jobs_beyond_the_tenth_link_are_detected(self):
         self.mark_known(URL)
@@ -678,7 +957,9 @@ class DetectionTests(MonitorTestCase):
             ok, reported = self.run_monitor(targets)
         self.assertTrue(ok)
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
-        self.assertEqual(self.saved_state(), {URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst"}]})
+        # (marked as reported, for any other entry for the same company: see SameCompanyTests)
+        self.assertEqual(self.saved_state(), {URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst",
+                                                     jm.REPORTED_MARK: jm.SHOWN_AS_MATCH}]})
         self.assertTrue(any("Broken" in line for line in logs.output))
 
     def test_failed_fetch_leaves_saved_jobs_alone(self):
@@ -1479,6 +1760,33 @@ class EmailBatchTests(MonitorTestCase):
         _, reported = self.run_batched()
         self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
 
+    @unittest.skipUnless(sys.platform.startswith("linux"), "only Linux allows folder names that aren't UTF-8")
+    def test_a_config_folder_whose_name_is_not_utf8_still_saves_waiting_postings(self):
+        folder = os.fsdecode(b"caf\xe9")
+        (self.tmp / folder).mkdir()
+        self.mark_known(URL)
+        self.last_email(hours_ago=0.5)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        ok, _ = self.run_batched(config_file=f"{folder}/config.json")
+        self.assertTrue(ok)
+        pool = self.saved_state()[jm.ALERT_POOL_KEY]
+        self.assertEqual([p["title"] for p in pool], ["Backend Engineer"])
+        self.assertRegex(pool[0]["source_config"], r"^[0-9a-f]{16}$")
+
+    def test_another_config_with_an_entry_of_the_same_name_leaves_this_configs_alerts_alone(self):
+        other = "https://other.example/careers"
+        self.mark_known(URL, other)
+        self.last_email(hours_ago=0.5)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.run_batched()  # held for this config's next email
+        self.pages[other] = page()
+        _, reported = self.run_monitor([target(url=other)], email={"enabled": False}, config_file="mine.json")
+        self.assertEqual(reported, {})
+        self.assertEqual([j["title"] for j in self.saved_state()[jm.ALERT_POOL_KEY]], ["Backend Engineer"])
+        self.last_email(hours_ago=3)
+        _, reported = self.run_batched()
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
     def test_a_last_email_time_in_the_future_doesnt_hold_emails_back(self):
         self.mark_known(URL)
         self.last_email(hours_ago=-1)  # e.g. the clock went back an hour
@@ -1671,6 +1979,25 @@ class FeedTests(MonitorTestCase):
         _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
         self.assertEqual(reported, {"Roblox": ["Software Engineer"],
                                     "Roblox (via SimplifyJobs New Grad)": ["ML Engineer, Safety"]})
+
+    def test_a_company_wide_id_in_ashby_links_does_not_make_new_postings_repeats(self):
+        # Simplify links Shield AI's postings as jobs.ashbyhq.com/<company id>/<posting id>/application.
+        org = "f7d8749a-72d6-407c-bf98-292ea630c73a"
+        job1, job2 = "0e7ecf76-1111-4a2b-9c3d-000000000001", "0e7ecf76-2222-4a2b-9c3d-000000000002"
+        first = simplify_row("Shield AI", "Engineer 1 New Grad - Software", url=f"https://jobs.ashbyhq.com/{org}/{job1}/application")
+        second = simplify_row("Shield AI", "Engineer 2 New Grad - Perception", url=f"https://jobs.ashbyhq.com/{org}/{job2}/application")
+        self.mark_known(SIMPLIFY_URL)
+        self.pages[SIMPLIFY_URL] = json.dumps([first])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Shield AI (via SimplifyJobs New Grad)": ["Engineer 1 New Grad - Software"]})
+        self.pages[SIMPLIFY_URL] = json.dumps([first, second])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Shield AI (via SimplifyJobs New Grad)": ["Engineer 2 New Grad - Perception"]})
+        # The same posting linked under the board's name is still the same posting.
+        again = simplify_row("Shield AI", "Engineer 2 New Grad - Perception", url=f"https://jobs.ashbyhq.com/shieldai/{job2}")
+        self.pages[SIMPLIFY_URL] = json.dumps([first, second, again])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
 
     def test_the_same_job_under_another_link_is_not_new(self):
         boeing = "https://boeing.wd1.myworkdayjobs.com/en-US/{site}/job/Seattle/Software-Application-Tester_JR2026524037{suffix}"

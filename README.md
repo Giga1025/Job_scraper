@@ -195,6 +195,25 @@ Each target has these fields:
 | `link_selector` | No | CSS selector for job links. If empty, uses heuristics |
 | `enabled` | No | `false` pauses the target: it isn't checked, and its saved postings are kept |
 
+**Several links for one company:** add one entry per link and give them the same `name`
+(Uber, for example, has one entry for its University team and one for all its US openings).
+A posting both links show is emailed once, under that name, whichever entry finds it first,
+when both pages link it the same way or with the same Greenhouse, Ashby or Lever job id (a
+job the two pages link differently can be listed twice). The order of the entries doesn't
+matter, and a new entry's first run, which records what its page lists without emailing,
+never hides a posting from the other entry; nor does one entry's own filter (`keyword_filters`,
+`us_only`) leaving out a posting without listing it, and a posting one entry only listed as
+left out is still emailed by another whose filters let it through. Entries count as the same
+company when their names match ignoring case, punctuation and endings like "Inc" (in any
+script). A paused entry still counts, so what it already emailed isn't sent again by the
+other. (state.json marks each posting an entry found for you with `"reported": "match"` or
+`"reported": "left out"`; postings saved before November 2026 have no mark, so a newly added
+entry may email one of those once more rather than risk hiding it.) Where it can't be sure,
+it errs toward emailing twice rather than not at all: after you edit or remove one of a
+company's links, a posting that link already emailed may come again from the other; and if
+the entries use different `keyword_filters`, one email can list a posting both as new and
+under "left out".
+
 ### How to figure out `link_selector` and `wait_for`
 
 1. Open the career page in Chrome
@@ -426,6 +445,13 @@ the `schedule:` lines from `.github/workflows/job-monitor.yml`.
 - **Pause one company:** add `"enabled": false` to its entry in `config_all.json` (Tesla and
   Atlassian are paused this way for now). Its saved postings are kept, so when you remove the
   line, only what it posted in the meantime is new.
+- **Watch another page of a company:** add a second entry with the same `name` (see
+  "Several links for one company" under Target Configuration). Its first run records what it
+  lists without emailing; from then on its new postings are emailed, except ones the
+  company's other entry already found for you.
+- **Edit an entry's link:** fine at any time. The new link's first run records what it lists
+  without emailing, and postings the old link found that are still waiting for the next email
+  are still sent, as long as the entry keeps its `name`.
 
 ### Working on the code from your computer
 
