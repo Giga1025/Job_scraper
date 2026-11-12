@@ -96,15 +96,48 @@ non-software engineering (`exclude_other_disciplines`, unless a `software_signal
 present). Matching is whole-word and case-insensitive. Edit the lists to taste; remove
 `role_filter` to turn it off.
 
-Left-out postings are not dropped silently. They wait in `state.json` and are listed in a
-separate "Left out by your filters" section at the bottom of the next alert email (with the
-reason), or in a digest email if no email has gone out for `filtered_digest_hours` (default 24),
-even if the posting has left the careers page by then. Monitors sharing a `state.json` (e.g.
-batch configs) share this list, so any alert or digest carries all of it. This is on whenever
-`role_filter` is set; `"show_filtered": false` drops left-out postings quietly instead.
+Left-out postings are not dropped silently. They wait in `state.json` and are summarised in a
+"Left out by your filters" section at the bottom of the next email: a count for each reason,
+then up to 25 of them that still look like engineering roles (an engineering or software/ML
+word in the title), the ones left out for their kind of role before those left out for their
+level. If no email has gone out for `filtered_digest_hours` (default 24), a digest email carries
+them. Every left-out posting of the last 7 days, with its reason, is also listed in
+`left_out.md` (next to `state.json`; on GitHub, on the `monitor-state` branch), and the email
+links to it. Monitors sharing a `state.json` (e.g. batch configs) share this list. This is on
+whenever `role_filter` is set; `"show_filtered": false` drops left-out postings quietly instead.
 
 `keyword_filters` (global, or per target) still works as an allow-list. Postings it leaves out
 are dropped quietly as before, unless you set `"show_filtered": true`.
+
+### How often emails come
+
+Each run records new postings straight away, and they wait in `state.json` until an email
+lists them, so nothing is lost if an email fails or a posting is taken down in the meantime.
+With `"email_every_hours": 2` (as in `config_all.json`) at most one email goes out every two
+hours, carrying everything found since the last one; `0` emails after every run that finds
+something.
+
+### New-grad lists maintained by others (startups and mid-size companies)
+
+A target with `"mode": "feed"` reads a list of postings that someone else keeps up to date,
+which covers hundreds of companies in one request. Each posting is emailed under its own
+company ("Clay (via SimplifyJobs New Grad)"). `config_all.json` uses three:
+
+| Feed | `format` | What's read |
+|---|---|---|
+| [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions) | `simplify` | its `listings.json`: rows in the given `categories` |
+| [speedyapply 2027 SWE](https://github.com/speedyapply/2027-SWE-College-Jobs) and [AI](https://github.com/speedyapply/2027-AI-College-Jobs) | `speedyapply` | the tables in `NEW_GRAD_USA.md` |
+
+Each feed remembers every posting it has listed in the last `max_age_days` (90 for Simplify,
+120 for speedyapply) and emails a link it hasn't seen before, whatever its posting date:
+Simplify often adds a posting days or weeks after it went up. Closed postings are remembered
+too but never emailed, so one that is re-opened doesn't come back as new. A posting that was already found,
+by a company's own entry or another feed, isn't emailed again, even under a different link:
+the job number in the link (Greenhouse, Ashby, Lever, Workday) is compared, and feeds are also
+compared by company and title. A company's own entry may be filtered (a team, a level, the
+newest page), so its postings that only a feed lists are still emailed. Your role filter and
+US-only setting apply as usual. Like any new target, a feed's first check records what it
+lists without emailing.
 
 ### Job-board APIs and US-only
 
@@ -157,7 +190,7 @@ Each target has these fields:
 |---|---|---|
 | `name` | Yes | Friendly label (used in alerts) |
 | `url` | Yes | Career page URL with your filters applied |
-| `mode` | Yes | `"html"` for static pages, `"browser"` for JS-heavy pages, `"sitemap"` for a sitemap of job pages |
+| `mode` | Yes | `"html"` for static pages, `"browser"` for JS-heavy pages, `"sitemap"` for a sitemap of job pages, `"feed"` for a maintained list of postings (with `format`, `max_age_days`, and for Simplify `categories`) |
 | `wait_for` | No | CSS selector to wait for before scraping (browser mode only) |
 | `link_selector` | No | CSS selector for job links. If empty, uses heuristics |
 | `enabled` | No | `false` pauses the target: it isn't checked, and its saved postings are kept |
@@ -266,13 +299,16 @@ repository, such as on a schedule or when you push. This repository has two **wo
 
 | Workflow | When it runs | What it does |
 |---|---|---|
-| **Job monitor** (`job-monitor.yml`) | every 30 minutes, or when you click *Run workflow* | checks every company, emails new postings, saves `state.json` |
+| **Job monitor** (`job-monitor.yml`) | every 30 minutes, or when you click *Run workflow* | checks every company, emails new postings (at most every 2 hours), saves what it has seen |
 | **Tests** (`tests.yml`) | on every push | runs the test suite; a red ❌ on a commit means a change broke something |
 
 Each run starts on a fresh, empty computer, so the job monitor workflow installs Python,
-the packages and a browser, runs `job_monitor.py`, and then **commits `state.json` back to
-the repository**. That file is how the next run knows which postings you've already seen.
-Commits by "github-actions[bot]" titled "Update job monitor state" are these saves.
+the packages and a browser, runs `job_monitor.py`, and then **saves `state.json` (and
+`left_out.md`) to the `monitor-state` branch**. That file is how the next run knows which
+postings you've already seen and which are waiting to be emailed. The branch always holds a
+single commit, which each run replaces, so it doesn't fill the history, and `main` only
+changes when you change it. To read the full left-out list, open `left_out.md` on that branch
+(the emails link to it).
 
 ### One-time setup
 
@@ -295,6 +331,75 @@ Commits by "github-actions[bot]" titled "Update job monitor state" are these sav
    **Run workflow**, then **Run workflow** again. The first run only records what each company
    lists today (no email); from the next run on, new postings are emailed.
 
+   Ticking **Dry run** in that menu runs everything but sends no email and saves to a separate
+   `monitor-state-test` branch, so it can't affect your real alerts. Runs started from any
+   branch other than `main` work the same way (no email, test branch).
+
+### Reliable runs every 30 minutes (cron-job.org)
+
+GitHub starts scheduled runs late, or skips them, when it is busy; on this repository it ran
+the 30-minute schedule only a few times a day. A free scheduler can ask GitHub to start the
+**Job monitor** workflow instead, exactly like clicking **Run workflow**, every 30 minutes.
+The GitHub schedule stays in the workflow as a backup.
+
+**1. Make a GitHub token that can only start this repository's workflows.**
+
+1. GitHub → your profile picture → **Settings** → **Developer settings** (bottom of the left
+   menu) → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
+   GitHub may ask for your password again.
+2. **Token name:** `cron-job.org dispatch`. **Expiration:** a date up to a year away (GitHub
+   emails you before it expires).
+3. **Resource owner:** your account. **Repository access:** **Only select repositories** →
+   pick `Job_scraper`.
+4. **Permissions:** under repository permissions add **Actions** and set it to **Read and
+   write**. (**Metadata: Read-only** is added automatically.) Add nothing else; in
+   particular not **Workflows**, which can edit workflow files.
+5. **Generate token**, and copy the `github_pat_...` value now; GitHub shows it only once.
+   Paste it only into cron-job.org below: never into this repository, an issue or a chat.
+   (GitHub automatically revokes a token that is pushed to a public repository.)
+
+**2. Create the job at [cron-job.org](https://cron-job.org)** (free; sign up, confirm the
+email, then sign in at console.cron-job.org; turning on multi-factor authentication under
+**Settings** is a good idea, because the token is stored there as plain text).
+
+1. **Cronjobs** → **Create cronjob**.
+2. **Common** tab:
+   - **Title:** `Job monitor`
+   - **URL:** replace the `http://` with
+     `https://api.github.com/repos/Giga1025/Job_scraper/actions/workflows/job-monitor.yml/dispatches`
+   - **Save responses in job history:** on (then GitHub's error message is kept if a call fails)
+   - **Execution schedule:** **Every** → **30 minutes** (the default is 15)
+3. **Notifications** tab: turn on **execution of the cronjob fails** and **execution of the
+   cronjob succeeds after it failed before** (both are off by default).
+4. **Advanced** tab:
+   - **Headers** → **Add**, once for each:
+
+     | Key | Value |
+     |---|---|
+     | `Accept` | `application/vnd.github+json` |
+     | `Authorization` | `Bearer ` followed by your token (one space, no quotes) |
+     | `X-GitHub-Api-Version` | `2026-03-10` |
+     | `Content-Type` | `application/json` |
+
+   - **Request method:** **POST** (the body box stays grey until you pick it)
+   - **Request body:** `{"ref":"main"}`
+5. **Test run** → **Start test run**. This really starts a run. It worked if the response is
+   **200** (with a link to the run); then a new **Job monitor** run shows on the Actions tab.
+   Click **Create**.
+
+**If it stops working:** cron-job.org's **History** shows each call's result. **401** means
+the token expired or was mistyped (make a new one and paste it into the `Authorization`
+header); **403** or **404** usually mean the token lacks **Actions: Read and write** or this
+repository; **422** usually means the body isn't exactly `{"ref":"main"}`. After 25 failures
+in a row (about 13 hours) cron-job.org switches the job off and emails you; switch **Enable
+job** back on once it's fixed. A **200** only means GitHub started the run; the run's own
+result is on the Actions tab.
+
+With both cron-job.org and the backup schedule, two runs sometimes come close together; the
+second waits for the first, and a run that was waiting can show as **Cancelled** when a newer
+one replaces it. That's expected and harmless. If you'd rather have only cron-job.org, delete
+the `schedule:` lines from `.github/workflows/job-monitor.yml`.
+
 ### Reading a run
 
 - On the **Actions** tab, each run shows ✅ (worked), ❌ (failed) or a spinner (running).
@@ -307,21 +412,26 @@ Commits by "github-actions[bot]" titled "Update job monitor state" are these sav
 
 ### Changing things
 
-- **How often:** edit the `cron` line in `.github/workflows/job-monitor.yml`. It has five fields
-  (minute, hour, day of month, month, day of week), in UTC: `"7,37 * * * *"` means minutes 7 and
-  37 of every hour; `"7 */3 * * *"` would mean every 3 hours. GitHub may start a run a few
-  minutes late.
+- **How often:** change the schedule of the cron-job.org job (see above). The backup schedule
+  is the `cron` line in `.github/workflows/job-monitor.yml`; it has five fields (minute, hour,
+  day of month, month, day of week), in UTC: `"7,37 * * * *"` means minutes 7 and 37 of every
+  hour, and `"7 */3 * * *"` would mean every 3 hours. How often emails go out is
+  `email_every_hours` in `config_all.json`.
 - **Pause everything:** Actions tab → **Job monitor** → **⋯** → **Disable workflow** (and
-  **Enable workflow** to resume). GitHub also disables scheduled workflows in public
-  repositories after 60 days without any activity; the same button turns it back on.
+  **Enable workflow** to resume).
+- **After 60 quiet days:** GitHub turns off scheduled workflows in a public repository when
+  nothing has happened in it for 60 days (it emails you first). The monitor's own saves don't
+  count, so if you go two months without pushing anything, click **Enable workflow** on the
+  Actions tab (or push any commit) to turn it back on.
 - **Pause one company:** add `"enabled": false` to its entry in `config_all.json` (Tesla and
   Atlassian are paused this way for now). Its saved postings are kept, so when you remove the
   line, only what it posted in the meantime is new.
 
 ### Working on the code from your computer
 
-Because the workflow commits `state.json` to `main`, your copy falls behind after each run.
-Run `git pull` before you make changes, and again if a `git push` is rejected.
+The workflow never commits to `main`, so `main` only changes when you (or a merged pull
+request) change it. The `state.json` still in `main` is the starting point for the very first
+run that uses the `monitor-state` branch; after that it isn't used or updated.
 
 ---
 
@@ -331,7 +441,8 @@ Run `git pull` before you make changes, and again if a `git push` is rejected.
 |---|---|
 | `config_all.json` | Shipped list of companies; used by default (see step 2) |
 | `config.json` | Your own settings; use it with `--config config.json` if `config_all.json` exists |
-| `state.json` | Last-seen jobs (auto-managed, don't edit; committed by the GitHub Actions workflow) |
+| `state.json` | Postings already seen, and those waiting to be emailed (auto-managed, don't edit; on GitHub it lives on the `monitor-state` branch) |
+| `left_out.md` | Every posting the filters left out in the last 7 days (auto-managed; on the `monitor-state` branch) |
 | `.github/workflows/` | The GitHub Actions workflows (job monitor and tests) |
 | `state.json.*` | Lock file and any set-aside unreadable state (auto-managed) |
 | `monitor.log` | Run history and errors |

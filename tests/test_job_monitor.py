@@ -181,11 +181,12 @@ class MonitorTestCase(unittest.TestCase):
         self.emails_attempted = 0
         real_send_email = jm.send_email
 
-        def spy(cfg, all_new, left_out=None):
+        def spy(cfg, all_new, left_out=None, left_out_summary=None):
             self.emails_attempted += 1
             reported.update({name: [j["title"] for j in jobs] for name, jobs in all_new.items()})
             self.left_out = {name: [j["title"] for j in jobs] for name, jobs in (left_out or {}).items()}
-            return real_send_email(cfg, all_new, left_out=left_out)
+            self.left_out_summary = left_out_summary
+            return real_send_email(cfg, all_new, left_out=left_out, left_out_summary=left_out_summary)
 
         with mock.patch.object(jm, "send_email", spy):
             result = jm.run(str(config_path))
@@ -215,7 +216,9 @@ class EmailDeliveryTests(MonitorTestCase):
         ok, reported = self.run_monitor([target()], email=WORKING_EMAIL)
         self.assertFalse(ok)
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
-        self.assertEqual(self.saved_state(), {URL: []})
+        # Recorded as seen, and held until an email gets through (even if it leaves the page).
+        self.assertEqual([j["title"] for j in self.saved_state()[jm.ALERT_POOL_KEY]], ["Data Analyst"])
+        self.pages[URL] = page()
 
         FakeSMTP.fail_with = None
         ok, reported = self.run_monitor([target()], email=WORKING_EMAIL)
@@ -460,7 +463,7 @@ class BaselineTests(MonitorTestCase):
         ok, reported = self.run_monitor(targets, email=WORKING_EMAIL)
         self.assertFalse(ok)
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
-        self.assertEqual(self.saved_state()[URL], [])  # still pending
+        self.assertEqual([j["title"] for j in self.saved_state()[jm.ALERT_POOL_KEY]], ["Data Analyst"])  # held
         self.assertEqual(len(self.saved_state()[other]), 1)  # baseline kept
 
         # The new target posts something while email is still down: it's reported and held.
@@ -491,7 +494,7 @@ class BaselineTests(MonitorTestCase):
         ok, reported = self.run_monitor(targets, email=WORKING_EMAIL)
         self.assertFalse(ok)
         self.assertEqual(reported, {"Interns": ["i1"]})  # alerted against the Jobs baseline
-        self.assertEqual([j["title"] for j in self.saved_state()[URL]], ["j1"])  # baseline only
+        self.assertEqual([j["title"] for j in self.saved_state()[jm.ALERT_POOL_KEY]], ["i1"])  # held
 
         self.pages[URL] = listing(["j1", "j2 New Grad"], ["i1"])  # posted while email is down
         ok, reported = self.run_monitor(targets, email=WORKING_EMAIL)
@@ -775,10 +778,13 @@ class RoleFilterTests(MonitorTestCase):
         ok, reported = self.run_filtered()
         self.assertTrue(ok)
         self.assertEqual(reported, {"Acme": ["Software Engineer, New Grad"]})
-        self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer", "Account Executive"]})
+        # Titles that still look like engineering roles are listed; the others are counted.
+        self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer"]})
         [(_, msg)] = self.emails_sent()
         body = msg.get_payload()[0].get_payload(decode=True).decode()
+        self.assertIn("Left out by your filters: 2 (senior 1, not engineering 1)", body)
         self.assertIn("Senior Software Engineer  [senior (Senior)]", body)
+        self.assertNotIn("Account Executive", body)
         self.assertIn("+2 left out by filters", msg["Subject"])
         self.assertEqual(self.pool_titles(), [])
 
@@ -857,7 +863,7 @@ class RoleFilterTests(MonitorTestCase):
         FakeSMTP.fail_with = smtplib.SMTPAuthenticationError(535, b"bad password")
         ok, _ = self.run_filtered()
         self.assertFalse(ok)
-        self.assertEqual(self.saved_state()[URL], [])
+        self.assertEqual([j["title"] for j in self.saved_state()[jm.ALERT_POOL_KEY]], ["Backend Engineer"])
         self.assertEqual(self.pool_titles(), ["Senior Software Engineer"])
 
         FakeSMTP.fail_with = None
@@ -1392,6 +1398,349 @@ class TalentBrewReaderTests(MonitorTestCase):
         self.assertIsNone(jm.job_board_api_reader("https://jobs.intuit.com/search-jobs/United%20States?orgIds=27595"))
 
 
+class EmailBatchTests(MonitorTestCase):
+    """Runs record postings every time; emails go out at most every email_every_hours."""
+
+    def last_email(self, hours_ago):
+        jm.save_state({}, last_email=(datetime.now() - timedelta(hours=hours_ago)).isoformat(timespec="seconds"))
+
+    def run_batched(self, **extra):
+        extra.setdefault("email_every_hours", 2)
+        return self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, **extra)
+
+    def test_matches_wait_until_two_hours_after_the_last_email(self):
+        self.mark_known(URL)
+        self.last_email(hours_ago=0.5)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        ok, reported = self.run_batched()
+        self.assertTrue(ok)
+        self.assertEqual(self.emails_attempted, 0)
+        state = self.saved_state()
+        self.assertEqual(len(state[URL]), 1)  # recorded as seen at once
+        self.assertEqual([j["title"] for j in state[jm.ALERT_POOL_KEY]], ["Backend Engineer"])
+
+        # Another posting 30 minutes later: still waiting, now two.
+        self.last_email(hours_ago=1.0)
+        self.pages[URL] = page(*jobs_named("Data Engineer"))  # the first one even left the page
+        self.run_batched()
+        self.assertEqual(self.emails_attempted, 0)
+
+        # Two hours after the last email (give or take a few minutes): both in one email.
+        self.last_email(hours_ago=1.9)
+        ok, reported = self.run_batched()
+        self.assertTrue(ok)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer", "Data Engineer"]})
+        self.assertEqual(len(self.emails_sent()), 1)
+        self.assertNotIn(jm.ALERT_POOL_KEY, self.saved_state())
+
+        # The timer restarted.
+        self.pages[URL] = page(*jobs_named("Data Engineer", "ML Engineer"))
+        self.run_batched()
+        self.assertEqual(len(self.emails_sent()), 1)
+        self.assertEqual([j["title"] for j in self.saved_state()[jm.ALERT_POOL_KEY]], ["ML Engineer"])
+
+    def test_first_posting_after_a_quiet_spell_goes_out_at_once(self):
+        self.mark_known(URL)
+        self.last_email(hours_ago=5)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_batched()
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_zero_means_every_run_and_bad_values_fall_back_to_it(self):
+        self.mark_known(URL)
+        self.last_email(hours_ago=0.1)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_batched(email_every_hours=0)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        with self.assertLogs(jm.log, "WARNING"):
+            self.assertEqual(jm._email_every_hours({"email_every_hours": "often"}), 0.0)
+
+    def test_failed_email_keeps_the_batch_for_the_next_run(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        FakeSMTP.fail_with = smtplib.SMTPAuthenticationError(535, b"bad password")
+        ok, _ = self.run_batched()
+        self.assertFalse(ok)
+        FakeSMTP.fail_with = None
+        ok, reported = self.run_batched()  # an email was never recorded as sent, so it's due
+        self.assertTrue(ok)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_another_config_sharing_state_leaves_this_configs_alerts_alone(self):
+        other = "https://other.example/careers"
+        self.mark_known(URL, other)
+        self.last_email(hours_ago=0.5)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.run_batched()  # held for this config's next email
+        self.pages[other] = page()
+        self.run_monitor([target(name="Other", url=other)], email={"enabled": False})  # e.g. the starter config
+        self.assertEqual([j["title"] for j in self.saved_state()[jm.ALERT_POOL_KEY]], ["Backend Engineer"])
+        self.last_email(hours_ago=3)
+        _, reported = self.run_batched()
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_a_last_email_time_in_the_future_doesnt_hold_emails_back(self):
+        self.mark_known(URL)
+        self.last_email(hours_ago=-1)  # e.g. the clock went back an hour
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_batched()
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_dry_run_prints_instead_of_emailing(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        os.environ["JOB_MONITOR_NO_EMAIL"] = "1"
+        with self.assertLogs(jm.log, "INFO") as logs:
+            ok, reported = self.run_batched()
+        self.assertTrue(ok)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.assertEqual(FakeSMTP.instances, [])
+        self.assertIn("Dry run", "\n".join(logs.output))
+
+
+class LeftOutSummaryTests(MonitorTestCase):
+    def setUp(self):
+        super().setUp()
+        self.patterns = jm.compile_role_filter(REPO_ROLE_FILTER)
+
+    def left(self, title, reason):
+        return {"title": title, "url": f"https://acme.example/{title.replace(' ', '-')}", "reason": reason, "group": "Acme"}
+
+    def test_engineering_looking_titles_are_listed_first_and_the_rest_counted(self):
+        jobs = [
+            self.left("Account Executive", "not engineering (Account Executive)"),
+            self.left("Senior Software Engineer", "senior (Senior)"),
+            self.left("Data Analyst", "not engineering (Analyst)"),
+            self.left("Software Engineer Intern", "internship (Intern)"),
+            self.left("Frontend Engineer", "frontend (Frontend)"),
+        ]
+        summary = jm.summarize_left_out(jobs, self.patterns)
+        self.assertEqual(summary["total"], 5)
+        self.assertEqual(summary["by_reason"], {"not engineering": 2, "senior": 1, "internship": 1, "frontend": 1})
+        # Kind-of-role exclusions before level ones, engineering words first; non-technical ones only counted.
+        self.assertEqual([j["title"] for j in summary["listed"]],
+                         ["Frontend Engineer", "Data Analyst", "Senior Software Engineer", "Software Engineer Intern"])
+
+    def test_a_title_repeated_at_one_company_is_listed_once(self):
+        jobs = [self.left("Data Center Technician", "not engineering (Technician)") for _ in range(3)]
+        jobs = [{**j, "url": f"{j['url']}/{i}"} for i, j in enumerate(jobs)]
+        summary = jm.summarize_left_out(jobs, self.patterns)
+        self.assertEqual((summary["total"], len(summary["listed"])), (3, 1))
+
+    def test_postings_waiting_before_an_upgrade_reach_the_page(self):
+        # A pool written by the previous version (no left_out.md log yet).
+        self.mark_known(URL)
+        jm.save_state({}, pending_add=[{"title": "Staff Engineer", "url": "https://acme.example/staff",
+                                       "company": "Acme", "reason": "senior (Staff)"}])
+        self.pages[URL] = page()
+        self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)  # digest due: never emailed
+        self.assertEqual(len(self.emails_sent()), 1)
+        self.assertIn("[Staff Engineer](https://acme.example/staff)", jm.left_out_page_path().read_text())
+
+    def test_line_breaks_in_titles_dont_break_the_page(self):
+        page_md = jm.format_left_out_page([{"title": "icon Associate : The group\n\nseeks people", "url": "https://x.example/1",
+                                            "reason": "senior (Associate)", "seen": "2026-10-08T10:00"}])
+        self.assertIn("- [icon Associate : The group seeks people](https://x.example/1)", page_md)
+
+    def test_at_most_25_are_listed_and_the_email_points_to_the_full_list(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer", *[f"Senior Engineer {i}" for i in range(40)]))
+        with mock.patch.dict(os.environ, GITHUB_REPOSITORY="me/jobs", JOB_MONITOR_STATE_BRANCH="monitor-state"):
+            self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(sum(len(v) for v in self.left_out.values()), 25)
+        [(_, msg)] = self.emails_sent()
+        plain = msg.get_payload()[0].get_payload(decode=True).decode()
+        html = msg.get_payload()[1].get_payload(decode=True).decode()
+        self.assertIn("Left out by your filters: 40 (senior 40)", plain)
+        self.assertIn("https://github.com/me/jobs/blob/monitor-state/left_out.md", plain)
+        self.assertIn('href="https://github.com/me/jobs/blob/monitor-state/left_out.md"', html)
+        self.assertIn("+40 left out by filters", msg["Subject"])
+
+    def test_left_out_page_keeps_seven_days(self):
+        self.mark_known(URL)
+        old = {"title": "Old Role", "url": "https://acme.example/old", "reason": "senior (Senior)",
+               "seen": (datetime.now() - timedelta(days=8)).isoformat(timespec="minutes")}
+        jm.save_state({}, last_email=datetime.now().isoformat(timespec="seconds"))
+        state = self.saved_state()
+        state[jm.LEFT_OUT_LOG_KEY] = [old]
+        jm.STATE_PATH.write_text(json.dumps(state))
+        self.pages[URL] = page(*jobs_named("Staff Engineer [Platform]", "Account Executive"))
+        self.run_monitor([target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, email_every_hours=2)
+        log_titles = [e["title"] for e in self.saved_state()[jm.LEFT_OUT_LOG_KEY]]
+        self.assertEqual(log_titles, ["Staff Engineer [Platform]", "Account Executive"])  # the 8-day-old one is gone
+        page_md = jm.left_out_page_path().read_text()
+        self.assertIn("[Staff Engineer \\[Platform\\]](https://acme.example/jobs/staff-engineer-[platform]) · Acme", page_md)
+        self.assertIn("Account Executive", page_md)  # every left-out posting is on the page
+        self.assertNotIn("Old Role", page_md)
+
+
+SIMPLIFY_URL = "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json"
+SPEEDY_URL = "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/NEW_GRAD_USA.md"
+
+
+def simplify_row(company, title, days_ago=1, **extra):
+    row = {"source": "Simplify", "category": "Software", "company_name": company, "title": title, "active": True,
+           "is_visible": True, "date_posted": int(time.time() - days_ago * 86400), "id": f"{company}-{title}",
+           "url": f"https://job-boards.greenhouse.io/{company.lower()}/jobs/{abs(hash((company, title))) % 10**8}",
+           "locations": ["San Francisco, CA"], "company_url": "", "sponsorship": "Other", "degrees": []}
+    row.update(extra)
+    return row
+
+
+# Rows as speedyapply writes them: FAANG+ tables have a Salary column, "Other" tables don't.
+SPEEDY_MD = """## 2027 USA SWE New Graduate Positions
+<!-- TABLE_FAANG_START -->
+| Company | Position | Location | Salary | Posting | Age |
+|---|---|---|---|---|---|
+| <a href="https://www.roblox.com"><strong>Roblox</strong></a> | Software Engineer - Test Frameworks &amp; Tooling | San Mateo, CA | $150k/yr | <a href="https://careers.roblox.com/jobs/8229705?gh_jid=8229705"><img src="https://i.imgur.com/JpkfjIq.png" alt="Apply" width="70"/></a> | 1d |
+<!-- TABLE_FAANG_END -->
+<!-- TABLE_START -->
+| Company | Position | Location | Posting | Age |
+|---|---|---|---|---|
+| <a href="https://thesirius.ai/"><strong>Sirius</strong></a> | Backend Engineer \\| Platform | San Francisco, CA | <a href="https://jobs.ashbyhq.com/thesirius/662f4814"><img src="https://i.imgur.com/JpkfjIq.png" alt="Apply" width="70"/></a> | 2d |
+| <a href="https://old.example/"><strong>Old Co</strong></a> | Backend Engineer | Austin, TX | <a href="https://jobs.lever.co/oldco/1"><img src="https://i.imgur.com/JpkfjIq.png" alt="Apply" width="70"/></a> | 40d |
+<!-- TABLE_END -->
+"""
+
+
+class FeedTests(MonitorTestCase):
+    def simplify_target(self, **extra):
+        extra.setdefault("max_age_days", 7)
+        return target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                      categories=["Software", "AI/ML/Data"], **extra)
+
+    def test_simplify_rows_are_filtered_by_activity_category_and_age(self):
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Clay", "Early Career Software Engineer", locations=["New York, NY", "Remote in USA"]),
+            simplify_row("Mach9", "Machine Learning Engineer", category="AI/ML/Data"),
+            simplify_row("Volt", "Hardware Engineer", category="Hardware"),
+            simplify_row("Gone", "Software Engineer", active=False),
+            simplify_row("Hidden", "Software Engineer", is_visible=False),
+            simplify_row("Stale", "Software Engineer", days_ago=30),
+        ])
+        jobs = jm.fetch_feed_jobs(self.simplify_target())
+        self.assertEqual([(j["company"], j["title"], j.get("listed", True)) for j in jobs],
+                         [("Clay", "Early Career Software Engineer", True), ("Mach9", "Machine Learning Engineer", True),
+                          ("Gone", "Software Engineer", False)])  # closed rows are remembered, not emailed
+        self.assertEqual(jobs[0]["location"], "New York, NY; Remote in USA")
+
+    def test_speedyapply_tables_with_and_without_salary(self):
+        self.pages[SPEEDY_URL] = SPEEDY_MD
+        jobs = jm.fetch_feed_jobs(target(url=SPEEDY_URL, mode="feed", format="speedyapply", max_age_days=7))
+        self.assertEqual({j.pop("first_seen") for j in jobs}, {datetime.now().date().isoformat()})
+        self.assertEqual(jobs, [
+            {"title": "Software Engineer - Test Frameworks & Tooling", "url": "https://careers.roblox.com/jobs/8229705?gh_jid=8229705",
+             "company": "Roblox", "location": "San Mateo, CA"},
+            {"title": "Backend Engineer | Platform", "url": "https://jobs.ashbyhq.com/thesirius/662f4814",
+             "company": "Sirius", "location": "San Francisco, CA"},
+        ])
+
+    def test_unknown_format_or_unreadable_feed_skips_the_target(self):
+        with self.assertLogs(jm.log, "ERROR"):
+            self.assertIsNone(jm.fetch_feed_jobs(target(url=SPEEDY_URL, mode="feed", format="rss")))
+        self.pages[SIMPLIFY_URL] = "<html>rate limited</html>"
+        with self.assertLogs(jm.log, "WARNING"):
+            self.assertIsNone(jm.fetch_feed_jobs(self.simplify_target()))
+
+    def test_feed_postings_are_emailed_under_their_company(self):
+        self.mark_known(SIMPLIFY_URL)
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Clay", "Early Career Software Engineer"),
+                                               simplify_row("Clay", "Senior Software Engineer")])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(reported, {"Clay (via SimplifyJobs New Grad)": ["Early Career Software Engineer"]})
+        self.assertEqual(self.left_out, {"Clay (via SimplifyJobs New Grad)": ["Senior Software Engineer"]})
+
+    def test_first_check_of_a_feed_is_silent(self):
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Clay", "Early Career Software Engineer")])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual((reported, self.emails_attempted), ({}, 0))
+        self.assertEqual(len(self.saved_state()[SIMPLIFY_URL]), 1)
+
+    def test_a_tracked_companys_posting_is_skipped_only_if_its_own_entry_found_it(self):
+        # Company entries are often filtered (a team, a level, the newest page), so a feed can
+        # list a posting the company's own entry never sees: that one is still emailed.
+        roblox = "https://boards-api.greenhouse.io/v1/boards/roblox/jobs"
+        self.mark_known(SIMPLIFY_URL, roblox)
+        self.pages[roblox] = json.dumps({"jobs": [{"title": "Software Engineer", "location": {"name": "San Mateo, CA"},
+                                                   "absolute_url": "https://careers.roblox.com/jobs/8229705?gh_jid=8229705"}]})
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Roblox", "Software Engineer", url="https://job-boards.greenhouse.io/roblox/jobs/8229705"),
+            simplify_row("Roblox", "ML Engineer, Safety", url="https://job-boards.greenhouse.io/roblox/jobs/8230001"),
+        ])
+        targets = [target(name="Roblox", url=roblox, mode="api"), self.simplify_target()]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Roblox": ["Software Engineer"],
+                                    "Roblox (via SimplifyJobs New Grad)": ["ML Engineer, Safety"]})
+
+    def test_the_same_job_under_another_link_is_not_new(self):
+        boeing = "https://boeing.wd1.myworkdayjobs.com/en-US/{site}/job/Seattle/Software-Application-Tester_JR2026524037{suffix}"
+        self.mark_known(SIMPLIFY_URL)
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Boeing", "Software Application Tester", url=boeing.format(site="external_careers", suffix="-1")),
+            simplify_row("Boeing", "Software Application Tester", url=boeing.format(site="external_subsidiary", suffix="")),
+        ])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Boeing (via SimplifyJobs New Grad)": ["Software Application Tester"]})  # once
+        # Later the feed links it under yet another site path: still the same job.
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Boeing", "Software Application Tester", url=boeing.format(site="boeing_jobs", suffix=""))])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+
+    def test_title_matches_across_feeds_only_look_back_two_weeks(self):
+        old = (datetime.now() - timedelta(days=30)).date().isoformat()
+        jm.save_state({SPEEDY_URL: [{"title": "Software Engineer - New Grad", "url": "https://ixl.example/old",
+                                     "company": "IXL Learning", "first_seen": old}], SIMPLIFY_URL: []})
+        self.pages[SPEEDY_URL] = ""
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("IXL Learning", "Software Engineer - New Grad",
+                                                            url="https://job-boards.greenhouse.io/ixl/jobs/8862043002")])
+        targets = [self.simplify_target(), target(name="speedyapply New Grad SWE", url=SPEEDY_URL, mode="feed", format="speedyapply")]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"IXL Learning (via SimplifyJobs New Grad)": ["Software Engineer - New Grad"]})
+
+    def test_a_new_link_is_new_whatever_its_date_and_closed_rows_stay_quiet(self):
+        wide = self.simplify_target(max_age_days=90)
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Old Co", "Software Engineer", days_ago=40),                 # listed at the first check
+            simplify_row("Closed Co", "Software Engineer", days_ago=20, active=False),
+        ])
+        self.run_monitor([wide], email=WORKING_EMAIL)  # first check: recorded silently
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Old Co", "Software Engineer", days_ago=40),
+            simplify_row("Closed Co", "Software Engineer", days_ago=20),              # re-activated: not new
+            simplify_row("Late Co", "Software Engineer", days_ago=35),                # added late: new
+            simplify_row("Shut Co", "Software Engineer", days_ago=1, active=False),   # new but closed: quiet
+            simplify_row("Ancient Co", "Software Engineer", days_ago=200),            # beyond max_age_days
+        ])
+        _, reported = self.run_monitor([wide], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Late Co (via SimplifyJobs New Grad)": ["Software Engineer"]})
+
+    def test_a_posting_in_two_feeds_or_already_known_is_emailed_once(self):
+        self.mark_known(SIMPLIFY_URL, SPEEDY_URL, URL)
+        roblox_link = "https://careers.roblox.com/jobs/8229705?gh_jid=8229705"
+        self.pages[URL] = page()
+        jm.save_state({URL: [{"title": "Software Engineer - Test Frameworks & Tooling", "url": roblox_link}]})
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Sirius", "Backend Engineer | Platform", url="https://jobs.ashbyhq.com/thesirius/662f4814?utm_source=Simplify"),
+            simplify_row("Roblox Corp", "SWE", url=roblox_link),
+        ])
+        self.pages[SPEEDY_URL] = SPEEDY_MD
+        targets = [target(name="Big Co"), self.simplify_target(),
+                   target(name="speedyapply New Grad SWE", url=SPEEDY_URL, mode="feed", format="speedyapply")]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Sirius (via SimplifyJobs New Grad)": ["Backend Engineer | Platform"]})
+
+        # Next run: the other feed listing the same job under another link isn't new either.
+        self.pages[SPEEDY_URL] = SPEEDY_MD.replace("662f4814", "662f4814-other-link")
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+
+    def test_the_shipped_feeds(self):
+        feeds = [t for t in json.loads((REPO_DIR / "config_all.json").read_text())["targets"] if t.get("mode") == "feed"]
+        self.assertEqual({t["format"] for t in feeds}, {"simplify", "speedyapply"})
+        self.assertTrue(all(t["url"].startswith("https://raw.githubusercontent.com/") for t in feeds))
+
+
 class UsFilterTests(MonitorTestCase):
     def test_location_classification(self):
         outside = ["London, UK", "Singapore", "Bengaluru, India; Mumbai, India", "Dublin OR London",
@@ -1785,18 +2134,22 @@ class CommandLineTests(unittest.TestCase):
         self.assertNotIn("Data Analyst", result.stdout)
         self.assertEqual(len(json.loads((self.tmp / "state.json").read_text())[self.page_url]), 2)
 
-        # A new posting with SMTP down: reported, exit 1, and not marked as seen.
+        # A new posting with SMTP down: reported, exit 1, and kept for the next email.
         self.handler.body = page(*jobs_named("Data Analyst", "Quant Researcher", "ML Engineer")).encode()
         result = self.run_script(unreachable)
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("ML Engineer", result.stdout)
-        self.assertEqual(len(json.loads((self.tmp / "state.json").read_text())[self.page_url]), 2)
+        state = json.loads((self.tmp / "state.json").read_text())
+        self.assertEqual([j["title"] for j in state[jm.ALERT_POOL_KEY]], ["ML Engineer"])
 
-        # Delivered on the next run.
+        # Delivered on the next run, even though the page no longer lists it.
+        self.handler.body = page(*jobs_named("Data Analyst", "Quant Researcher")).encode()
         result = self.run_script({"enabled": False})
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("ML Engineer", result.stdout)
-        self.assertEqual(len(json.loads((self.tmp / "state.json").read_text())[self.page_url]), 3)
+        state = json.loads((self.tmp / "state.json").read_text())
+        self.assertEqual(len(state[self.page_url]), 3)
+        self.assertNotIn(jm.ALERT_POOL_KEY, state)
 
     def test_exit_code_and_state_follow_email_delivery(self):
         closed = socket.socket()
@@ -1809,12 +2162,14 @@ class CommandLineTests(unittest.TestCase):
         result = self.run_script(unreachable)
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("Data Analyst", result.stdout)
-        self.assertEqual(json.loads((self.tmp / "state.json").read_text()), {self.page_url: []})
+        state = json.loads((self.tmp / "state.json").read_text())
+        self.assertEqual(len(state[jm.ALERT_POOL_KEY]), 2)  # waiting for an email that works
 
         result = self.run_script({"enabled": False})
         self.assertEqual(result.returncode, 0, result.stderr)
         state = json.loads((self.tmp / "state.json").read_text())
         self.assertEqual(len(state[self.page_url]), 2)
+        self.assertNotIn(jm.ALERT_POOL_KEY, state)
 
 
 if __name__ == "__main__":
