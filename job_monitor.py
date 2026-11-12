@@ -83,6 +83,7 @@ LEFT_OUT_EMAIL_LIMIT = 25     # left-out postings listed in an email (the rest a
 EMAIL_DUE_TOLERANCE_MINUTES = 10  # a batch due at 2h may go out at 1h50 (runs come every 30 min)
 REPORTED_MARK = "reported"  # on postings a company entry found new for you: how they were shown
 SHOWN_AS_MATCH, SHOWN_AS_LEFT_OUT = "match", "left out"  # (queued for the email / for its left-out list)
+GREENHOUSE_JOB_KEY = "gh_job"  # on Greenhouse postings: the job's id, shared by its postings on every board
 
 # A state.json temp file older than this was left by a monitor killed mid-save.
 STALE_TEMP_FILE_SECONDS = 600
@@ -924,11 +925,16 @@ def fetch_greenhouse_api_jobs(url: str, get_json=None) -> list[dict] | None:
             continue
         if not matches(post, "departments", want_departments) or not matches(post, "offices", want_offices):
             continue
-        jobs.append({
+        job = {
             "title": _to_text(post["title"])[:200],
             "url": _to_text(post["absolute_url"]),
             "location": _to_text((post.get("location") or {}).get("name")),
-        })
+        }
+        internal = post.get("internal_job_id")
+        if isinstance(internal, (int, str)) and not isinstance(internal, bool) and str(internal).isdigit():
+            # The same for every posting of one job, on any of the company's boards.
+            job[GREENHOUSE_JOB_KEY] = str(internal)
+        jobs.append(job)
     return _dedupe_jobs(jobs)
 
 
@@ -1366,8 +1372,11 @@ _BOARD_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
 def board_api_url(job_url) -> tuple[str, str] | None:
     """(platform, the board's job-board API URL) for a posting link on Greenhouse, Ashby
-    or Lever, else None."""
-    parsed = urlparse(str(job_url or "").strip())
+    or Lever, else None (also for a link that isn't a valid URL)."""
+    try:
+        parsed = urlparse(str(job_url or "").strip())
+    except ValueError:  # e.g. "https://[x": one bad row in a list mustn't stop the run
+        return None
     host = parsed.netloc.lower().removeprefix("www.")
     parts = [p for p in parsed.path.split("/") if p]
     if _GREENHOUSE_BOARD_HOST.match(host):  # incl. job-boards.eu.greenhouse.io: same API
@@ -2548,7 +2557,8 @@ def check_target(
     def to_record(jobs):
         if not target.get("_compact"):
             return jobs
-        return [{"url": job["url"]} for job in jobs]
+        return [{"url": job["url"], **({GREENHOUSE_JOB_KEY: job[GREENHOUSE_JOB_KEY]} if job.get(GREENHOUSE_JOB_KEY) else {})}
+                for job in jobs]
 
     current_jobs = fetch()
     if current_jobs is None:
@@ -2634,13 +2644,21 @@ def run(config_override: str | None = None) -> bool:
     board_meta = _board_meta(state)
     loaded_board_meta = copy.deepcopy(board_meta)
     board_targets, boards_now, fetched = [], False, {}
+    boards_on = bool(board_entries) and board_entries[0].get("enabled", True) is not False
     if board_entries:
         if len(board_entries) > 1:
             log.warning('Only the first "boards" entry in the config is used.')
-        boards_now = boards_due(board_entries[0], board_meta)
-        board_targets = plan_boards(board_entries[0], targets, state, board_meta, boards_now)
+        if not boards_on:
+            log.info(f"Paused (\"enabled\": false): {board_entries[0].get('name') or 'company job boards'}")
+        try:
+            boards_now = boards_due(board_entries[0], board_meta)
+            board_targets = plan_boards(board_entries[0], targets, state, board_meta, boards_now)
+        except Exception:
+            # The boards are extra: a problem with them mustn't stop everything else.
+            log.exception("  Could not plan the company job boards, skipping them this run")
+            board_targets, boards_now = [], False
     # All boards when due; boards new to the registry right away (their silent first check).
-    to_fetch = [b for b in board_targets if (boards_now or b["url"] not in state)
+    to_fetch = [b for b in board_targets if boards_on and (boards_now or b["url"] not in state)
                 and _hours_since(board_meta["missing"].get(b["url"])) >= BOARD_MISSING_RETRY_HOURS]
     if to_fetch:
         log.info(f"Checking {len(to_fetch)} of {len(board_targets)} company job boards"
@@ -2696,8 +2714,8 @@ def run(config_override: str | None = None) -> bool:
         if is_feed:
             new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls, board_urls) for jobs in (new_jobs, left_out))
         elif is_board:
-            new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls, board_urls, match_titles=False)
-                                  for jobs in (new_jobs, left_out))
+            # A board's left-out postings aren't listed (see below), so only its matches are checked.
+            new_jobs, left_out = _drop_repeats(new_jobs, state, url, feed_urls, board_urls, match_titles=False), []
         elif siblings.get(url):
             found = len(new_jobs) + len(left_out)
             # Another entry listing a posting as left out doesn't stop this one emailing it.
@@ -2831,12 +2849,15 @@ def _drop_repeats(jobs: list[dict], state: dict, current_url: str, feed_urls: se
 
     What another company job board (board_urls) recorded without showing you (its first
     check, a non-tech title, a posting outside the US) doesn't count: the feeds list postings
-    a day or two late, so a board's first check would otherwise hide them."""
+    a day or two late, so a board's first check would otherwise hide them.
+
+    A Greenhouse posting of a job you've already been shown (the same GREENHOUSE_JOB_KEY,
+    e.g. the same role on a company's main and campus boards) isn't new either."""
     if not jobs:
         return jobs
     batch_ids = {compute_job_id(j) for j in jobs}
     cutoff = (datetime.now() - timedelta(days=FEED_TITLE_MATCH_DAYS)).date().isoformat()
-    known_ids, known_keys, known_titles = set(), set(), set()
+    known_ids, known_keys, known_titles, shown_jobs = set(), set(), set(), set()
     for url, seen in state.items():
         if url.startswith("_") or not isinstance(seen, list):
             continue
@@ -2850,13 +2871,16 @@ def _drop_repeats(jobs: list[dict], state: dict, current_url: str, feed_urls: se
                 continue  # these new postings themselves (already merged into this feed's list)
             known_ids.add(job_id)
             known_keys |= job_keys(job["url"])
+            if job.get(REPORTED_MARK) and job.get(GREENHOUSE_JOB_KEY):
+                shown_jobs.add(str(job[GREENHOUSE_JOB_KEY]))
             if match_titles and url in feed_urls and url != current_url and str(job.get("first_seen", "")) >= cutoff:
                 known_titles.add((company_key(job.get("company")), _title_key(job.get("title"))))
     fresh = []
     for job in jobs:
         keys = job_keys(job["url"])
         title = (company_key(job.get("company")), _title_key(job.get("title")))
-        if compute_job_id(job) in known_ids or keys & known_keys or title in known_titles:
+        if compute_job_id(job) in known_ids or keys & known_keys or title in known_titles \
+                or (job.get(GREENHOUSE_JOB_KEY) and str(job[GREENHOUSE_JOB_KEY]) in shown_jobs):
             continue
         fresh.append(job)
         known_keys |= keys  # the same job twice in this batch (two links) is listed once

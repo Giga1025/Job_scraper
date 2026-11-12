@@ -175,11 +175,19 @@ answers with no data. A board that no longer exists is tried again a day later.
 
 Only titles containing one of `tech_titles` (software, ML, AI, infrastructure, inference,
 forward deployed, member of technical staff, research engineer/scientist, new grad, ...) are
-considered; then your role filter and US-only setting apply as usual. What they leave out at
-these hundreds of companies (mostly senior roles and internships) is skipped without being
-listed, so the left-out list isn't flooded. Postings are emailed under the company's name, and
-a posting already emailed from a new-grad list isn't emailed again from the board (or the
-other way round).
+considered, minus titles with a `skip_titles` word: gig work such as AI trainer, tutor,
+annotator, rater or labeler, "expert", contractor and part-time roles. Words that also name
+real engineering work ("Software Engineer, Annotation Systems") aren't on that list. Then your
+role filter and US-only setting apply as usual. What they leave out at these hundreds of
+companies (mostly senior roles and internships) is skipped without being listed, so the
+left-out list isn't flooded. Companies under `skip_companies` (gig-work platforms) aren't
+checked at all, and `"enabled": false` on the entry pauses every board.
+
+Postings are emailed under the company's name. A posting already emailed from a new-grad list
+isn't emailed again from the board (or the other way round), and a Greenhouse job a company
+posts on two of its boards (say its main and campus boards) is emailed once. The same role on
+two Ashby or Lever boards, or a new-grad list linking the other board's copy, can still come
+twice.
 
 ### Job-board APIs and US-only
 
