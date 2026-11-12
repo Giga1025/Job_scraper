@@ -164,7 +164,7 @@ class MonitorTestCase(unittest.TestCase):
     def fake_post(self, url, *args, **kwargs):
         raise jm.requests.ConnectionError(f"no fake page for {url}")
 
-    def run_monitor(self, targets, email=None, keyword_filters=None, **config_extra):
+    def run_monitor(self, targets, email=None, keyword_filters=None, config_file="config.json", **config_extra):
         """Run one monitor cycle. Returns (run() result, {target name: [new titles]}).
         Titles listed in the email's left-out section end up in self.left_out."""
         config = {
@@ -173,7 +173,7 @@ class MonitorTestCase(unittest.TestCase):
             "targets": targets,
             **config_extra,
         }
-        config_path = self.tmp / "config.json"
+        config_path = self.tmp / config_file
         config_path.write_text(json.dumps(config))
 
         reported = {}
@@ -825,6 +825,18 @@ class SameCompanyTests(MonitorTestCase):
         self.assertEqual(jm._sibling_urls(targets), {
             "https://jobs.example/0": {"https://jobs.example/4"}, "https://jobs.example/4": {"https://jobs.example/0"},
             "https://jobs.example/7": {"https://jobs.example/8"}, "https://jobs.example/8": {"https://jobs.example/7"}})
+
+    def test_job_ids_in_ashby_and_lever_links(self):
+        u1, org = "0e7ecf76-1111-4a2b-9c3d-000000000001", "f7d8749a-72d6-407c-bf98-292ea630c73a"
+        same = ["https://jobs.lever.co/acme/" + u1, "https://jobs.lever.co/acme/" + u1 + "/apply",
+                "https://jobs.eu.lever.co/acme/" + u1.upper() + "/apply?lever-source=LinkedIn",
+                "https://jobs.ashbyhq.com/acme/" + u1, "https://jobs.ashbyhq.com/" + org + "/" + u1 + "/application"]
+        for link in same:
+            self.assertEqual(jm.job_keys(link), {("uuid", u1)}, link)
+            self.assertEqual(jm._posting_ids(link), {("uuid", u1)}, link)
+        # Elsewhere a UUID still matches feed rows (job_keys) but isn't taken as one posting's id.
+        self.assertEqual(jm.job_keys("https://careers.example/jobs/" + u1), {("uuid", u1)})
+        self.assertEqual(jm._posting_ids("https://careers.example/jobs/" + u1), set())
 
     def test_the_shipped_config_groups_only_the_two_uber_entries(self):
         config = json.loads((REPO_DIR / "config_all.json").read_text())
@@ -1743,6 +1755,20 @@ class EmailBatchTests(MonitorTestCase):
         self.run_batched()  # held for this config's next email
         self.pages[other] = page()
         self.run_monitor([target(name="Other", url=other)], email={"enabled": False})  # e.g. the starter config
+        self.assertEqual([j["title"] for j in self.saved_state()[jm.ALERT_POOL_KEY]], ["Backend Engineer"])
+        self.last_email(hours_ago=3)
+        _, reported = self.run_batched()
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+
+    def test_another_config_with_an_entry_of_the_same_name_leaves_this_configs_alerts_alone(self):
+        other = "https://other.example/careers"
+        self.mark_known(URL, other)
+        self.last_email(hours_ago=0.5)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.run_batched()  # held for this config's next email
+        self.pages[other] = page()
+        _, reported = self.run_monitor([target(url=other)], email={"enabled": False}, config_file="mine.json")
+        self.assertEqual(reported, {})
         self.assertEqual([j["title"] for j in self.saved_state()[jm.ALERT_POOL_KEY]], ["Backend Engineer"])
         self.last_email(hours_ago=3)
         _, reported = self.run_batched()

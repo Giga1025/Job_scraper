@@ -208,7 +208,11 @@ company when their names match ignoring case, punctuation and endings like "Inc"
 script). A paused entry still counts, so what it already emailed isn't sent again by the
 other. (state.json marks each posting an entry found for you with `"reported": "match"` or
 `"reported": "left out"`; postings saved before November 2026 have no mark, so a newly added
-entry may email one of those once more rather than risk hiding it.)
+entry may email one of those once more rather than risk hiding it.) Where it can't be sure,
+it errs toward emailing twice rather than not at all: after you edit or remove one of a
+company's links, a posting that link already emailed may come again from the other; and if
+the entries use different `keyword_filters`, one email can list a posting both as new and
+under "left out".
 
 ### How to figure out `link_selector` and `wait_for`
 

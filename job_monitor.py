@@ -211,6 +211,11 @@ def save_text(path: Path, text: str):
         raise
 
 
+# The config file this run uses (set by ensure_config): postings waiting for its email are
+# marked with it, so another config sharing state.json never takes them by name (see run()).
+_active_config_file = ""
+
+
 def ensure_config(config_override: str | None = None):
     override = config_override or os.environ.get("JOB_MONITOR_CONFIG", "").strip()
     if override:
@@ -239,6 +244,8 @@ def ensure_config(config_override: str | None = None):
                 f"Using {CONFIG_ALL_PATH.name}; {CONFIG_PATH.name} is ignored. "
                 f"To use it, run with --config {CONFIG_PATH.name}."
             )
+    global _active_config_file
+    _active_config_file = os.path.realpath(active_config_path)
     log.info(f"Using config file: {active_config_path.name}")
     return load_json(active_config_path)
 
@@ -2335,8 +2342,9 @@ def run(config_override: str | None = None) -> bool:
     siblings = _sibling_urls(targets)
     # The postings waiting to be emailed are shared with any other config using the same
     # state.json; each config takes only those found by its own targets: the same link, or
-    # the same name, so a posting still waiting when an entry's link is edited (or when one
-    # of a company's several entries is removed) is still emailed.
+    # (for postings this config file queued) the same name, so a posting still waiting when an
+    # entry's link is edited (or one of a company's several entries is removed) is still emailed.
+    this_config = _active_config_file
     own_urls = {t.get("url") for t in targets}
     own_names = {_entry_key(t.get("name")) for t in targets if t.get("url")} - {""}
     new_matches: list[dict] = []
@@ -2376,7 +2384,8 @@ def run(config_override: str | None = None) -> bool:
                          f"found through another {name} entry")
         # "group" is the heading the posting is listed under in emails.
         for job in new_jobs:
-            new_matches.append({**job, "group": _group_name(job, name, is_feed), "source": url, "source_name": name})
+            new_matches.append({**job, "group": _group_name(job, name, is_feed), "source": url, "source_name": name,
+                                "source_config": this_config})
         if show_left_out:
             new_left_out.extend({**job, "group": _group_name(job, name, is_feed)} for job in left_out)
         if not is_feed:
@@ -2395,7 +2404,8 @@ def run(config_override: str | None = None) -> bool:
     record = dict(alerts_add=new_matches, pending_add=new_left_out, left_out_log_add=new_left_out)
 
     pooled = [p for p in state.get(ALERT_POOL_KEY) or []
-              if "source" not in p or p["source"] in own_urls or _entry_key(p.get("source_name")) in own_names]
+              if "source" not in p or p["source"] in own_urls
+              or (p.get("source_config") == this_config and _entry_key(p.get("source_name")) in own_names)]
     alerts = _dedupe_jobs(pooled + new_matches)
     pending = _dedupe_jobs(list(state.get(PENDING_LEFT_OUT_KEY) or []) + new_left_out)
     hours_since_email = _hours_since(state.get(LAST_EMAIL_KEY))
