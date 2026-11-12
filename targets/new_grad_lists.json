@@ -1,0 +1,30 @@
+{
+  "_help": "New-grad lists that people maintain on GitHub. Their postings are emailed like any other (once each), and the companies they link to on Greenhouse, Ashby or Lever are added to the startup boards (targets/startups.json).",
+  "targets": [
+    {
+      "_section": "New-grad lists maintained on GitHub by others (many startups and mid-size companies). A posting already found by a company's own entry above, or by another list, isn't emailed again."
+    },
+    {
+      "name": "SimplifyJobs New Grad",
+      "url": "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
+      "mode": "feed",
+      "format": "simplify",
+      "categories": ["Software", "Software Engineering", "AI/ML/Data", "Data Science, AI & Machine Learning"],
+      "max_age_days": 90
+    },
+    {
+      "name": "speedyapply New Grad SWE",
+      "url": "https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/NEW_GRAD_USA.md",
+      "mode": "feed",
+      "format": "speedyapply",
+      "max_age_days": 120
+    },
+    {
+      "name": "speedyapply New Grad AI",
+      "url": "https://raw.githubusercontent.com/speedyapply/2027-AI-College-Jobs/main/NEW_GRAD_USA.md",
+      "mode": "feed",
+      "format": "speedyapply",
+      "max_age_days": 120
+    }
+  ]
+}

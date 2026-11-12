@@ -277,6 +277,29 @@ class EmailDeliveryTests(MonitorTestCase):
         self.assertEqual([j["title"] for j in self.saved_state()[URL]], ["Data Analyst"])
 
 
+class SplitConfigTests(MonitorTestCase):
+    def test_target_files_are_added_after_the_configs_own_targets(self):
+        (self.tmp / "targets").mkdir()
+        (self.tmp / "targets" / "big.json").write_text(json.dumps({"_help": "x", "targets": [target(name="Big")]}))
+        (self.tmp / "targets" / "small.json").write_text(json.dumps([target(name="Small")]))
+        path = self.tmp / "config_all.json"
+        path.write_text(json.dumps({"targets": [target(name="Own")], "target_files": ["targets/big.json", "targets/small.json"]}))
+        self.assertEqual([t["name"] for t in jm.load_config(path)["targets"]], ["Own", "Big", "Small"])
+
+    def test_a_missing_target_file_stops_the_run(self):
+        path = self.tmp / "config_all.json"
+        path.write_text(json.dumps({"target_files": ["targets/nope.json"]}))
+        with self.assertLogs(jm.log, "ERROR"), self.assertRaises(SystemExit):
+            jm.load_config(path)
+
+    def test_the_shipped_config_is_split_into_three_files(self):
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        self.assertEqual(config["target_files"], ["targets/big_tech.json", "targets/new_grad_lists.json", "targets/startups.json"])
+        modes = [t.get("mode") for t in config["targets"] if not t.get("_section")]
+        self.assertEqual((modes.count("feed"), modes.count("boards")), (3, 1))
+        self.assertGreater(len(modes), 60)
+
+
 class SmtpSecurityTests(MonitorTestCase):
     def test_starttls_verifies_certificate_and_times_out(self):
         self.assertTrue(jm.send_email({"email": WORKING_EMAIL}, ALERTS))
@@ -563,7 +586,7 @@ class PausedTargetTests(MonitorTestCase):
         self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
 
     def test_the_shipped_config_pauses_tesla_and_atlassian_only(self):
-        targets = json.loads((REPO_DIR / "config_all.json").read_text())["targets"]
+        targets = jm.load_config(REPO_DIR / "config_all.json")["targets"]
         paused = [t["name"] for t in targets if t.get("name") and t.get("enabled", True) is False]
         self.assertEqual(paused, ["Tesla", "Atlassian"])
 
@@ -839,7 +862,7 @@ class SameCompanyTests(MonitorTestCase):
         self.assertEqual(jm._posting_ids("https://careers.example/jobs/" + u1), set())
 
     def test_the_shipped_config_groups_only_the_two_uber_entries(self):
-        config = json.loads((REPO_DIR / "config_all.json").read_text())
+        config = jm.load_config(REPO_DIR / "config_all.json")
         targets = [t for t in config["targets"] if not t.get("_section")]
         siblings = jm._sibling_urls(targets)
         uber = {t["url"] for t in targets if t.get("name") == "Uber"}
@@ -2063,9 +2086,248 @@ class FeedTests(MonitorTestCase):
         self.assertEqual(reported, {})
 
     def test_the_shipped_feeds(self):
-        feeds = [t for t in json.loads((REPO_DIR / "config_all.json").read_text())["targets"] if t.get("mode") == "feed"]
+        feeds = [t for t in jm.load_config(REPO_DIR / "config_all.json")["targets"] if t.get("mode") == "feed"]
         self.assertEqual({t["format"] for t in feeds}, {"simplify", "speedyapply"})
         self.assertTrue(all(t["url"].startswith("https://raw.githubusercontent.com/") for t in feeds))
+
+
+GH_ACME = "https://boards-api.greenhouse.io/v1/boards/acme/jobs"
+ASHBY_ZETA = "https://api.ashbyhq.com/posting-api/job-board/zeta"
+INTERNSHIPS_URL = "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json"
+
+
+def gh_link(jid, host="job-boards.greenhouse.io"):
+    return f"https://{host}/acme/jobs/{4000000 + jid}"  # Greenhouse job ids are long numbers
+
+
+def gh_board(*jobs):
+    """A Greenhouse board API response; each job is (id, title[, location])."""
+    return json.dumps({"jobs": [{"id": 4000000 + jid, "title": title, "location": {"name": rest[0] if rest else "New York, NY"},
+                                 "absolute_url": gh_link(jid)} for jid, title, *rest in jobs]})
+
+
+class BoardTests(MonitorTestCase):
+    """Company job boards found through the feeds ("mode": "boards")."""
+
+    def setUp(self):
+        super().setUp()
+        self.patch(jm, "LEVER_DELAY_SECONDS", 0)
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Acme", "New Grad Software Engineer", url=gh_link(1))])
+
+    def boards_entry(self, **extra):
+        return {"name": "Company job boards", "mode": "boards", "every_hours": 1,
+                "tech_titles": ["software", "ml", "infrastructure", "new grad"], **extra}
+
+    def targets(self, **extra):
+        return [target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                       categories=["Software"], max_age_days=7), self.boards_entry(**extra)]
+
+    def run_boards(self, **config_extra):
+        config_extra.setdefault("role_filter", REPO_ROLE_FILTER)
+        config_extra.setdefault("us_only", True)
+        return self.run_monitor(self.targets(), email=WORKING_EMAIL, **config_extra)
+
+    def boards_meta(self):
+        return self.saved_state().get(jm.BOARDS_KEY, {})
+
+    def age_board_check(self, hours=2):
+        meta = self.boards_meta()
+        meta["checked_at"] = (datetime.now() - timedelta(hours=hours)).isoformat(timespec="seconds")
+        jm.save_state({}, boards=meta)
+
+    def board_requests(self, url=GH_ACME):
+        return [u for u, _ in self.requests_made if u == url]
+
+    def start(self, *board_jobs):
+        """Feed and board recorded (silent first checks); the board was just checked."""
+        self.pages[GH_ACME] = gh_board(*board_jobs)
+        self.run_boards()                      # the feed's first check
+        _, reported = self.run_boards()        # finds Acme's board; its first check
+        self.assertEqual(reported, {})
+        self.assertIn(GH_ACME, self.saved_state())
+
+    def test_board_links_are_recognised(self):
+        cases = {
+            "https://job-boards.greenhouse.io/Acme/jobs/123": ("greenhouse", GH_ACME),
+            "https://boards.greenhouse.io/acme/jobs/123?gh_jid=123": ("greenhouse", GH_ACME),
+            "https://job-boards.eu.greenhouse.io/acme/jobs/5": ("greenhouse", GH_ACME),
+            "https://boards.greenhouse.io/embed/job_app?for=acme&token=5": ("greenhouse", GH_ACME),
+            "https://jobs.ashbyhq.com/zeta/0e7ecf76-1111-4a2b-9c3d-000000000001/application": ("ashby", ASHBY_ZETA),
+            "https://jobs.lever.co/Beta/0e7ecf76-1111-4a2b-9c3d-000000000001/apply": ("lever", "https://api.lever.co/v0/postings/beta"),
+            "https://jobs.eu.lever.co/beta/x": ("lever", "https://api.eu.lever.co/v0/postings/beta"),
+        }
+        for link, expected in cases.items():
+            self.assertEqual(jm.board_api_url(link), expected, link)
+        for link in ("https://careers.acme.example/jobs/1", "https://jobs.ashbyhq.com/", "https://boards.greenhouse.io/embed/job_app"):
+            self.assertIsNone(jm.board_api_url(link), link)
+
+    def test_a_board_is_found_through_a_feed_checked_hourly_and_kept_for_good(self):
+        self.start((1, "New Grad Software Engineer"))
+        self.assertEqual(self.boards_meta()["known"]["https://boards-api.greenhouse.io/v1/boards/acme/jobs"]["name"], "Acme")
+        # Within the hour the board isn't asked again.
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Software Engineer, Infrastructure"))
+        before = len(self.board_requests())
+        _, reported = self.run_boards()
+        self.assertEqual((reported, len(self.board_requests())), ({}, before))
+        # An hour later it is, and its new posting is emailed under the company's name.
+        self.age_board_check(hours=1)
+        _, reported = self.run_boards()
+        self.assertEqual(reported, {"Acme": ["Software Engineer, Infrastructure"]})
+        # The feed drops Acme: the board stays.
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Other", "Data Engineer")])
+        self.run_boards()
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Software Engineer, Infrastructure"), (3, "ML Engineer"))
+        _, reported = self.run_boards()
+        self.assertEqual(reported, {"Acme": ["ML Engineer"]})
+
+    def test_only_tech_titles_and_left_outs_are_not_listed(self):
+        self.start((1, "New Grad Software Engineer"))
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Account Executive"), (3, "Senior Software Engineer"),
+                                       (4, "Software Engineer"), (5, "Software Engineer", "London, UK"))
+        _, reported = self.run_boards()
+        self.assertEqual((reported, self.left_out), ({"Acme": ["Software Engineer"]}, {}))
+        self.assertEqual(len(self.saved_state()[GH_ACME]), 5)  # all recorded as seen
+        self.assertEqual(self.saved_state()[GH_ACME][-1], {"title": "New Grad Software Engineer",
+                                                           "url": gh_link(1)})
+
+    def test_an_unchanged_board_answers_304_and_is_not_read(self):
+        self.start((1, "New Grad Software Engineer"))
+        sent = []
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            if url == GH_ACME:
+                sent.append((kwargs.get("headers") or {}).get("If-None-Match"))
+                if sent[-1] == '"v1"':
+                    return FakeResponse("", status_code=304)
+                response = FakeResponse(self.pages[GH_ACME])
+                response.headers["ETag"] = '"v1"'
+                return response
+            return real_get(url, *args, **kwargs)
+
+        self.patch(jm.requests, "get", get)
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Software Engineer"))
+        _, reported = self.run_boards()
+        self.assertEqual((reported, sent), ({"Acme": ["Software Engineer"]}, [None]))
+        self.assertEqual(self.boards_meta()["etags"], {GH_ACME: '"v1"'})
+        self.age_board_check()
+        _, reported = self.run_boards()
+        self.assertEqual((reported, sent), ({}, [None, '"v1"']))
+
+    def test_a_board_that_is_gone_is_tried_again_a_day_later(self):
+        self.start((1, "New Grad Software Engineer"))
+        real_get = self.fake_get
+        self.patch(jm.requests, "get", lambda url, *a, **k: FakeResponse("{}", status_code=404) if url == GH_ACME else real_get(url, *a, **k))
+        self.age_board_check()
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.run_boards()
+        self.assertIn("1 not found", "\n".join(logs.output))
+        self.assertIn(GH_ACME, self.boards_meta()["missing"])
+        self.age_board_check(hours=2)
+        self.patch(jm.requests, "get", lambda url, *a, **k: self.fail("asked a missing board within a day") if url == GH_ACME else real_get(url, *a, **k))
+        self.run_boards()
+        self.assertIn(GH_ACME, self.saved_state())  # its postings are kept
+
+    def test_a_boards_first_check_does_not_hide_a_posting_the_feed_lists_later(self):
+        # The feeds list postings a day or two late: by then the board has recorded it silently.
+        self.start((1, "New Grad Software Engineer"), (7, "Software Engineer II"))
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Acme", "New Grad Software Engineer", url=gh_link(1)),
+            simplify_row("Acme", "Software Engineer II", url=gh_link(7))])
+        _, reported = self.run_boards()
+        self.assertEqual(reported, {"Acme (via SimplifyJobs New Grad)": ["Software Engineer II"]})
+
+    def test_a_posting_is_emailed_once_whether_the_feed_or_the_board_finds_it_first(self):
+        self.start((1, "New Grad Software Engineer"))
+        # The board first, then the feed.
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Software Engineer"))
+        _, reported = self.run_boards()
+        self.assertEqual(reported, {"Acme": ["Software Engineer"]})
+        rows = [simplify_row("Acme", "New Grad Software Engineer", url=gh_link(1)),
+                simplify_row("Acme", "Software Engineer", url=gh_link(2, "boards.greenhouse.io"))]
+        self.pages[SIMPLIFY_URL] = json.dumps(rows)
+        _, reported = self.run_boards()
+        self.assertEqual(reported, {})
+        # The feed first, then the board.
+        rows.append(simplify_row("Acme", "ML Engineer", url=gh_link(3)))
+        self.pages[SIMPLIFY_URL] = json.dumps(rows)
+        _, reported = self.run_boards()
+        self.assertEqual(reported, {"Acme (via SimplifyJobs New Grad)": ["ML Engineer"]})
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Software Engineer"), (3, "ML Engineer"))
+        _, reported = self.run_boards()
+        self.assertEqual(reported, {})
+
+    def test_waiting_board_postings_go_out_on_a_run_that_does_not_check_boards(self):
+        self.start((1, "New Grad Software Engineer"))
+        jm.save_state({}, last_email=(datetime.now() - timedelta(hours=1)).isoformat(timespec="seconds"))
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Software Engineer"))
+        self.run_boards(email_every_hours=2)
+        self.assertEqual(self.emails_attempted, 0)
+        jm.save_state({}, last_email=(datetime.now() - timedelta(hours=3)).isoformat(timespec="seconds"))
+        _, reported = self.run_boards(email_every_hours=2)  # boards not due this run
+        self.assertEqual(reported, {"Acme": ["Software Engineer"]})
+
+    def test_boards_from_the_config_and_from_lists_used_only_to_find_companies(self):
+        self.pages[INTERNSHIPS_URL] = json.dumps([
+            {"url": "https://jobs.ashbyhq.com/zeta/0e7ecf76-1111-4a2b-9c3d-000000000001", "company_name": "Zeta"}])
+        self.pages[ASHBY_ZETA] = json.dumps({"jobs": []})
+        self.pages["https://boards-api.greenhouse.io/v1/boards/gamma/jobs"] = gh_board()
+        targets = [self.boards_entry(
+            find_companies_in=[{"name": "SimplifyJobs Internships", "url": INTERNSHIPS_URL}],
+            companies=[{"name": "Gamma", "link": "https://job-boards.greenhouse.io/gamma"}])]
+        self.run_monitor(targets, email=WORKING_EMAIL)
+        known = {info["name"]: info["via"] for info in self.boards_meta()["known"].values()}
+        self.assertEqual(known, {"Zeta": "SimplifyJobs Internships", "Gamma": "your list"})
+        page = (jm.boards_page_path()).read_text()
+        self.assertIn("| Zeta | [Ashby](https://jobs.ashbyhq.com/zeta) |", page)
+        self.assertIn("| Gamma | [Greenhouse](https://job-boards.greenhouse.io/gamma) |", page)
+
+    def test_a_board_the_config_already_checks_is_not_checked_twice(self):
+        self.mark_known(GH_ACME)
+        self.pages[GH_ACME] = gh_board((1, "Software Engineer"))
+        targets = [target(name="Acme", url=GH_ACME, mode="api"),
+                   self.boards_entry(companies=[{"name": "Acme", "link": "https://job-boards.greenhouse.io/acme"}])]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Software Engineer"]})
+        self.assertEqual(len(self.board_requests()), 1)
+
+    def test_a_board_whose_check_fails_is_read_again_next_time(self):
+        self.start((1, "New Grad Software Engineer"))
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            response = real_get(url, *args, **kwargs)
+            if url == GH_ACME:
+                response.headers["ETag"] = '"v2"'
+            return response
+
+        self.patch(jm.requests, "get", get)
+        real_check = jm.check_target
+        self.patch(jm, "check_target", lambda t, *a, **k: (_ for _ in ()).throw(RuntimeError("boom")) if t.get("_board") else real_check(t, *a, **k))
+        self.age_board_check()
+        with self.assertLogs(jm.log, "ERROR"):
+            self.run_boards()
+        self.assertNotIn(GH_ACME, self.boards_meta().get("etags", {}))
+
+    def test_the_shipped_startup_list_is_all_board_links(self):
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        self.assertGreater(len(entry["companies"]), 40)
+        self.assertEqual([c["name"] for c in entry["companies"] if not jm.board_api_url(c["link"])], [])
+        self.assertTrue(jm._phrase_pattern(entry["tech_titles"]).search("Member of Technical Staff, Inference"))
+
+    def test_lever_eu_boards_are_read_from_the_eu_api(self):
+        self.pages["https://api.eu.lever.co/v0/postings/beta"] = json.dumps(
+            [{"text": "Software Engineer", "hostedUrl": "https://jobs.eu.lever.co/beta/1", "categories": {"location": "Berlin"}}])
+        jobs = jm.fetch_lever_api_jobs("https://api.eu.lever.co/v0/postings/beta")
+        self.assertEqual([j["title"] for j in jobs], ["Software Engineer"])
 
 
 class UsFilterTests(MonitorTestCase):

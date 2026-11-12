@@ -16,7 +16,17 @@ The `playwright install chromium` step downloads a headless Chromium browser (~1
 
 ### 2. Pick a config file
 
-The repo ships `config_all.json` (about 60 companies). Which file is used:
+The repo ships `config_all.json`: your settings (email, filters, schedule), with the companies
+to check split into three files it lists under `target_files`:
+
+| File | What's in it |
+|---|---|
+| `targets/big_tech.json` | Big tech and other companies with a hand-made entry each (finance, crypto, AI labs, data and infrastructure; about 60) |
+| `targets/new_grad_lists.json` | New-grad lists maintained on GitHub by others |
+| `targets/startups.json` | Startups, unicorns and mid-size companies on Greenhouse, Ashby or Lever (see [Startup and mid-size company job boards](#startup-and-mid-size-company-job-boards)) |
+
+Each file holds a list of entries (under `"targets"`); a config can also have its own
+`"targets"` list, checked first. Which config is used:
 
 - `--config <file>` (or the `JOB_MONITOR_CONFIG` environment variable) always wins. A relative
   path is relative to the folder containing `job_monitor.py`. If the file doesn't exist, the
@@ -128,7 +138,7 @@ company ("Clay (via SimplifyJobs New Grad)"). `config_all.json` uses three:
 | [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions) | `simplify` | its `listings.json`: rows in the given `categories` |
 | [speedyapply 2027 SWE](https://github.com/speedyapply/2027-SWE-College-Jobs) and [AI](https://github.com/speedyapply/2027-AI-College-Jobs) | `speedyapply` | the tables in `NEW_GRAD_USA.md` |
 
-Each feed remembers every posting it has listed in the last `max_age_days` (90 for Simplify,
+They live in `targets/new_grad_lists.json`. Each feed remembers every posting it has listed in the last `max_age_days` (90 for Simplify,
 120 for speedyapply) and emails a link it hasn't seen before, whatever its posting date:
 Simplify often adds a posting days or weeks after it went up. Closed postings are remembered
 too but never emailed, so one that is re-opened doesn't come back as new. A posting that was already found,
@@ -138,6 +148,38 @@ compared by company and title. A company's own entry may be filtered (a team, a 
 newest page), so its postings that only a feed lists are still emailed. Your role filter and
 US-only setting apply as usual. Like any new target, a feed's first check records what it
 lists without emailing.
+
+### Startup and mid-size company job boards
+
+Most startups and mid-size companies post on Greenhouse, Ashby or Lever, whose job boards can
+be read one company at a time (none of them offers a list of every company's postings). The
+`"mode": "boards"` entry in `targets/startups.json` checks the whole board of each company
+in a registry that only grows:
+
+- the companies you list under `companies` (a name and a link to the board, or to any of its
+  postings); it ships with about 50 well-known startups,
+- every company the new-grad lists link to on one of those sites, added the first time it
+  shows up,
+- every company the lists under `find_companies_in` link to (SimplifyJobs' internship list:
+  companies that hire interns usually hire new grads too). These lists are only used to find
+  companies; their postings aren't emailed.
+
+A company, once in, stays even when the lists drop it. `boards.md` (on the `monitor-state`
+branch, next to `left_out.md`) lists every board checked, when it was added and where it was
+found. Boards the config already has an entry for aren't checked twice.
+
+The boards are checked about every `every_hours` (1), in parallel, and a company new to the
+registry right away (its first check records its postings without emailing them). Each
+board is asked "anything changed since this version?" (its ETag), so an unchanged one
+answers with no data. A board that no longer exists is tried again a day later.
+
+Only titles containing one of `tech_titles` (software, ML, AI, infrastructure, inference,
+forward deployed, member of technical staff, research engineer/scientist, new grad, ...) are
+considered; then your role filter and US-only setting apply as usual. What they leave out at
+these hundreds of companies (mostly senior roles and internships) is skipped without being
+listed, so the left-out list isn't flooded. Postings are emailed under the company's name, and
+a posting already emailed from a new-grad list isn't emailed again from the board (or the
+other way round).
 
 ### Job-board APIs and US-only
 
@@ -442,7 +484,7 @@ the `schedule:` lines from `.github/workflows/job-monitor.yml`.
   nothing has happened in it for 60 days (it emails you first). The monitor's own saves don't
   count, so if you go two months without pushing anything, click **Enable workflow** on the
   Actions tab (or push any commit) to turn it back on.
-- **Pause one company:** add `"enabled": false` to its entry in `config_all.json` (Tesla and
+- **Pause one company:** add `"enabled": false` to its entry in `targets/big_tech.json` (Tesla and
   Atlassian are paused this way for now). Its saved postings are kept, so when you remove the
   line, only what it posted in the meantime is new.
 - **Watch another page of a company:** add a second entry with the same `name` (see
@@ -465,10 +507,12 @@ run that uses the `monitor-state` branch; after that it isn't used or updated.
 
 | File | Purpose |
 |---|---|
-| `config_all.json` | Shipped list of companies; used by default (see step 2) |
+| `config_all.json` | Shipped settings; used by default (see step 2) |
+| `targets/*.json` | The companies and lists `config_all.json` checks (big tech, new-grad lists, startups) |
 | `config.json` | Your own settings; use it with `--config config.json` if `config_all.json` exists |
 | `state.json` | Postings already seen, and those waiting to be emailed (auto-managed, don't edit; on GitHub it lives on the `monitor-state` branch) |
 | `left_out.md` | Every posting the filters left out in the last 7 days (auto-managed; on the `monitor-state` branch) |
+| `boards.md` | Every startup and mid-size company job board checked (auto-managed; on the `monitor-state` branch) |
 | `.github/workflows/` | The GitHub Actions workflows (job monitor and tests) |
 | `state.json.*` | Lock file and any set-aside unreadable state (auto-managed) |
 | `monitor.log` | Run history and errors |
