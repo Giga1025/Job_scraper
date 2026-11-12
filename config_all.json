@@ -86,6 +86,12 @@
       "mobile"
     ],
     "exclude_non_engineering": [
+      "tutor",
+      "tutors",
+      "trainer",
+      "trainers",
+      "annotator",
+      "annotators",
       "sales",
       "account executive",
       "account manager",

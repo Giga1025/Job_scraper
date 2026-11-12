@@ -2190,8 +2190,23 @@ class BoardTests(MonitorTestCase):
         _, reported = self.run_boards()
         self.assertEqual((reported, self.left_out), ({"Acme": ["Software Engineer"]}, {}))
         self.assertEqual(len(self.saved_state()[GH_ACME]), 5)  # all recorded as seen
-        self.assertEqual(self.saved_state()[GH_ACME][-1], {"title": "New Grad Software Engineer",
-                                                           "url": gh_link(1)})
+        self.assertEqual(self.saved_state()[GH_ACME][-1], {"url": gh_link(1)})  # boards keep only the link
+
+    def test_gig_work_titles_and_skipped_companies_are_left_out(self):
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Acme", "New Grad Software Engineer", url=gh_link(1)),
+            simplify_row("Prolific", "AI Trainer", url="https://jobs.ashbyhq.com/prolific/0e7ecf76-1111-4a2b-9c3d-000000000001")])
+        self.pages["https://api.ashbyhq.com/posting-api/job-board/prolific"] = json.dumps({"jobs": []})
+        self.patch(self, "boards_entry", lambda **extra: {
+            "name": "Company job boards", "mode": "boards", "tech_titles": ["software", "ai"],
+            "skip_titles": ["trainer", "annotation"], "skip_companies": ["Prolific"], **extra})
+        self.start((1, "New Grad Software Engineer"))
+        self.assertNotIn("https://api.ashbyhq.com/posting-api/job-board/prolific", [u for u, _ in self.requests_made])
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "AI Trainer - Fluent Spanish"),
+                                       (3, "Data Annotation Specialist - AI"), (4, "AI Software Engineer"))
+        _, reported = self.run_boards()
+        self.assertEqual(reported, {"Acme": ["AI Software Engineer"]})
 
     def test_an_unchanged_board_answers_304_and_is_not_read(self):
         self.start((1, "New Grad Software Engineer"))

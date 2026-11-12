@@ -1357,7 +1357,8 @@ def job_keys(url: str) -> set[tuple]:
 # parallel (Lever one at a time) with the ETag from the last check, so a board that
 # hasn't changed answers "304 Not Modified" with no body.
 BOARD_WORKERS = 8
-LEVER_DELAY_SECONDS = 1.0
+LEVER_WORKERS = 3            # Lever boards are read at most this many at a time,
+LEVER_DELAY_SECONDS = 0.5    # each reader pausing this long between boards
 BOARD_MISSING_RETRY_HOURS = 24  # a board that answers 404 is tried again a day later
 _GREENHOUSE_BOARD_HOST = re.compile(r"^(?:job-)?boards(?:\.[a-z]{2,3})?\.greenhouse\.io$")
 _BOARD_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
@@ -1483,21 +1484,22 @@ def fetch_boards(boards: list[dict], etags: dict) -> dict[str, tuple]:
             return "failed", None, None
         return "ok", jobs, outcome.get("etag")
 
-    lever = [b for b in boards if _url_key(b["url"]).split("/")[2].endswith("lever.co")]
-    others = [b for b in boards if b not in lever]
+    lever = [b for b in boards if _board_platform(b["url"]) == "lever"]
+    others = [b for b in boards if _board_platform(b["url"]) != "lever"]
     results: dict[str, tuple] = {}
 
-    def lever_one_at_a_time():
-        for i, board in enumerate(lever):
+    def lever_reader(share):
+        for i, board in enumerate(share):
             if i:
                 time.sleep(LEVER_DELAY_SECONDS)
             results[board["url"]] = one(board)
 
-    with ThreadPoolExecutor(max_workers=BOARD_WORKERS) as pool:
-        lever_done = pool.submit(lever_one_at_a_time)
+    with ThreadPoolExecutor(max_workers=BOARD_WORKERS + LEVER_WORKERS) as pool:
+        lever_done = [pool.submit(lever_reader, lever[i::LEVER_WORKERS]) for i in range(LEVER_WORKERS)]
         for board, result in zip(others, pool.map(one, others)):
             results[board["url"]] = result
-        lever_done.result()
+        for done in lever_done:
+            done.result()
     return results
 
 
@@ -1527,11 +1529,14 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
 
     platforms = set(entry.get("platforms") or ("greenhouse", "ashby", "lever"))
     skip = {_url_key(t.get("url")) for t in targets if t.get("url")}
+    skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
     tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
+    skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
     return [{"name": info["name"], "url": info["url"], "mode": "api", "_board": True,
-             "_tech_titles": tech, "_compact": True, "_quiet": True}
+             "_tech_titles": tech, "_skip_titles": skip_titles, "_compact": True, "_quiet": True}
             for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
-            if key not in skip and _board_platform(info["url"]) in platforms]
+            if key not in skip and _board_platform(info["url"]) in platforms
+            and _entry_key(info.get("name")) not in skip_companies]
 
 
 def boards_due(entry: dict, meta: dict) -> bool:
@@ -2520,9 +2525,9 @@ def check_target(
     """Scrape one target, record what it lists in state (as seen), and return its new
     jobs split into (matches, left out by the filters; copies carrying a "reason").
 
-    Company job boards found through the feeds (see discover_boards) come with their
-    postings already fetched ("_prefetched"), only tech titles wanted ("_tech_titles"),
-    a compact record (title and link only) and quiet logging."""
+    Company job boards (see plan_boards) come with their postings already fetched
+    ("_prefetched"), only tech titles wanted ("_tech_titles") minus gig-work titles
+    ("_skip_titles"), a compact record (the link only) and quiet logging."""
     name = target["name"]
     url = target["url"]
     mode = target.get("mode", "html")
@@ -2543,7 +2548,7 @@ def check_target(
     def to_record(jobs):
         if not target.get("_compact"):
             return jobs
-        return [{key: job[key] for key in ("title", "url") if key in job} for job in jobs]
+        return [{"url": job["url"]} for job in jobs]
 
     current_jobs = fetch()
     if current_jobs is None:
@@ -2579,12 +2584,15 @@ def check_target(
         if outside:
             say(f"  [location] Skipped {len(outside)} new posting(s) outside the US")
             new_jobs = [j for j in new_jobs if not is_outside_us(j)]
-    tech = target.get("_tech_titles")
-    if tech is not None:
-        other = [j for j in new_jobs if not tech.search(_title_core(j["title"]))]
+    tech, skip = target.get("_tech_titles"), target.get("_skip_titles")
+    if tech is not None or skip is not None:
+        def wanted(job):
+            title = _title_core(job["title"])
+            return (tech is None or tech.search(title)) and not (skip and skip.search(title))
+        other = [j for j in new_jobs if not wanted(j)]
         if other:
-            say(f"  [tech] Skipped {len(other)} new non-tech posting(s)")
-            new_jobs = [j for j in new_jobs if tech.search(_title_core(j["title"]))]
+            say(f"  [tech] Skipped {len(other)} new posting(s) that aren't tech roles")
+            new_jobs = [j for j in new_jobs if wanted(j)]
     new_jobs, left_out = split_new_jobs(new_jobs, target.get("keyword_filters", default_keywords), role_patterns)
 
     where = f" ({name})" if quiet else ""
@@ -2835,11 +2843,11 @@ def _drop_repeats(jobs: list[dict], state: dict, current_url: str, feed_urls: se
         for job in seen:
             if not isinstance(job, dict) or not job.get("url"):
                 continue
+            if url in board_urls and url != current_url and not job.get(REPORTED_MARK):
+                continue
             job_id = compute_job_id(job)
             if url == current_url and job_id in batch_ids:
                 continue  # these new postings themselves (already merged into this feed's list)
-            if url in board_urls and url != current_url and not job.get(REPORTED_MARK):
-                continue
             known_ids.add(job_id)
             known_keys |= job_keys(job["url"])
             if match_titles and url in feed_urls and url != current_url and str(job.get("first_seen", "")) >= cutoff:
