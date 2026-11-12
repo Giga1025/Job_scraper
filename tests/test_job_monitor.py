@@ -568,6 +568,77 @@ class PausedTargetTests(MonitorTestCase):
         self.assertEqual(paused, ["Tesla", "Atlassian"])
 
 
+class SameCompanyTests(MonitorTestCase):
+    """A company checked through several entries (same name), e.g. its new-grad page and its
+    full US list: each posting is emailed once, whichever entry finds it first."""
+
+    ALL = "https://acme.example/careers/all"
+
+    def test_a_posting_found_through_one_entry_is_not_new_under_another(self):
+        self.mark_known(URL, self.ALL)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[self.ALL] = page()
+        targets = [target(), target(url=self.ALL)]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        # Next run the full list shows it too (and something new): only the new one is emailed.
+        self.pages[self.ALL] = page(*jobs_named("Backend Engineer", "Data Engineer"))
+        with self.assertLogs(jm.log, "INFO") as logs:
+            _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Data Engineer"]})
+        self.assertIn("[same company] 1 of them were already found through another Acme entry", "\n".join(logs.output))
+        self.assertEqual(len(self.saved_state()[self.ALL]), 2)  # still recorded under the second entry
+        # And the other way round: the first entry showing it later doesn't email it again.
+        self.pages[URL] = page(*jobs_named("Backend Engineer", "Data Engineer"))
+        self.emails_attempted = 0
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual((reported, self.emails_attempted), ({}, 0))
+        self.assertEqual(len(self.emails_sent()), 2)
+
+    def test_found_by_both_in_one_run_it_is_listed_once_and_so_is_a_left_out_one(self):
+        self.mark_known(URL, self.ALL)
+        both = page(*jobs_named("Backend Engineer", "Senior Backend Engineer"))
+        self.pages[URL] = self.pages[self.ALL] = both
+        _, reported = self.run_monitor([target(), target(url=self.ALL)], email=WORKING_EMAIL,
+                                       role_filter=REPO_ROLE_FILTER)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.assertEqual(self.left_out, {"Acme": ["Senior Backend Engineer"]})
+
+    def test_the_same_job_number_under_another_link_counts(self):
+        other_site = "https://jobs.acme-careers.example/search"
+        self.mark_known(URL, other_site)
+        self.pages[URL] = page(("backend?gh_jid=7712345", "Backend Engineer"))
+        self.pages[other_site] = page()
+        targets = [target(), target(name="ACME, Inc.", url=other_site)]  # same company, written differently
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
+        self.pages[other_site] = page(("7712345?gh_jid=7712345", "Backend Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+
+    def test_other_companies_and_entries_with_other_filters_stay_apart(self):
+        other = "https://other.example/careers"
+        self.mark_known(URL, self.ALL, other)
+        self.pages[URL] = page(*jobs_named("Backend Engineer"))
+        self.pages[self.ALL] = self.pages[other] = page()
+        # The first entry only shows titles with "Intern", so it records Backend Engineer
+        # without showing it: the second entry must still email it when it lists it.
+        targets = [target(keyword_filters=["Intern"]), target(url=self.ALL), target(name="Other", url=other)]
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+        self.pages[self.ALL] = self.pages[other] = page(*jobs_named("Backend Engineer"))
+        _, reported = self.run_monitor(targets, email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Acme": ["Backend Engineer"], "Other": ["Backend Engineer"]})
+
+    def test_the_shipped_config_groups_only_the_two_uber_entries(self):
+        config = json.loads((REPO_DIR / "config_all.json").read_text())
+        targets = [t for t in config["targets"] if not t.get("_section")]
+        siblings = jm._sibling_urls(targets, config.get("keyword_filters", []), bool(config.get("us_only")))
+        uber = {t["url"] for t in targets if t.get("name") == "Uber"}
+        self.assertEqual(len(uber), 2)
+        self.assertEqual(siblings, {url: uber - {url} for url in uber})
+
+
 class DetectionTests(MonitorTestCase):
     def test_jobs_beyond_the_tenth_link_are_detected(self):
         self.mark_known(URL)

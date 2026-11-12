@@ -2323,6 +2323,7 @@ def run(config_override: str | None = None) -> bool:
     us_only = bool(config.get("us_only", False))
     targets = [t for t in config["targets"] if isinstance(t, dict) and not t.get("_section")]
     feed_urls = {t.get("url") for t in targets if t.get("mode") == "feed"}
+    siblings = _sibling_urls(targets, keywords, us_only)
     # The postings waiting to be emailed are shared with any other config using the same
     # state.json; each config takes only those found by its own targets.
     own_urls = {t.get("url") for t in targets}
@@ -2353,6 +2354,12 @@ def run(config_override: str | None = None) -> bool:
             first_checks.add(url)
         if is_feed:
             new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls) for jobs in (new_jobs, left_out))
+        elif siblings.get(url):
+            found = len(new_jobs) + len(left_out)
+            new_jobs, left_out = (_drop_seen_by(jobs, state, siblings[url]) for jobs in (new_jobs, left_out))
+            if found > len(new_jobs) + len(left_out):
+                log.info(f"  [same company] {found - len(new_jobs) - len(left_out)} of them were already "
+                         f"found through another {name} entry")
         # "group" is the heading the posting is listed under in emails.
         for job in new_jobs:
             new_matches.append({**job, "group": _group_name(job, name, is_feed), "source": url})
@@ -2456,6 +2463,41 @@ def _drop_repeats(jobs: list[dict], state: dict, current_url: str, feed_urls: se
         fresh.append(job)
         known_keys |= keys  # the same job twice in this batch (two links) is listed once
     return fresh
+
+
+def _sibling_urls(targets: list[dict], default_keywords, us_only: bool) -> dict[str, set[str]]:
+    """For each company entry, the URLs of the other entries for the same company: the same
+    name (ignoring case, punctuation and suffixes like "Inc") and the same filters. A company
+    can be checked through several links (say its new-grad page and its full US list), and a
+    posting one of them has already recorded isn't new under another. Entries whose filters
+    differ are kept apart: one of them may have recorded a posting without showing it."""
+    groups: dict[tuple, set[str]] = {}
+    for t in targets:
+        if t.get("mode") == "feed" or not t.get("name") or not t.get("url"):
+            continue
+        filters = (json.dumps(t.get("keyword_filters", default_keywords), sort_keys=True),
+                   bool(t.get("us_only", us_only)))
+        groups.setdefault((company_key(t["name"]), filters), set()).add(t["url"])
+    return {url: urls - {url} for urls in groups.values() if len(urls) > 1 for url in urls}
+
+
+def _drop_seen_by(jobs: list[dict], state: dict, urls) -> list[dict]:
+    """These new postings minus those already recorded under any of these targets (the same
+    link, or the same job number under another link; see job_keys).
+
+    A posting recorded by another entry's first check (its silent baseline) counts as seen
+    too, so one posted in the seconds between two entries' checks of the run that adds the
+    second entry is not emailed, as with any posting listed at a first check."""
+    if not jobs:
+        return jobs
+    known_ids, known_keys = set(), set()
+    for url in urls:
+        seen = state.get(url)
+        for job in seen if isinstance(seen, list) else []:
+            if isinstance(job, dict) and job.get("url"):
+                known_ids.add(compute_job_id(job))
+                known_keys |= job_keys(job["url"])
+    return [j for j in jobs if compute_job_id(j) not in known_ids and not job_keys(j["url"]) & known_keys]
 
 
 def _dedupe_jobs(jobs: list[dict]) -> list[dict]:

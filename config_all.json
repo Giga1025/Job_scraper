@@ -669,6 +669,14 @@
       "link_selector": "a[href^='/en/jobs/'][href$='/']:not([href='/en/jobs/']):not([href*='saved-jobs'])"
     },
     {
+      "_note": "All of Uber's US openings (the entry above is only its University team). Same name, so a posting both list is emailed once.",
+      "name": "Uber",
+      "url": "https://jobs.uber.com/en/jobs/?countries=United+States&pagesize=100",
+      "mode": "browser",
+      "wait_for": "a[href^='/en/jobs/'][href$='/']:not([href='/en/jobs/']):not([href*='saved-jobs'])",
+      "link_selector": "a[href^='/en/jobs/'][href$='/']:not([href='/en/jobs/']):not([href*='saved-jobs'])"
+    },
+    {
       "name": "DoorDash",
       "url": "https://boards-api.greenhouse.io/v1/boards/doordashusa/jobs?departments%5B%5D=89007",
       "mode": "api"

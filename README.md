@@ -195,6 +195,12 @@ Each target has these fields:
 | `link_selector` | No | CSS selector for job links. If empty, uses heuristics |
 | `enabled` | No | `false` pauses the target: it isn't checked, and its saved postings are kept |
 
+**Several links for one company:** add one entry per link and give them the same `name`
+(Uber, for example, has one entry for its University team and one for all its US openings).
+A posting both links show is emailed once, whichever finds it first, and is listed under that
+name. Entries count as the same company when their names match ignoring case, punctuation
+and endings like "Inc", and their filters (`keyword_filters`, `us_only`) are the same.
+
 ### How to figure out `link_selector` and `wait_for`
 
 1. Open the career page in Chrome
@@ -426,6 +432,10 @@ the `schedule:` lines from `.github/workflows/job-monitor.yml`.
 - **Pause one company:** add `"enabled": false` to its entry in `config_all.json` (Tesla and
   Atlassian are paused this way for now). Its saved postings are kept, so when you remove the
   line, only what it posted in the meantime is new.
+- **Watch another page of a company:** add a second entry with the same `name` (see
+  "Several links for one company" under Target Configuration). Its first run records what it
+  lists without emailing; from then on its new postings are emailed, except ones the
+  company's other entry already found.
 
 ### Working on the code from your computer
 
