@@ -1848,6 +1848,25 @@ class FeedTests(MonitorTestCase):
         self.assertEqual(reported, {"Roblox": ["Software Engineer"],
                                     "Roblox (via SimplifyJobs New Grad)": ["ML Engineer, Safety"]})
 
+    def test_a_company_wide_id_in_ashby_links_does_not_make_new_postings_repeats(self):
+        # Simplify links Shield AI's postings as jobs.ashbyhq.com/<company id>/<posting id>/application.
+        org = "f7d8749a-72d6-407c-bf98-292ea630c73a"
+        job1, job2 = "0e7ecf76-1111-4a2b-9c3d-000000000001", "0e7ecf76-2222-4a2b-9c3d-000000000002"
+        first = simplify_row("Shield AI", "Engineer 1 New Grad - Software", url=f"https://jobs.ashbyhq.com/{org}/{job1}/application")
+        second = simplify_row("Shield AI", "Engineer 2 New Grad - Perception", url=f"https://jobs.ashbyhq.com/{org}/{job2}/application")
+        self.mark_known(SIMPLIFY_URL)
+        self.pages[SIMPLIFY_URL] = json.dumps([first])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Shield AI (via SimplifyJobs New Grad)": ["Engineer 1 New Grad - Software"]})
+        self.pages[SIMPLIFY_URL] = json.dumps([first, second])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {"Shield AI (via SimplifyJobs New Grad)": ["Engineer 2 New Grad - Perception"]})
+        # The same posting linked under the board's name is still the same posting.
+        again = simplify_row("Shield AI", "Engineer 2 New Grad - Perception", url=f"https://jobs.ashbyhq.com/shieldai/{job2}")
+        self.pages[SIMPLIFY_URL] = json.dumps([first, second, again])
+        _, reported = self.run_monitor([self.simplify_target()], email=WORKING_EMAIL)
+        self.assertEqual(reported, {})
+
     def test_the_same_job_under_another_link_is_not_new(self):
         boeing = "https://boeing.wd1.myworkdayjobs.com/en-US/{site}/job/Seattle/Software-Application-Tester_JR2026524037{suffix}"
         self.mark_known(SIMPLIFY_URL)

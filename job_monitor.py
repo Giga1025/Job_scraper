@@ -1287,7 +1287,14 @@ def job_keys(url: str) -> set[tuple]:
     keys: set[tuple] = {("gh", v) for v in query.get("gh_jid", []) if v.isdigit()}
     if host.endswith("greenhouse.io"):
         keys |= {("gh", n) for n in re.findall(r"/jobs/(\d{5,})", parsed.path)}
-    keys |= {("uuid", u) for u in _UUID_RE.findall(parsed.path)}
+    if host.endswith(".ashbyhq.com") or host.endswith(".lever.co"):
+        # jobs.ashbyhq.com/<board>/<posting id>, jobs.lever.co/<company>/<posting id>: some
+        # boards are named by a company-wide id (Shield AI's), which isn't the posting's.
+        parts = [p for p in parsed.path.split("/") if p]
+        if len(parts) >= 2 and _UUID_RE.fullmatch(parts[1]):
+            keys.add(("uuid", parts[1]))
+    else:
+        keys |= {("uuid", u) for u in _UUID_RE.findall(parsed.path)}
     if "myworkday" in host:
         token = parsed.path.rstrip("/").rsplit("_", 1)[-1]
         trimmed = re.fullmatch(r"(.*\d.*?)-\d{1,2}", token)
@@ -2487,14 +2494,9 @@ def _posting_ids(url: str) -> set[tuple]:
     id of an Ashby or Lever link (the part after the board name; some boards are named by a
     company-wide id, which isn't one). Other numbers job_keys finds can be shared: Apple uses
     one number for a role in several cities, and a Workday requisition can be posted twice."""
-    keys = {key for key in job_keys(url) if key[0] == "gh"}
-    parsed = urlparse(str(url or "").strip().lower())
-    host = parsed.netloc.removeprefix("www.")
-    parts = [p for p in parsed.path.split("/") if p]
-    if (host.endswith(".ashbyhq.com") or host.endswith(".lever.co")) and len(parts) >= 2 \
-            and _UUID_RE.fullmatch(parts[1]):
-        keys.add(("uuid", parts[1]))  # jobs.ashbyhq.com/<board>/<posting id>, jobs.lever.co/<company>/<posting id>
-    return keys
+    host = urlparse(str(url or "").strip().lower()).netloc
+    ats = host.endswith(".ashbyhq.com") or host.endswith(".lever.co")
+    return {key for key in job_keys(url) if key[0] == "gh" or (key[0] == "uuid" and ats)}
 
 
 def _mark_reported(state: dict, url: str, jobs: list[dict]):
