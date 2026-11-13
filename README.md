@@ -169,9 +169,12 @@ branch, next to `left_out.md`) lists every board checked, when it was added and 
 found. Boards the config already has an entry for aren't checked twice.
 
 The boards are checked about every `every_hours` (1), in parallel, and a company new to the
-registry right away (its first check records its postings without emailing them). Each
-board is asked "anything changed since this version?" (its ETag), so an unchanged one
-answers with no data. A board that no longer exists is tried again a day later.
+registry right away. Its first check records what its board lists and emails only the roles
+posted in the last `catch_up_days` (3) days (Greenhouse, Ashby and Lever give each posting's
+date), so a company's thousands of older postings don't flood your inbox but a role it posted
+yesterday isn't missed. Boards first checked before `catch_up_days` existed are caught up the
+same way once. Each board is asked "anything changed since this version?" (its ETag), so an
+unchanged one answers with no data. A board that no longer exists is tried again a day later.
 
 Only titles containing one of `tech_titles` (software, ML, AI, infrastructure, inference,
 forward deployed, member of technical staff, research engineer/scientist, new grad, ...) are

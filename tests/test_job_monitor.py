@@ -24,7 +24,7 @@ import threading
 import time
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -2106,6 +2106,16 @@ def gh_board(*jobs):
                                  "absolute_url": gh_link(jid)} for jid, title, *rest in jobs]})
 
 
+def gh_dated(*jobs):
+    """A Greenhouse board API response with posting dates; each job is (id, title, posted how
+    many days ago or None[, location])."""
+    now = datetime.now(timezone.utc)
+    return json.dumps({"jobs": [{"id": 4000000 + jid, "title": title, "location": {"name": rest[0] if rest else "New York, NY"},
+                                 "absolute_url": gh_link(jid),
+                                 **({"first_published": (now - timedelta(days=days)).isoformat()} if days is not None else {})}
+                                for jid, title, days, *rest in jobs]})
+
+
 class BoardTests(MonitorTestCase):
     """Company job boards found through the feeds ("mode": "boards")."""
 
@@ -2123,10 +2133,11 @@ class BoardTests(MonitorTestCase):
         return [target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
                        categories=["Software"], max_age_days=7), self.boards_entry(**extra)]
 
-    def run_boards(self, **config_extra):
+    def run_boards(self, boards=None, **config_extra):
+        """One run with the feed and the boards entry (plus the settings in boards)."""
         config_extra.setdefault("role_filter", REPO_ROLE_FILTER)
         config_extra.setdefault("us_only", True)
-        return self.run_monitor(self.targets(), email=WORKING_EMAIL, **config_extra)
+        return self.run_monitor(self.targets(**(boards or {})), email=WORKING_EMAIL, **config_extra)
 
     def boards_meta(self):
         return self.saved_state().get(jm.BOARDS_KEY, {})
@@ -2343,6 +2354,88 @@ class BoardTests(MonitorTestCase):
             [{"text": "Software Engineer", "hostedUrl": "https://jobs.eu.lever.co/beta/1", "categories": {"location": "Berlin"}}])
         jobs = jm.fetch_lever_api_jobs("https://api.eu.lever.co/v0/postings/beta")
         self.assertEqual([j["title"] for j in jobs], ["Software Engineer"])
+
+    def test_posting_dates_are_read_from_each_board(self):
+        self.assertEqual(jm._posted_at("2025-01-28T18:57:29-05:00"), "2025-01-28T23:57:29+00:00")
+        self.assertEqual(jm._posted_at("2026-04-07T17:12:35.753Z"), "2026-04-07T17:12:35+00:00")
+        self.assertEqual(jm._posted_at(1700000000000), "2023-11-14T22:13:20+00:00")
+        for unknown in (None, "", "soon", True, [], 10 ** 20):
+            self.assertIsNone(jm._posted_at(unknown), unknown)
+        self.pages[GH_ACME] = json.dumps({"jobs": [{"id": 4000001, "title": "Software Engineer", "absolute_url": gh_link(1),
+                                                    "first_published": "2026-11-10T09:00:00-05:00"}]})
+        self.pages[ASHBY_ZETA] = json.dumps({"jobs": [{"title": "Software Engineer", "jobUrl": "https://jobs.ashbyhq.com/zeta/1",
+                                                       "publishedAt": "2026-11-10T14:00:00.000+00:00"}]})
+        self.pages["https://api.lever.co/v0/postings/beta"] = json.dumps(
+            [{"text": "Software Engineer", "hostedUrl": "https://jobs.lever.co/beta/1", "createdAt": 1700000000000}])
+        self.assertEqual([jm.fetch_greenhouse_api_jobs(GH_ACME)[0]["posted"], jm.fetch_ashby_api_jobs(ASHBY_ZETA)[0]["posted"],
+                          jm.fetch_lever_api_jobs("https://api.lever.co/v0/postings/beta")[0]["posted"]],
+                         ["2026-11-10T14:00:00+00:00", "2026-11-10T14:00:00+00:00", "2023-11-14T22:13:20+00:00"])
+
+    def test_a_new_companys_first_check_emails_only_its_roles_from_the_last_days(self):
+        catch_up = {"catch_up_days": 3}
+        self.pages[GH_ACME] = gh_dated(
+            (1, "New Grad Software Engineer", 1),           # the new-grad list has it already
+            (2, "Software Engineer", 1),
+            (3, "ML Engineer", 10),                          # too old
+            (4, "Software Engineer, Infrastructure", None),  # no date: can't tell
+            (5, "Senior Software Engineer", 1),              # your role filter
+            (6, "Software Engineer", 2, "London, UK"))       # outside the US
+        self.run_boards(catch_up)               # the feed's first check
+        _, reported = self.run_boards(catch_up)  # finds Acme's board: its first check
+        self.assertEqual(reported, {"Acme": ["Software Engineer"]})
+        self.assertTrue(self.boards_meta()["known"][GH_ACME]["caught_up"])
+        self.assertEqual(len(self.saved_state()[GH_ACME]), 6)  # all recorded
+        # Only once; after that, new postings as usual (and the board is read hourly again).
+        before = len(self.board_requests())
+        self.assertEqual((self.run_boards(catch_up)[1], len(self.board_requests())), ({}, before))
+        self.age_board_check()
+        _, reported = self.run_boards(catch_up)
+        self.assertEqual(reported, {})
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_dated((1, "New Grad Software Engineer", 1), (2, "Software Engineer", 1), (7, "ML Engineer", 30))
+        _, reported = self.run_boards(catch_up)
+        self.assertEqual(reported, {"Acme": ["ML Engineer"]})
+
+    def test_boards_first_checked_before_catching_up_existed_are_caught_up_once(self):
+        jobs = [(1, "New Grad Software Engineer", 1), (2, "Software Engineer", 1), (3, "ML Engineer", 2),
+                (7, "Software Engineer II", 1), (8, "Software Engineer, Payments", 9)]
+        sent = []
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            if url == GH_ACME:
+                body = gh_dated(*jobs)
+                etag = '"%s"' % hashlib.sha256(json.dumps(jobs).encode()).hexdigest()[:8]
+                sent.append((kwargs.get("headers") or {}).get("If-None-Match"))
+                if sent[-1] == etag:
+                    return FakeResponse("", status_code=304)
+                response = FakeResponse(body)
+                response.headers["ETag"] = etag
+                return response
+            return real_get(url, *args, **kwargs)
+
+        self.patch(jm.requests, "get", get)
+        self.run_boards()
+        self.assertEqual(self.run_boards()[1], {})  # Acme's board: a silent first check
+        self.assertNotIn("caught_up", self.boards_meta()["known"][GH_ACME])
+        # Meanwhile the new-grad list emails one of its recent roles, and the board a new one.
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Acme", "New Grad Software Engineer", url=gh_link(1)),
+                                               simplify_row("Acme", "Software Engineer II", url=gh_link(7))])
+        self.assertEqual(self.run_boards()[1], {"Acme (via SimplifyJobs New Grad)": ["Software Engineer II"]})
+        self.age_board_check()
+        jobs.append((9, "Software Engineer, Infrastructure", 0))
+        self.assertEqual(self.run_boards()[1], {"Acme": ["Software Engineer, Infrastructure"]})
+        # Catching up is turned on: the board is read in full right away (not due yet, and
+        # without its ETag, which would answer "unchanged"), and the recent roles not emailed
+        # yet are emailed once.
+        _, reported = self.run_boards({"catch_up_days": 3})
+        self.assertEqual(sorted(reported["Acme"]), ["ML Engineer", "Software Engineer"])
+        self.assertEqual(sent[-1], None)
+        self.assertTrue(self.boards_meta()["known"][GH_ACME]["caught_up"])
+        self.age_board_check()
+        _, reported = self.run_boards({"catch_up_days": 3})
+        self.assertEqual(reported, {})
+        self.assertIsNotNone(sent[-1])  # back to asking "anything changed?"
 
     def test_a_bad_link_in_a_company_list_does_not_stop_the_run(self):
         self.pages[INTERNSHIPS_URL] = json.dumps([

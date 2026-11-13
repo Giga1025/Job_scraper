@@ -36,7 +36,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urljoin
 from urllib.parse import urlparse, urlunparse, parse_qs
@@ -896,6 +896,30 @@ def _query_values(query: dict, *names: str) -> list[str]:
     return [v for name in names for v in query.get(name, []) if v]
 
 
+def _posted_at(value) -> str | None:
+    """When a posting went up, as a UTC time ("2026-11-12T18:57:29+00:00"), from an ISO time
+    (Greenhouse, Ashby) or milliseconds since 1970 (Lever); None if unknown."""
+    try:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            when = datetime.fromtimestamp(value / 1000, timezone.utc)
+        elif isinstance(value, str) and value.strip():
+            when = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        else:
+            return None
+    except (ValueError, OverflowError, OSError):
+        return None
+    when = when.replace(tzinfo=timezone.utc) if when.tzinfo is None else when.astimezone(timezone.utc)
+    return when.isoformat(timespec="seconds")
+
+
+def _posted_since(job: dict, since: datetime) -> bool:
+    """Whether this posting is known to have gone up at or after since (an aware time)."""
+    try:
+        return datetime.fromisoformat(str(job.get("posted"))) >= since
+    except (TypeError, ValueError):
+        return False
+
+
 def fetch_greenhouse_api_jobs(url: str, get_json=None) -> list[dict] | None:
     """https://boards-api.greenhouse.io/v1/boards/<board>/jobs[?departments[]=<id or name>&offices[]=...]"""
     get_json = get_json or _get_json
@@ -930,6 +954,8 @@ def fetch_greenhouse_api_jobs(url: str, get_json=None) -> list[dict] | None:
             "url": _to_text(post["absolute_url"]),
             "location": _to_text((post.get("location") or {}).get("name")),
         }
+        if _posted_at(post.get("first_published")):
+            job["posted"] = _posted_at(post.get("first_published"))
         internal = post.get("internal_job_id")
         if isinstance(internal, (int, str)) and not isinstance(internal, bool) and str(internal).isdigit():
             # The same for every posting of one job, on any of the company's boards.
@@ -970,13 +996,16 @@ def fetch_ashby_api_jobs(url: str, get_json=None) -> list[dict] | None:
             _to_text(((loc.get("address") or {}).get("postalAddress") or {}).get("addressCountry"))
             for loc in [post] + [l for l in post.get("secondaryLocations") or [] if isinstance(l, dict)]
         ]
-        jobs.append({
+        job = {
             "title": _to_text(post["title"])[:200],
             "url": _to_text(post["jobUrl"]),
             "location": "; ".join(_to_text(p) for p in places if _to_text(p)),
             # Only trust countries when every location has one; otherwise the text decides.
             "countries": countries if all(countries) else [],
-        })
+        }
+        if _posted_at(post.get("publishedAt")):
+            job["posted"] = _posted_at(post.get("publishedAt"))
+        jobs.append(job)
     return _dedupe_jobs(jobs)
 
 
@@ -1001,12 +1030,15 @@ def fetch_lever_api_jobs(url: str, get_json=None) -> list[dict] | None:
             continue
         categories = post.get("categories") or {}
         places = categories.get("allLocations") or [categories.get("location")]
-        jobs.append({
+        job = {
             "title": _to_text(post["text"])[:200],
             "url": _to_text(post["hostedUrl"]),
             "location": "; ".join(_to_text(p) for p in places if _to_text(p)),
             "countries": [_to_text(post.get("country"))] if _to_text(post.get("country")) else [],
-        })
+        }
+        if _posted_at(post.get("createdAt")):
+            job["posted"] = _posted_at(post.get("createdAt"))
+        jobs.append(job)
     return _dedupe_jobs(jobs)
 
 
@@ -1518,7 +1550,11 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
 
     The registry grows from the feeds' saved postings (every run), the boards the entry
     lists under "companies", and, when the boards are due, the lists under
-    "find_companies_in" (read only if they changed)."""
+    "find_companies_in" (read only if they changed).
+
+    With "catch_up_days", a board not yet caught up (its registry entry has no "caught_up"
+    date: new, or first checked before catching up existed) gets "_catch_up_since", so the
+    roles it lists that went up in those last days are emailed once (see check_target)."""
     today = datetime.now().date().isoformat()
     known = meta["known"]
     for target in targets:
@@ -1541,8 +1577,15 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
     skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
     tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
     skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
-    return [{"name": info["name"], "url": info["url"], "mode": "api", "_board": True,
-             "_tech_titles": tech, "_skip_titles": skip_titles, "_compact": True, "_quiet": True}
+    try:
+        days = float(entry.get("catch_up_days") or 0)
+    except (TypeError, ValueError):
+        days = 0.0
+    days = min(days, 365.0) if days > 0 else 0.0  # (not a number: 0)
+    since = datetime.now(timezone.utc) - timedelta(days=days) if days else None
+    return [{"name": info["name"], "url": info["url"], "mode": "api", "_board": True, "_board_key": key,
+             "_tech_titles": tech, "_skip_titles": skip_titles, "_compact": True, "_quiet": True,
+             "_catch_up_since": since if since and not info.get("caught_up") else None}
             for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
             if key not in skip and _board_platform(info["url"]) in platforms
             and _entry_key(info.get("name")) not in skip_companies]
@@ -2536,12 +2579,15 @@ def check_target(
 
     Company job boards (see plan_boards) come with their postings already fetched
     ("_prefetched"), only tech titles wanted ("_tech_titles") minus gig-work titles
-    ("_skip_titles"), a compact record (the link only) and quiet logging."""
+    ("_skip_titles"), a compact record (the link only) and quiet logging. A board still to
+    be caught up ("_catch_up_since", a time) also counts as new what it lists that went up
+    since then and wasn't found new before, even at its first check."""
     name = target["name"]
     url = target["url"]
     mode = target.get("mode", "html")
     quiet = bool(target.get("_quiet"))
     say = log.debug if quiet else log.info
+    catch_up = target.get("_catch_up_since")
 
     say(f"Checking: {name}")
     say(f"  URL: {url}")
@@ -2580,15 +2626,25 @@ def check_target(
         # First check of this target: record what's already listed without
         # alerting, so adding a target doesn't email every job it has.
         state[url] = merge_jobs_new_first([], to_record(current_jobs), STATE_RETENTION_PER_TARGET)
-        say(
-            f"  [baseline] First check: recorded {len(current_jobs)} job(s). "
-            f"New postings will be alerted from the next run."
-        )
-        return [], []
-
-    # --- Diff against last run ---
+        if not catch_up:
+            say(
+                f"  [baseline] First check: recorded {len(current_jobs)} job(s). "
+                f"New postings will be alerted from the next run."
+            )
+            return [], []
+        new_jobs = [j for j in current_jobs if _posted_since(j, catch_up)]
+        say(f"  [baseline] First check: recorded {len(current_jobs)} job(s); "
+            f"the {len(new_jobs)} posted in the last few days count as new.")
+    else:
+        # --- Diff against last run ---
+        new_jobs = diff_jobs(previous_jobs, current_jobs)
+        if catch_up:
+            # Recorded at an earlier (silent) first check: what went up recently is new to you.
+            skip_ids = {compute_job_id(j) for j in new_jobs} | {
+                compute_job_id(j) for j in previous_jobs if isinstance(j, dict) and j.get(REPORTED_MARK)}
+            new_jobs += [j for j in current_jobs if _posted_since(j, catch_up) and compute_job_id(j) not in skip_ids]
     # A posting marked "listed": False (closed, e.g. in a feed) is remembered but not alerted.
-    new_jobs = [j for j in diff_jobs(previous_jobs, current_jobs) if j.get("listed", True) is not False]
+    new_jobs = [j for j in new_jobs if j.get("listed", True) is not False]
     if target.get("us_only", us_only):
         outside = [j for j in new_jobs if is_outside_us(j)]
         if outside:
@@ -2613,7 +2669,8 @@ def check_target(
     if left_out:
         log.info(f"  [filtered]{where} {len(left_out)} new posting(s) left out by the filters")
 
-    state[url] = merge_jobs_new_first(previous_jobs, to_record(current_jobs), STATE_RETENTION_PER_TARGET)
+    if previous_jobs is not None:
+        state[url] = merge_jobs_new_first(previous_jobs, to_record(current_jobs), STATE_RETENTION_PER_TARGET)
     return new_jobs, left_out
 
 
@@ -2657,13 +2714,16 @@ def run(config_override: str | None = None) -> bool:
             # The boards are extra: a problem with them mustn't stop everything else.
             log.exception("  Could not plan the company job boards, skipping them this run")
             board_targets, boards_now = [], False
-    # All boards when due; boards new to the registry right away (their silent first check).
-    to_fetch = [b for b in board_targets if boards_on and (boards_now or b["url"] not in state)
+    # All boards when due; boards new to the registry, or still to be caught up, right away
+    # (their first check, which records what they list and emails only what's recent).
+    to_fetch = [b for b in board_targets if boards_on and (boards_now or b["url"] not in state or b["_catch_up_since"])
                 and _hours_since(board_meta["missing"].get(b["url"])) >= BOARD_MISSING_RETRY_HOURS]
     if to_fetch:
         log.info(f"Checking {len(to_fetch)} of {len(board_targets)} company job boards"
-                 f"{'' if boards_now else ' (new ones)'}...")
-        fetched = fetch_boards(to_fetch, {u: e for u, e in board_meta["etags"].items() if u in state})
+                 f"{'' if boards_now else ' (new ones, or catching up)'}...")
+        catching_up = {b["url"] for b in to_fetch if b["_catch_up_since"]}
+        fetched = fetch_boards(to_fetch, {u: e for u, e in board_meta["etags"].items()
+                                          if u in state and u not in catching_up})
     targets = targets + board_targets
     board_urls = {b["url"] for b in board_targets}
     siblings = _sibling_urls(targets)
@@ -2711,6 +2771,8 @@ def run(config_override: str | None = None) -> bool:
                 board_meta["etags"][url] = etag
             else:
                 board_meta["etags"].pop(url, None)
+            if target.get("_catch_up_since") and target.get("_board_key") in board_meta["known"]:
+                board_meta["known"][target["_board_key"]]["caught_up"] = datetime.now().date().isoformat()
         if is_feed:
             new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls, board_urls) for jobs in (new_jobs, left_out))
         elif is_board:
