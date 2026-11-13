@@ -1,5 +1,5 @@
 {
-  "_help": "Startups, unicorns and mid-size companies on Greenhouse, Ashby or Lever. The whole job board of each is checked about every hour (every_hours) for tech roles. Besides the companies listed here, every company that the new-grad lists (targets/new_grad_lists.json) or the lists under find_companies_in link to is added automatically and stays; boards.md on the monitor-state branch lists all of them. To add one yourself, add {\"name\": ..., \"link\": ...} under companies, with a link to its board or any of its postings. Companies under skip_companies are never checked, and titles with a skip_titles word (gig work like AI training or data labeling) are dropped; keep that list to words that don't also name engineering work (\"annotator\", not \"annotation\"). \"enabled\": false pauses all of the boards.",
+  "_help": "Startups, unicorns and mid-size companies on Greenhouse, Ashby or Lever. The whole job board of each is checked about every hour (every_hours) for tech roles. Besides the companies listed here, every company that the new-grad lists (targets/new_grad_lists.json) or the lists under find_companies_in link to is added automatically and stays; boards.md on the monitor-state branch lists all of them. A company's first check records what its board lists and emails only the roles posted in the last catch_up_days days. To add one yourself, add {\"name\": ..., \"link\": ...} under companies, with a link to its board or any of its postings. Companies under skip_companies are never checked, and titles with a skip_titles word (gig work like AI training or data labeling) are dropped; keep that list to words that don't also name engineering work (\"annotator\", not \"annotation\"). \"enabled\": false pauses all of the boards.",
   "targets": [
     {
       "_section": "═══════ STARTUP AND MID-SIZE COMPANY JOB BOARDS ═══════"
@@ -8,6 +8,7 @@
       "name": "Company job boards",
       "mode": "boards",
       "every_hours": 1,
+      "catch_up_days": 3,
       "platforms": ["greenhouse", "ashby", "lever"],
       "find_companies_in": [
         {"name": "SimplifyJobs Internships", "url": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json"}
