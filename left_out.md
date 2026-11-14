@@ -1,0 +1,835 @@
+# Left out by your filters
+
+Postings from the last 7 days that your role filter left out, newest first, so a role with an unusual title isn't missed. Written by the job monitor; to change what is left out, edit `role_filter` in config_all.json.
+
+## 2026-11-14
+
+- [Research Scientist Intern, Central Applied Science (PhD) Menlo Park, CA ⋅ New York, NY Research](https://www.metacareers.com/profile/job_details/1582569213186235) · Meta · *internship (Intern)*
+- [Research Scientist Intern, FM Quality ML (PhD) Menlo Park, CA AI Research Research University Grad - PhD & Postdoc](https://www.metacareers.com/profile/job_details/1125383989877928) · Meta · *internship (Intern)*
+- [Research Scientist Intern, Ads Quality (PhD) Menlo Park, CA AI Research Research University Grad - PhD & Postdoc](https://www.metacareers.com/profile/job_details/1838454487574865) · Meta · *internship (Intern)*
+- [Research Scientist Intern, AI Agents and Machine Learning (PhD) Sunnyvale, CA ⋅ Menlo Park, CA AI Research Internship - PhD Research](https://www.metacareers.com/profile/job_details/1826604892017856) · Meta · *internship (Intern)*
+- [CPU Microarchitect / RTL Design Engineer](https://jobs.apple.com/en-us/details/200694855-3760/cpu-microarchitect-rtl-design-engineer?team=HRDWR) · Apple · *not software (RTL)*
+- [Associate Banker, 30 Hours, Newnan, GA - Bullsboro and Newnan Crossing Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808587) · JPMorgan Chase · Newnan, GA, United States · *not engineering (Associate Banker)*
+- [Staff Technical Program Manager - Program Management (Tech)](https://jobs.uber.com/en/jobs/303000/) · Uber · *senior (Staff)*
+- [Corporate Counsel, Public Reporting](https://job-boards.greenhouse.io/anthropic/jobs/5462511008) · Anthropic · San Francisco, CA \| New York City, NY · *not engineering (Counsel)*
+- [Corporate Development Integration Manager Menlo Park, CA Business Development & Partnerships Business Development](https://www.metacareers.com/profile/job_details/870265539483095) · Meta · *senior (Manager)*
+- [Senior Manager, People Partner - LATAM](https://jobs.ashbyhq.com/snowflake/b33aa9ae-b4a1-4539-b47b-60517ff9f3d0) · Snowflake · *senior (Senior)*
+- [Director of Software Engineering](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801278) · JPMorgan Chase · Plano, TX, United States · *senior (Director)*
+- [Cook](https://job-boards.greenhouse.io/xai/jobs/5214370007) · xAI (Grok) · Palo Alto, CA · *not engineering (Cook)*
+- [Staff / Principal ML Infrastructure Engineer](https://jobs.apple.com/en-us/details/200695047-0836/staff-principal-ml-infrastructure-engineer?team=SFTWR) · Apple · *senior (Staff)*
+- [Applied Science: PhD Internship Opportunities, Turing](https://apply.careers.microsoft.com/careers/job/1970393557050154) · Microsoft — US Entry Level · *internship (Internship)*
+- [Product Manager: Internship Opportunities](https://apply.careers.microsoft.com/careers/job/1970393556953113) · Microsoft — US Entry Level · *senior (Manager)*
+- [Data Science: PhD Internship Opportunities - Redmond](https://apply.careers.microsoft.com/careers/job/1970393556982928) · Microsoft — US Entry Level · *internship (Internship)*
+- [Software Engineer, Teamwork Experiences Internship Opportunities](https://apply.careers.microsoft.com/careers/job/1970393557037859) · Microsoft — US Entry Level · *internship (Internship)*
+- [Applied Scientist: Internship Opportunities, Turing](https://apply.careers.microsoft.com/careers/job/1970393557050150) · Microsoft — US Entry Level · *internship (Internship)*
+- [Applied Science: Internship Opportunities - Redmond](https://apply.careers.microsoft.com/careers/job/1970393556986141) · Microsoft — US Entry Level · *internship (Internship)*
+- [Applied Science: PhD Internship Opportunities - Multiple Locations](https://apply.careers.microsoft.com/careers/job/1970393556986140) · Microsoft — US Entry Level · *internship (Internship)*
+- [Senior Product Marketing Manager](https://apply.careers.microsoft.com/careers/job/1970393557044860) · Microsoft — US Entry Level · *senior (Senior)*
+- [Sr Product Marketing Manager - Agentic Security Demos](https://apply.careers.microsoft.com/careers/job/1970393557070183) · Microsoft — US Entry Level · *senior (Sr)*
+- [Senior Product Marketing Manager - Azure](https://apply.careers.microsoft.com/careers/job/1970393557055981) · Microsoft — US Entry Level · *senior (Senior)*
+- [Sr. Electrical Engineer, Prime Air Perception](https://www.amazon.jobs/en/jobs/10605151/sr-electrical-engineer-prime-air-perception) · Amazon · *senior (Sr)*
+- [Sr. Aerospace Hardware Reliability Engineer, Prime Air](https://www.amazon.jobs/en/jobs/10605146/sr-aerospace-hardware-reliability-engineer-prime-air) · Amazon · *senior (Sr)*
+- [Research Scientist Intern, Integrity (Trust and Safety) AI (PhD) Bellevue, WA ⋅ Seattle, WA AI Research Internship - PhD Research](https://www.metacareers.com/profile/job_details/1105933535765181) · Meta · *internship (Intern)*
+- [Research Scientist Intern, Scam and Trust (PhD) Menlo Park, CA AI Research Internship - PhD Research Artificial Intelligence](https://www.metacareers.com/profile/job_details/2355649268510104) · Meta · *internship (Intern)*
+- [HR Business Partner, GTM](https://jobs.ashbyhq.com/openai/695f73a5-00f5-416a-8939-78571263819b) · OpenAI · San Francisco; New York City · *not engineering (HR)*
+- [Senior Software Engineer, Roblox OS](https://careers.roblox.com/jobs/8350723?gh_jid=8350723) · Roblox · San Mateo, CA, United States · *senior (Senior)*
+- [Software Engineering Program Manager - visionOS](https://jobs.apple.com/en-us/details/200694999-3956/software-engineering-program-manager-visionos?team=SFTWR) · Apple · *senior (Manager)*
+- [Research Scientist Intern PhD, PAR Safety Evals and Red Teaming Bellevue, WA ⋅ Menlo Park, CA ⋅ New York, NY Internship - PhD Research](https://www.metacareers.com/profile/job_details/1903232531024141) · Meta · *internship (Intern)*
+- [Marketing MBA Internship Opportunities, United States](https://apply.careers.microsoft.com/careers/job/1970393556962236) · Microsoft — US Entry Level · *internship (Internship)*
+- [Data Center Infrastructure Engineer Intern, Summer 2027 - East](https://www.amazon.jobs/en/jobs/10605141/data-center-infrastructure-engineer-intern-summer-2027-east) · Amazon · *internship (Intern)*
+- [Senior Engineering Manager - Control Plane & Regulatory and Sovereign Cloud](https://jobs.ashbyhq.com/snowflake/b67291f8-f05d-4c29-ac08-55b831f2861d) · Snowflake · *senior (Senior)*
+- [Gen AI Portfolio Intake Program Manager](https://jobs.apple.com/en-us/details/200692635-0157/gen-ai-portfolio-intake-program-manager?team=MLAI) · Apple · *senior (Manager)*
+- [Gen AI Portfolio Intake Program Manager](https://jobs.apple.com/en-us/details/200692635-3956/gen-ai-portfolio-intake-program-manager?team=MLAI) · Apple · *senior (Manager)*
+- [Senior Legal Counsel – Home and Wearables Product Counsel](https://jobs.apple.com/en-us/details/200689996-0836/senior-legal-counsel-home-and-wearables-product-counsel?team=CORSV) · Apple · *senior (Senior)*
+- [Channel Activation Lead](https://jobs.apple.com/en-us/details/200695056-0670/channel-activation-lead?team=MKTG) · Apple · *senior (Lead)*
+- [Data Center Infrastructure Engineer Intern, Summer 2027 - West Coast](https://www.amazon.jobs/en/jobs/10605132/data-center-infrastructure-engineer-intern-summer-2027-west-coast) · Amazon · *internship (Intern)*
+- [Director of Software Engineering, Central Integrity Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Washington, DC ⋅ New York, NY Software Engineering Engineering](https://www.metacareers.com/profile/job_details/1143943474645049) · Meta · *senior (Director)*
+- [Senior Product Manager, Tableau Applied AI](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Senior-Product-Manager--Tableau-Applied-AI_JR367767) · Salesforce · *senior (Senior)*
+- [Product Controller](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807057) · JPMorgan Chase · Brooklyn, NY, United States · *not engineering (Controller)*
+- [Sr Manager, Workplace](https://jobs.uber.com/en/jobs/304299/) · Uber · *senior (Sr)*
+- [Staff Software Engineer - Android, Mobile Networking](https://jobs.uber.com/en/jobs/304519/) · Uber · *senior (Staff)*
+- [Camera Competitive Intelligence & Strategy Lead](https://jobs.apple.com/en-us/details/200686608-0836/camera-competitive-intelligence-strategy-lead?team=HRDWR) · Apple · *senior (Lead)*
+- [Drone Avionics Electrical Engineer, Prime Air](https://www.amazon.jobs/en/jobs/10605115/drone-avionics-electrical-engineer-prime-air) · Amazon · *not software (Electrical)*
+- [Technical Program Manager, AI/ML Sunnyvale, CA ⋅ Bellevue, WA ⋅ Menlo Park, CA Product Management Technical Program Management Program Management](https://www.metacareers.com/profile/job_details/4522463481232421) · Meta · *senior (Manager)*
+- [Director and Associate General Counsel, Banking and Credit Cards](https://boards.greenhouse.io/robinhood/jobs/8379461?t=gh_src=&gh_jid=8379461) · Robinhood · Menlo Park, CA; New York, NY; Washington, DC · *senior (Director)*
+- [Lead Software Engineer - Infrastructure Platforms](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801711) · JPMorgan Chase · Plano, TX, United States · *senior (Lead)*
+- [Associate Banker, 30 Hours, Albuquerque, NM - Paseo Del Norte and Wyoming Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807904) · JPMorgan Chase · Albuquerque, NM, United States · *not engineering (Associate Banker)*
+- [Growth Product Marketing Manager](https://jobs.ashbyhq.com/openai/10c7fcdc-1f07-41e3-8e37-4d930898a648) · OpenAI · San Francisco; New York City · *senior (Manager)*
+- [Travel & Expense Operations Specialist](https://jobs.intuit.com/job/texas/travel-and-expense-operations-specialist/27595/103274381184) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *not engineering (Operations)*
+- [Senior Strategic Sourcing Manager, Corporate Services](https://jobs.intuit.com/job/san-diego/senior-strategic-sourcing-manager-corporate-services/27595/103274381152) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *senior (Senior)*
+- [Manager 3, AI Science](https://jobs.intuit.com/job/mountain-view/manager-3-ai-science/27595/103274381136) · Intuit (TurboTax / QuickBooks) · Mountain View, California · *senior (Manager)*
+- [Manager, Payroll Tax Operations](https://jobs.intuit.com/job/atlanta/manager-payroll-tax-operations/27595/103274381120) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *senior (Manager)*
+- [Senior Software Engineer, Data Engineering](https://careers.roblox.com/jobs/8366921?gh_jid=8366921) · Roblox · San Mateo, CA, United States · *senior (Senior)*
+- [Sr. Software Engineer, AI & Data Platforms (AiDP)](https://jobs.apple.com/en-us/details/200694233-3956/sr-software-engineer-ai-data-platforms-aidp?team=SFTWR) · Apple · *senior (Sr)*
+- [Sr. Platform Software Engineer, AI & Data Platforms (AiDP)](https://jobs.apple.com/en-us/details/200692913-3956/sr-platform-software-engineer-ai-data-platforms-aidp?team=SFTWR) · Apple · *senior (Sr)*
+- [Sr. Drone Avionics Electrical Engineer, Prime Air](https://www.amazon.jobs/en/jobs/10605096/sr-drone-avionics-electrical-engineer-prime-air) · Amazon · *senior (Sr)*
+- [Data Science Director Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA Data & Analytics Data Science](https://www.metacareers.com/profile/job_details/2299119854163905) · Meta · *senior (Director)*
+- [Summer 2027 Intern - Sales Immersion, Financial Services](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/New-York---New-York/Summer-2027-Intern---Sales-Immersion--Financial-Services_JR368293-1) · Salesforce · *internship (Intern)*
+- [Petroleum Engineering Lead- Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807572) · JPMorgan Chase · Houston, TX, United States · *senior (Lead)*
+
+## 2026-11-13
+
+- [Sr. Software Engineer, Distributed Systems - Platform Apps & Technologies](https://jobs.apple.com/en-us/details/200694527-0836/sr-software-engineer-distributed-systems-platform-apps-technologies?team=SFTWR) · Apple · *senior (Sr)*
+- [Senior Software Power Systems Engineer](https://jobs.apple.com/en-us/details/200694630-3543/senior-software-power-systems-engineer?team=SFTWR) · Apple · *senior (Senior)*
+- [Forecasting Manager, Amazon Advertising](https://www.amazon.jobs/en/jobs/10605083/forecasting-manager-amazon-advertising) · Amazon · *senior (Manager)*
+- [Risk, Operational Risk, Vice President, New York New York · United States · Vice President](https://higher.gs.com/roles/150019) · Goldman Sachs · *senior (Vice President)*
+- [Head of Technical Success, HR Business Partner – Go-to-Market](https://jobs.ashbyhq.com/openai/57486b6e-0b23-4fec-9c35-5efb63fa521a) · OpenAI · San Francisco · *senior (Head of)*
+- [Director, Growth Sales (AI & Digital Natives)](https://boards.greenhouse.io/cloudflare/jobs/8383781?gh_jid=8383781) · Cloudflare · Hybrid · *senior (Director)*
+- [Procedures & Quality Associate - Pilot Support Team](https://job-boards.greenhouse.io/figureai/jobs/4729424006) · Figure (via SimplifyJobs New Grad) · San Jose, CA · *not engineering (Support)*
+- [Data Collection Quality Support - Pilot Support Team](https://job-boards.greenhouse.io/figureai/jobs/4729425006) · Figure (via SimplifyJobs New Grad) · San Jose, CA · *not engineering (Support)*
+- [Operations Analyst](https://careers-gdms.icims.com/jobs/81473/job?mobile=true&needsRedirect=false) · General Dynamics Mission Systems (via SimplifyJobs New Grad) · Pittsburgh, PA · *not engineering (Operations)*
+- [People Planning Operations Analyst](https://jobs.apple.com/en-us/details/200694921-0157/people-planning-operations-analyst?team=SLDEV) · Apple · *not engineering (People)*
+- [Transportation Operations Manager](https://www.amazon.jobs/en/jobs/10605054/transportation-operations-manager) · Amazon · *senior (Manager)*
+- [Executive Assistant Cto Team Lead](https://plaid.com/careers/openings/executive/san-francisco-hq/executive-assistant-cto-team-lead/) · Plaid · *senior (Lead)*
+- [Tech Risk and Controls Senior Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799605) · JPMorgan Chase · Plano, TX, United States · *senior (Senior)*
+- [Technical Program Manager I, Data Center Networking, Cloud Network](https://www.google.com/about/careers/applications/jobs/results/114909851020075718-technical-program-manager-i-data-center-networking-cloud-network?location=United+States&target_level=EARLY&sort_by=date) · Google / Alphabet · *senior (Manager)*
+- [Senior Systems Prototype Engineer - Apple Vision Pro](https://jobs.apple.com/en-us/details/200693891-3749/senior-systems-prototype-engineer-apple-vision-pro?team=HRDWR) · Apple · *senior (Senior)*
+- [AIML - Sr Data Scientist, Evaluation](https://jobs.apple.com/en-us/details/200695022-0836/aiml-sr-data-scientist-evaluation?team=MLAI) · Apple · *senior (Sr)*
+- [Sr. HW Regulatory Compliance Engineer](https://www.amazon.jobs/en/jobs/10605000/sr-hw-regulatory-compliance-engineer) · Amazon · *senior (Sr)*
+- [Account Executive, Model AI API Austin, TX ⋅ New York, NY ⋅ San Francisco, CA Sales & Marketing Sales](https://www.metacareers.com/profile/job_details/1179617661387917) · Meta · *not engineering (Account Executive)*
+- [Data Center Technician Temple, TX Data Center Data Center Operations](https://www.metacareers.com/profile/job_details/2087120945504482) · Meta · *not engineering (Technician)*
+- [Strategic Sourcing Manager, Intern Menlo Park, CA Internship - Engineering, Tech & Design Internship - Business Program Management](https://www.metacareers.com/profile/job_details/1819500979094439) · Meta · *senior (Manager)*
+- [Futures Compliance Senior Specialist](https://boards.greenhouse.io/robinhood/jobs/8367410?t=gh_src=&gh_jid=8367410) · Robinhood · Chicago, IL · *senior (Senior)*
+- [Senior Data Scientist, Experimentation](https://boards.greenhouse.io/robinhood/jobs/8356065?t=gh_src=&gh_jid=8356065) · Robinhood · Menlo Park, CA · *senior (Senior)*
+- [Area Manager II](https://www.amazon.jobs/en/jobs/10604999/area-manager-ii) · Amazon · *senior (Manager)*
+- [Area Manager, Early Career (2027) – Cleveland & Akron, Ohio](https://www.amazon.jobs/en/jobs/10604985/area-manager-early-career-2027-cleveland-akron-ohio) · Amazon · *senior (Manager)*
+- [Senior Technical Program Manager - Digital Enterprise Technology](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Texas---Dallas/Senior-Technical-Program-Manager---Digital-Enterprise-Technology_JR367301) · Salesforce · *senior (Senior)*
+- [Sr Product Manager, Technical](https://paypal.eightfold.ai/careers/job/274923424744) · PayPal · *senior (Sr)*
+- [Sr Product Manager](https://paypal.eightfold.ai/careers/job/274923423241) · PayPal · *senior (Sr)*
+- [Director, Product Growth](https://paypal.eightfold.ai/careers/job/274923349636) · PayPal · *senior (Director)*
+- [Sr Manager, Product Growth](https://paypal.eightfold.ai/careers/job/274923349588) · PayPal · *senior (Sr)*
+- [Sr Manager, Product Growth](https://paypal.eightfold.ai/careers/job/274923349586) · PayPal · *senior (Sr)*
+- [Sr. Manager of Software Engineering](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210788696) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Sr)*
+- [Risk Management & Compliance – AI Enablement Senior Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210794405) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Senior)*
+- [Lead Infrastructure Engineer](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804550) · JPMorgan Chase · OH, United States · *senior (Lead)*
+- [CMC & Manufacturing Lead, Life Sciences](https://job-boards.greenhouse.io/anthropic/jobs/5481396008) · Anthropic · Remote-Friendly, United States · *senior (Lead)*
+- [GTM Narrative Lead](https://job-boards.greenhouse.io/anthropic/jobs/5481671008) · Anthropic · San Francisco, CA \| New York City, NY · *senior (Lead)*
+- [Technical Program Manager, Life Sciences Research (Genetic Medicine)](https://job-boards.greenhouse.io/anthropic/jobs/5481980008) · Anthropic · Boston, MA; San Francisco, CA \| New York City, NY \| Seattle, WA · *senior (Manager)*
+- [GTM Strategy & Operations, Generalist](https://jobs.ashbyhq.com/openai/58b0c1ff-9a9a-4a8a-a7eb-97618713574d) · OpenAI · San Francisco · *not engineering (GTM)*
+- [Strategy & Execution Manager - Deal Desk Transformation](https://databricks.com/company/careers/open-positions/job?gh_jid=8762400002) · Databricks · Mountain View, California; San Francisco, California · *senior (Manager)*
+- [Senior Product Delivery Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210787447) · JPMorgan Chase · Newark, DE, United States · *senior (Senior)*
+- [Lead Infrastructure Engineer - VMware, Red Hat, Kubernetes, Terraform](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803486) · JPMorgan Chase · Plano, TX, United States · *senior (Lead)*
+- [EHS Specialist](https://www.amazon.jobs/en/jobs/10604971/ehs-specialist) · Amazon · *not engineering (Specialist)*
+- [Product Marketing Leader, Facebook Monetization Menlo Park, CA Sales & Marketing Product Marketing Management](https://www.metacareers.com/profile/job_details/1676434554059815) · Meta · *senior (Leader)*
+- [Mechanical Design Engineer, Robotics Sustaining Engineering Redmond, WA Research](https://www.metacareers.com/profile/job_details/2279041119514008) · Meta · *not software (Mechanical)*
+- [Product Manager Burlingame, CA Product Management Product Strategy](https://www.metacareers.com/profile/job_details/1106171345544959) · Meta · *senior (Manager)*
+- [Strategic Sourcing Manager Intern — Reality Labs Hardware (2027) Internship - Engineering, Tech & Design Internship - Business Program Management](https://www.metacareers.com/profile/job_details/1632929388311563) · Meta · *senior (Manager)*
+- [Head of Enterprise, West](https://stripe.com/jobs/search?gh_jid=8382000) · Stripe · San Francisco, Seattle, Chicago or Remote · *senior (Head of)*
+- [Corporate Finance Intern (Summer 2027)](https://boards.greenhouse.io/robinhood/jobs/8357464?t=gh_src=&gh_jid=8357464) · Robinhood · New York, NY · *internship (Intern)*
+- [Transactions Specialist I - Data Entry – 2nd Shift](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210768859) · JPMorgan Chase · Binghamton, NY, United States · *not engineering (Specialist)*
+- [Lead Software Engineer - Salesforce- Business Banking](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803861) · JPMorgan Chase · Plano, TX, United States · *senior (Lead)*
+- [Credit Card: Customer Service Account Specialist I](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806758) · JPMorgan Chase · Heathrow, FL, United States · *not engineering (Customer Service)*
+- [Director, Support Operations Strategy & Governance](https://jobs.uber.com/en/jobs/304884/) · Uber · *senior (Director)*
+- [Principal University Recruiter](https://jobs.uber.com/en/jobs/304321/) · Uber · *senior (Principal)*
+- [Sr Manager, Recruiting](https://jobs.uber.com/en/jobs/304684/) · Uber · *senior (Sr)*
+- [Account Manager, Eats Franchise Enterprise](https://jobs.uber.com/en/jobs/304166/) · Uber · *senior (Manager)*
+- [Senior Engineering Program Manager, Infrastructure Services](https://jobs.apple.com/en-us/details/200694973-3401/senior-engineering-program-manager-infrastructure-services?team=SFTWR) · Apple · *senior (Senior)*
+- [Sr Software Engineer, Infrastructure Services](https://jobs.apple.com/en-us/details/200694982-3401/sr-software-engineer-infrastructure-services?team=SFTWR) · Apple · *senior (Sr)*
+- [Sr Software Engineer, Infrastructure Services](https://jobs.apple.com/en-us/details/200694981-3401/sr-software-engineer-infrastructure-services?team=SFTWR) · Apple · *senior (Sr)*
+- [Network Circuit Provisioning Manager, Infrastructure Services](https://jobs.apple.com/en-us/details/200694991-1025/network-circuit-provisioning-manager-infrastructure-services?team=SFTWR) · Apple · *senior (Manager)*
+- [Hardware Reliability Engineer - Mac System Reliability](https://jobs.apple.com/en-us/details/200684228-0157/hardware-reliability-engineer-mac-system-reliability?team=HRDWR) · Apple · *not software (Hardware)*
+- [Sr. Construction Program Manager, Worldwide Grocery Stores - Growth & Development](https://www.amazon.jobs/en/jobs/10604906/sr-construction-program-manager-worldwide-grocery-stores-growth-development) · Amazon · *senior (Sr)*
+- [Prime Air Ground Handler, Amazon Prime Air](https://www.amazon.jobs/en/jobs/10604908/prime-air-ground-handler-amazon-prime-air) · Amazon · *not engineering (Handler)*
+- [Optical Systems Liaison Engineer, Optical Inter-Satellite Link](https://www.amazon.jobs/en/jobs/10604911/optical-systems-liaison-engineer-optical-inter-satellite-link) · Amazon · *not software (Optical)*
+- [HR Business Partner, Meta Superintelligence Labs (MSL) Menlo Park, CA People & Recruiting HR](https://www.metacareers.com/profile/job_details/3455551204832865) · Meta · *not engineering (HR)*
+- [Senior Production Support Engineer](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Senior-Production-Support-Engineer_JR368302) · Salesforce · *senior (Senior)*
+- [Director, Software Engineering – Availability Engineering](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Director--Software-Engineering---Availability-Engineering_JR366828-1) · Salesforce · *senior (Director)*
+- [Director of Product Management](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Director-of-Product-Management_JR366531) · Salesforce · *senior (Director)*
+- [Executive Assistant/Senior Executive Assistant](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Executive-Assistant-Senior-Executive-Assistant_JR368394) · Salesforce · *senior (Senior)*
+- [Head of Enterprise Sales, Marketplaces](https://stripe.com/jobs/search?gh_jid=8382002) · Stripe · US-Chicago, US-Seattle, US-San Francisco, US-Remote · *senior (Head of)*
+- [Chase Modeling - Applied AI ML Senior Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210706883) · JPMorgan Chase · New York, NY, United States · *senior (Senior)*
+- [Associate Banker, 30 Hours, Del Mar Surrounding Area - Multiple locations](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210782870) · JPMorgan Chase · Del Mar, CA, United States · *not engineering (Associate Banker)*
+- [Full Stack Lead Software Engineer Java AWS](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802451) · JPMorgan Chase · Wilmington, DE, United States · *senior (Lead)*
+- [Operations Division Leader](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804396) · JPMorgan Chase · Heathrow, FL, United States · *senior (Leader)*
+- [Part Time (30 Hours) Associate Banker, Chappaqua Crossing Branch, Chappaqua, NY](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804627) · JPMorgan Chase · Chappaqua, NY, United States · *not engineering (Associate Banker)*
+- [Part Time (30 hours) Associate Banker, Ygnacio Valley, Concord, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804927) · JPMorgan Chase · Concord, CA, United States · *not engineering (Associate Banker)*
+- [Part Time (30 hours) Associate Banker, Ygnacio Valley, Concord, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804974) · JPMorgan Chase · Concord, CA, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 30 Hours, Mooresville, NC - Mooresville East Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807594) · JPMorgan Chase · Mooresville, NC, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 20 Hours, Sequim, WA - Sequim Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807960) · JPMorgan Chase · Sequim, WA, United States · *not engineering (Associate Banker)*
+- [Client Service Associate](https://morganstanley.eightfold.ai/careers/job/549801334035) · Morgan Stanley · *not engineering (Client Service)*
+- [Registered Client Service Associate](https://morganstanley.eightfold.ai/careers/job/549801333942) · Morgan Stanley · *not engineering (Client Service)*
+- [Registered Client Service Associate](https://morganstanley.eightfold.ai/careers/job/549801275853) · Morgan Stanley · *not engineering (Client Service)*
+- [Enterprise Sales Manager, Healthcare](https://jobs.ashbyhq.com/openai/1ea4eda8-b420-4391-bb58-cd21e189a863) · OpenAI · San Francisco · *senior (Manager)*
+- [Principal, Developer Platform Positioning](https://boards.greenhouse.io/cloudflare/jobs/8381749?gh_jid=8381749) · Cloudflare · Hybrid · *senior (Principal)*
+- [Principal Software Engineer, Creator Analytics](https://careers.roblox.com/jobs/8310779?gh_jid=8310779) · Roblox · San Mateo, CA, United States · *senior (Principal)*
+- [Prime Air Ground Handler, Amazon Prime Air](https://www.amazon.jobs/en/jobs/10604871/prime-air-ground-handler-amazon-prime-air) · Amazon · *not engineering (Handler)*
+- [Prime Air Ground Handler, Amazon Prime Air](https://www.amazon.jobs/en/jobs/10604867/prime-air-ground-handler-amazon-prime-air) · Amazon · *not engineering (Handler)*
+- [Prime Air Maintenance Technician, Corporate Operations, Prime Air](https://www.amazon.jobs/en/jobs/10604865/prime-air-maintenance-technician-corporate-operations-prime-air) · Amazon · *not engineering (Technician)*
+- [The Core Engineering-L2-New York-Vice President-Software Engineering New York · United States · Vice President](https://higher.gs.com/roles/185538) · Goldman Sachs · *senior (Vice President)*
+- [Part Time (20 hours) Associate Banker Merced Branch, Merced, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210795232) · JPMorgan Chase · Merced, CA, United States · *not engineering (Associate Banker)*
+- [Part Time (30 Hours) Associate Banker, Chappaqua Branch, Chappaqua, NY](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804136) · JPMorgan Chase · Chappaqua, NY, United States · *not engineering (Associate Banker)*
+- [Enterprise AI - Technical Product Owner - Vice President](https://morganstanley.eightfold.ai/careers/job/549801308537) · Morgan Stanley · *senior (Vice President)*
+- [Manager, Delivery Solutions Architects](https://databricks.com/company/careers/open-positions/job?gh_jid=8926037002) · Databricks · Central - United States; Northeast - United States; Southeast - United States · *senior (Manager)*
+- [Staff Product Manager, Services Growth & Monetization](https://jobs.intuit.com/job/mountain-view/staff-product-manager-services-growth-and-monetization/27595/103266345456) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *senior (Staff)*
+- [Staff Software Engineer](https://jobs.intuit.com/job/new-york/staff-software-engineer/27595/103266345328) · Intuit (TurboTax / QuickBooks) · New York, New York · *senior (Staff)*
+- [Senior Design Researcher](https://jobs.intuit.com/job/san-diego/senior-design-researcher/27595/103266345264) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *senior (Senior)*
+- [US-Technical Specialist](https://jobs.apple.com/en-us/details/200694985-2159/us-technical-specialist?team=APPST) · Apple · *not engineering (Specialist)*
+- [People Business Partner Manager, Hardware](https://jobs.apple.com/en-us/details/200694776-0836/people-business-partner-manager-hardware?team=CORSV) · Apple · *senior (Manager)*
+- [Senior Corporate Counsel](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Washington---Seattle/Senior-Corporate-Counsel_JR368102) · Salesforce · *senior (Senior)*
+- [Sr. Manager, Hyperscaler Partner Sales](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/New-York---New-York/Sr-Manager--Hyperscaler-Partner-Sales_JR366369) · Salesforce · *senior (Sr)*
+- [Senior Data Engineer](https://plaid.com/careers/openings/engineering/senior-data-engineer/) · Plaid · *senior (Senior)*
+- [Fullstack Senior Software Engineer - Java, SpringBoot, React](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210791686) · JPMorgan Chase · Tampa, FL, United States · *senior (Senior)*
+- [Trusts and Estates International Tax, Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800707) · JPMorgan Chase · Chicago, IL, United States · *senior (Vice President)*
+- [Relationship Banker - Baldwin Maybee Branch - Orion Twp, MI](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805589) · JPMorgan Chase · Lake Orion, MI, United States · *not engineering (Banker)*
+- [Transformation Execution Program Manager – Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808117) · JPMorgan Chase · Tampa, FL, United States · *senior (Manager)*
+- [Private Client Banker - Gratiot - Marysville, MI](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808263) · JPMorgan Chase · Marysville, MI, United States · *not engineering (Banker)*
+- [Sales Development Manager, Enterprise (AMER)](https://jobs.ashbyhq.com/openai/7b0786b7-ee7d-494d-97a3-38b9277d8634) · OpenAI · New York City · *senior (Manager)*
+- [Senior Product Manager - Openflow](https://jobs.ashbyhq.com/snowflake/61d48d79-aeb8-45fb-806a-5b6e9f625de7) · Snowflake · *senior (Senior)*
+- [Executive & Personal Assistant, Founders’ Office](https://boards.greenhouse.io/cloudflare/jobs/8282863?gh_jid=8282863) · Cloudflare · Hybrid · *not engineering (Executive)*
+- [Electrical Engineering INTERN (PhD)](https://apply.careers.microsoft.com/careers/job/1970393556986148) · Microsoft — US Entry Level · *internship (INTERN)*
+- [Electrical Engineer](https://apply.careers.microsoft.com/careers/job/1970393557051393) · Microsoft — US Entry Level · *not software (Electrical)*
+- [Senior Principal Design Verification Engineer](https://apply.careers.microsoft.com/careers/job/1970393557052974) · Microsoft — US Entry Level · *senior (Senior)*
+- [Principal or Senior Quantum Engineer - Readout Design](https://apply.careers.microsoft.com/careers/job/1970393556978520) · Microsoft — US Entry Level · *senior (Principal)*
+- [Senior Hardware Engineer](https://apply.careers.microsoft.com/careers/job/1970393557037788) · Microsoft — US Entry Level · *senior (Senior)*
+- [Principal Design Verification Engineer](https://apply.careers.microsoft.com/careers/job/1970393556988934) · Microsoft — US Entry Level · *senior (Principal)*
+- [Cloud Principal Hardware Engineer](https://apply.careers.microsoft.com/careers/job/1970393557055124) · Microsoft — US Entry Level · *senior (Principal)*
+- [Principal Silicon Design Engineer](https://apply.careers.microsoft.com/careers/job/1970393557070220) · Microsoft — US Entry Level · *senior (Principal)*
+- [Senior Silicon Design Verification Engineer](https://apply.careers.microsoft.com/careers/job/1970393557054107) · Microsoft — US Entry Level · *senior (Senior)*
+- [Senior Logic Design Engineer](https://apply.careers.microsoft.com/careers/job/1970393557046046) · Microsoft — US Entry Level · *senior (Senior)*
+- [Senior Hardware Engineer - DC/DC Power](https://apply.careers.microsoft.com/careers/job/1970393556998647) · Microsoft — US Entry Level · *senior (Senior)*
+- [Graphics Design Verification Flow Engineer](https://jobs.apple.com/en-us/details/200694972-0157/graphics-design-verification-flow-engineer?team=HRDWR) · Apple · *not software (Design Verification)*
+- [Graphics Design Verification Flow Engineer](https://jobs.apple.com/en-us/details/200694972-3760/graphics-design-verification-flow-engineer?team=HRDWR) · Apple · *not software (Design Verification)*
+- [Graphics Design Verification Flow Engineer](https://jobs.apple.com/en-us/details/200694960-0157/graphics-design-verification-flow-engineer?team=HRDWR) · Apple · *not software (Design Verification)*
+- [Graphics Design Verification Flow Engineer](https://jobs.apple.com/en-us/details/200694960-3760/graphics-design-verification-flow-engineer?team=HRDWR) · Apple · *not software (Design Verification)*
+- [Sr. Software Development Engineer, Amazon Quick](https://www.amazon.jobs/en/jobs/10604744/sr-software-development-engineer-amazon-quick) · Amazon · *senior (Sr)*
+- [Senior Cluster Data Center Manager](https://www.amazon.jobs/en/jobs/10604745/senior-cluster-data-center-manager) · Amazon · *senior (Senior)*
+- [Product Designer, Human Interface Los Angeles, CA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Burlingame, CA ⋅ New York, NY ⋅ +1 more Design & User Experience Design](https://www.metacareers.com/profile/job_details/2153803492149585) · Meta · *not engineering (Designer)*
+- [Lead Counsel, Youth Los Angeles, CA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ New York, NY ⋅ San Francisco, CA ⋅ +1 more Legal, Finance, Facilities & Admin Legal](https://www.metacareers.com/profile/job_details/1047091104830875) · Meta · *senior (Lead)*
+- [Business Operations Manager, Ads Sales Austin, TX ⋅ Menlo Park, CA ⋅ New York, NY Legal, Finance, Facilities & Admin Finance](https://www.metacareers.com/profile/job_details/3745895235548410) · Meta · *senior (Manager)*
+- [Principal Architect- Market Surveillance tech](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210771692) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Principal)*
+- [Relationship Banker - Sepulveda Manhattan Beach - Manhattan Beach, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210786867) · JPMorgan Chase · Manhattan Beach, CA, United States · *not engineering (Banker)*
+- [Branch Manager, MI - North Oakland Market - Waterford MI](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808028) · JPMorgan Chase · Flint, MI, United States · *senior (Manager)*
+- [Relationship Banker - Fremont Market- Hayward, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808175) · JPMorgan Chase · Hayward, CA, United States · *not engineering (Banker)*
+- [Relationship Banker - Fremont Market- Milpitas, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808178) · JPMorgan Chase · Milpitas, CA, United States · *not engineering (Banker)*
+- [Relationship Banker - Fremont Market - Union City, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808181) · JPMorgan Chase · Union City, CA, United States · *not engineering (Banker)*
+- [Territory Account Executive](https://boards.greenhouse.io/cloudflare/jobs/8384276?gh_jid=8384276) · Cloudflare · Hybrid · *not engineering (Account Executive)*
+- [Frontend Engineer II - Ground Control Console](https://www.amazon.jobs/jobs/10602619/apply) · Amazon (via speedyapply New Grad SWE) · Redmond, WA · *frontend (Frontend)*
+- [Frontend Engineer II - Ground Control Console](https://www.amazon.jobs/jobs/10602616/apply) · Amazon (via speedyapply New Grad SWE) · Redmond, WA · *frontend (Frontend)*
+- [Front-End Engineer II - AWS Agentic WorkSpaces - WorkSpaces Admin and Builder CX](https://www.amazon.jobs/jobs/10601883/apply) · Amazon (via speedyapply New Grad SWE) · Seattle, WA · *frontend (Front-End)*
+- [Frontend Engineer - EE&P - IS&T Early Career](https://jobs.apple.com/en-us/details/200676168-0157) · Apple (via speedyapply New Grad SWE) · Austin, TX · *frontend (Frontend)*
+- [Frontend Engineer - New Grad](https://apply.workable.com/bask-health-1/j/95FB1074E4/) · Bask (via speedyapply New Grad SWE) · USA · *frontend (Frontend)*
+- [Associate Materials Developer - UGG Apparel & Accessories](https://deckers.wd5.myworkdayjobs.com/en-US/deckers/job/Goleta-California/Associate-Materials-Developer---UGG-Apparel---Accessories_22046) · Deckers Brands (via speedyapply New Grad SWE) · Goleta, CA · *not software (Materials)*
+- [AI Product Support Specialist - Enterprise](https://job-boards.greenhouse.io/podium81/jobs/8380825) · Podium (via speedyapply New Grad AI) · Lehi, UT · *not engineering (Support)*
+- [2027 AI Quant Summer Analyst](https://www.stepstonegroup.com/current-opportunities/?gh_jid=8368989) · StepStone Group (via speedyapply New Grad AI) · La Jolla, CA · *internship (Summer Analyst)*
+- [AI Search Strategist](https://jobs.lever.co/terrahq/a33d82c9-7200-478d-adc3-778d2e139c93) · Terra (via speedyapply New Grad AI) · Remote - USA · *not engineering (Strategist)*
+- [Privacy Counsel](https://jobs.apple.com/en-us/details/200689092-0836/privacy-counsel?team=CORSV) · Apple · *not engineering (Counsel)*
+- [Privacy Counsel](https://jobs.apple.com/en-us/details/200689092-2459/privacy-counsel?team=CORSV) · Apple · *not engineering (Counsel)*
+- [Research Scientist Intern, Diffractive Optics (PhD) Redmond, WA AI Research Facebook Reality Labs Internship - PhD Research Hardware Engineering](https://www.metacareers.com/profile/job_details/1158829233342350) · Meta · *internship (Intern)*
+- [Hardware Engineering Program Manager Menlo Park, CA Artificial Intelligence Generative AI Hardware Operations Program Management Machine Learning](https://www.metacareers.com/profile/job_details/1038179719312945) · Meta · *senior (Manager)*
+- [Executive Administrative Partner Bellevue, WA ⋅ Menlo Park, CA Facebook G and A](https://www.metacareers.com/profile/job_details/1473357794740616) · Meta · *not engineering (Executive)*
+- [Sr Specialist, Social & Events Operations, PayPal & Venmo](https://paypal.eightfold.ai/careers/job/274923406511) · PayPal · *senior (Sr)*
+- [Executive Assistant](https://paypal.eightfold.ai/careers/job/274923403916) · PayPal · *not engineering (Executive Assistant)*
+- [Manager, Third Party Risk](https://paypal.eightfold.ai/careers/job/274923349056) · PayPal · *senior (Manager)*
+- [Decision Science Vice President – Finance Analytics](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805994) · JPMorgan Chase · OH, United States · *senior (Vice President)*
+- [Associate II - Global Fund Services Operations Service Delivery](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807632) · JPMorgan Chase · Boston, MA, United States · *not engineering (Operations)*
+- [J.P. Morgan Wealth Management – Private Client Advisor - IN-66 and Bell Road](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807657) · JPMorgan Chase · Evansville, IN, United States · *not engineering (Wealth)*
+- [J.P. Morgan Wealth Management – Private Client Advisor - Green River road and Constellation](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807665) · JPMorgan Chase · Evansville, IN, United States · *not engineering (Wealth)*
+- [Vice President, Business Resiliency Manager, HR](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808026) · JPMorgan Chase · NY, United States · *senior (Vice President)*
+- [Private Client Banker-North Dallas Market - Dallas, TX](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808116) · JPMorgan Chase · Richardson, TX, United States · *not engineering (Banker)*
+- [Staff+ Software Engineer, Consumer](https://job-boards.greenhouse.io/anthropic/jobs/5477652008) · Anthropic · San Francisco, CA · *senior (Staff)*
+- [Enterprise Account Manager, Eats](https://jobs.uber.com/en/jobs/304719/) · Uber · *senior (Manager)*
+- [Sr Machine Learning Engineer](https://jobs.uber.com/en/jobs/304737/) · Uber · *senior (Sr)*
+- [Customer Success Manager, Enterprise](https://jobs.uber.com/en/jobs/304624/) · Uber · *senior (Manager)*
+- [Senior / Staff ML Engineer, Training Services, Apple Cloud AI](https://jobs.apple.com/en-us/details/200694844-3337/senior-staff-ml-engineer-training-services-apple-cloud-ai?team=SFTWR) · Apple · *senior (Senior)*
+- [Sr. Software Engineer - Distributed Storage](https://jobs.apple.com/en-us/details/200694569-0836/sr-software-engineer-distributed-storage?team=SFTWR) · Apple · *senior (Sr)*
+- [Data Platform & Governance Manager Austin, TX ⋅ Menlo Park, CA Legal, Finance, Facilities & Admin G and A Finance Data Science](https://www.metacareers.com/profile/job_details/939416365875204) · Meta · *senior (Manager)*
+- [Supplier Master Operations Specialist Austin, TX Global Operations Finance](https://www.metacareers.com/profile/job_details/1787261759176001) · Meta · *not engineering (Operations)*
+- [Policy Lead, AI Infrastructure](https://stripe.com/jobs/search?gh_jid=8334556) · Stripe · US-Remote · *senior (Lead)*
+- [Director, US Consumer Credit](https://paypal.eightfold.ai/careers/job/274923254556) · PayPal · *senior (Director)*
+- [Business Operations](https://plaid.com/careers/openings/business-operations/london-office/business-operations/) · Plaid · *not engineering (Operations)*
+- [Sr Principal Software Engineer (Java, AWS) - Common Components Group](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210773678) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Sr)*
+- [Private Client Banker - Chicago North Shore Market - Evanston, IL](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808108) · JPMorgan Chase · Evanston, IL, United States · *not engineering (Banker)*
+- [Sr. Lead Software Engineer](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808982) · JPMorgan Chase · Columbus, OH, United States · *senior (Sr)*
+- [Principal Software Engineer, Data Engineering](https://jobs.intuit.com/job/oakland/principal-software-engineer-data-engineering/27595/103261389648) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *senior (Principal)*
+- [Principal Software Engineer, Creator Hub](https://careers.roblox.com/jobs/8332418?gh_jid=8332418) · Roblox · San Mateo, CA, United States · *senior (Principal)*
+- [Places Lease Accouting and Payments Manager](https://jobs.apple.com/en-us/details/200693703-3749/places-lease-accouting-and-payments-manager?team=CORSV) · Apple · *senior (Manager)*
+- [Sr. Manager, Software Development](https://www.amazon.jobs/en/jobs/10604626/sr-manager-software-development) · Amazon · *senior (Sr)*
+- [Research Scientist Intern, Materials Architecture & Device Integration (PhD) Redmond, WA Internship - PhD Engineering Hardware](https://www.metacareers.com/profile/job_details/1674297360998408) · Meta · *internship (Intern)*
+- [Senior Manager, Debit](https://paypal.eightfold.ai/careers/job/274923254514) · PayPal · *senior (Senior)*
+- [Vice President - Senior Lead Architect](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210765803) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Vice President)*
+- [Dealer Marketing Strategy Lead-Chase Auto](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210781163) · JPMorgan Chase · Plano, TX, United States · *senior (Lead)*
+- [Lead Software Engineer - Fullstack Java and React with Cloud](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210781669) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Lead)*
+- [Lead Cybersecurity Architect, AI/Agentic Security](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798559) · JPMorgan Chase · Chicago, IL, United States · *senior (Lead)*
+- [1251378: Vendor Manager - Vice President, Card Collections Litigation (OPVM10)](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803352) · JPMorgan Chase · Wilmington, DE, United States · *senior (Manager)*
+- [Lead Cybersecurity Architect, AI/Agentic Security](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804347) · JPMorgan Chase · Chicago, IL, United States · *senior (Lead)*
+- [Lead Cybersecurity Architect, AI/Agentic Security](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804350) · JPMorgan Chase · Chicago, IL, United States · *senior (Lead)*
+- [Lead Software Engineer - Frontend-Stacks](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805311) · JPMorgan Chase · Plano, TX, United States · *senior (Lead)*
+- [Senior Product Associate - Consumer Banking - Sales Incentive and Growth](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805958) · JPMorgan Chase · Columbus, OH, United States · *senior (Senior)*
+- [J.P. Morgan Wealth Management – Private Client Advisor - Kent, WA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807727) · JPMorgan Chase · Kent, WA, United States · *not engineering (Wealth)*
+- [J.P. Morgan Wealth Management – Private Client Advisor - Hilliard, Ohio](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808987) · JPMorgan Chase · Hilliard, OH, United States · *not engineering (Wealth)*
+- [Vice President, Attorney - Investment Advisory & Alternative Investments](https://morganstanley.eightfold.ai/careers/job/549801221633) · Morgan Stanley · *senior (Vice President)*
+- [Staff Software Engineer, Internal Products](https://job-boards.greenhouse.io/anthropic/jobs/5481096008) · Anthropic · Remote-Friendly (Travel-Required) \| San Francisco, CA \| Seattle, WA \| New York City, NY · *senior (Staff)*
+- [Account Executive, Air Force](https://job-boards.greenhouse.io/scaleai/jobs/4753839005) · Scale AI · Colorado Springs, CO; Dayton, OH; Washington, DC · *not engineering (Account Executive)*
+- [Account Executive, Army](https://job-boards.greenhouse.io/scaleai/jobs/4753822005) · Scale AI · Washington, DC · *not engineering (Account Executive)*
+- [Senior Machine Learning Engineer, Behavioral Detection](https://careers.roblox.com/jobs/8311549?gh_jid=8311549) · Roblox · San Mateo, CA, United States · *senior (Senior)*
+- [Network Site Investments Manager Denver, CO ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Boston, MA ⋅ New York, NY AI Infrastructure Business Development & Partnerships Data Center Data Center Strategy Business D](https://www.metacareers.com/profile/job_details/1455722832835537) · Meta · *senior (Manager)*
+- [Associate General Counsel, AI Product Los Angeles, CA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Washington, DC ⋅ New York, NY ⋅ +1 more Legal, Finance, Facilities & Admin Legal](https://www.metacareers.com/profile/job_details/1041507768348279) · Meta · *not engineering (Counsel)*
+- [Government Relations Manager, AI](https://stripe.com/jobs/search?gh_jid=8334539) · Stripe · Washington DC-metro area · *senior (Manager)*
+- [Senior Machine Learning Engineer, Platform Remote Bay Area, CA, US](https://block.xyz/careers/jobs/5481625008) · Square / Block · *senior (Senior)*
+- [Staff Software Engineer, TRUST Network](https://www.coinbase.com/careers/positions/8368472) · Coinbase · *senior (Staff)*
+- [Asset & Wealth Management Operations - Alternative Private Operations - Dallas - Associate Dallas · United States · Associate](https://higher.gs.com/roles/188883) · Goldman Sachs · *not engineering (Wealth)*
+- [Finance & Business Management](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807062) · JPMorgan Chase · Plano, TX, United States · *not engineering (Finance)*
+- [Branch Operations Lead - KC Central Market - Leawood, KS](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807995) · JPMorgan Chase · Leawood, KS, United States · *senior (Lead)*
+- [Branch Operations Lead - Independence and Hedgcoxe - Plano, Tx.](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808970) · JPMorgan Chase · Plano, TX, United States · *senior (Lead)*
+- [Engineering Program Manager, Siri AI Performance & Reliability](https://jobs.apple.com/en-us/details/200694916-0836/engineering-program-manager-siri-ai-performance-reliability?team=SFTWR) · Apple · *senior (Manager)*
+- [Engineering Program Manager, Siri AI Performance & Reliability](https://jobs.apple.com/en-us/details/200694916-3956/engineering-program-manager-siri-ai-performance-reliability?team=SFTWR) · Apple · *senior (Manager)*
+- [Engineering Program Manager, Siri Evaluation](https://jobs.apple.com/en-us/details/200694917-0836/engineering-program-manager-siri-evaluation?team=SFTWR) · Apple · *senior (Manager)*
+- [Operations Senior Analyst (AMER HCM)](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Indiana---Indianapolis/Operations-Senior-Analyst--AMER-HCM-_JR366327-1) · Salesforce · *senior (Senior)*
+- [Applied AI/ML Lead](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210791679) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Lead)*
+- [Private Client Banker - South San Jose Market - San Jose, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797291) · JPMorgan Chase · San Jose, CA, United States · *not engineering (Banker)*
+- [Payroll Onboarding Specialist](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798893) · JPMorgan Chase · Columbus, OH, United States · *not engineering (Payroll)*
+- [Security Operations Sr Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802077) · JPMorgan Chase · Seattle, WA, United States · *senior (Sr)*
+- [Relationship Executive - Healthcare Technology Payments Banking - Executive Director](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802268) · JPMorgan Chase · San Francisco, CA, United States · *senior (Director)*
+- [Associate Relationship Banker - Gahanna North - Gahanna, OH](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807675) · JPMorgan Chase · Gahanna, OH, United States · *not engineering (Banker)*
+- [Early Careers Recruiter, Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808075) · JPMorgan Chase · Columbus, OH, United States · *not engineering (Recruiter)*
+- [Associate Relationship Banker - Plano Market - Plano, Tx.](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808872) · JPMorgan Chase · Plano, TX, United States · *not engineering (Banker)*
+- [Senior Associate, Slate Product Marketing Strategy](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808936) · JPMorgan Chase · Wilmington, DE, United States · *senior (Senior)*
+- [(P) Senior Analyst - AI Journey Transformation & Partnerships (SDBT06)](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808995) · JPMorgan Chase · Wilmington, DE, United States · *senior (Senior)*
+- [(P) Analyst - AI Journey Transformation & Partnerships (SDBT05)](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210809002) · JPMorgan Chase · Wilmington, DE, United States · *not engineering (Partnerships)*
+- [(P) Strategy Business Transformation Mgr Vice President (SDBT07)](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210809009) · JPMorgan Chase · Wilmington, DE, United States · *senior (Vice President)*
+- [Investment Phone Specialist - JPMorgan Wealth Management - Tempe, AZ](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210809117) · JPMorgan Chase · Tempe, AZ, United States · *not engineering (Specialist)*
+- [Strategic Delivery Lead, National Security](https://jobs.ashbyhq.com/openai/38e66047-7d81-4347-8e64-2c16bc9a803a) · OpenAI · Washington, DC · *senior (Lead)*
+- [Technical Operations Analyst, User Safety & Risk Operations](https://jobs.ashbyhq.com/openai/7b867d19-f018-4c08-8183-d2358b733ee5) · OpenAI · San Francisco · *not engineering (Operations)*
+- [Model Safety Program Manager, User Safety & Risk Operations](https://jobs.ashbyhq.com/openai/4444d839-3f58-4369-a241-985acbbbf2f9) · OpenAI · San Francisco · *senior (Manager)*
+- [Senior Forward Deployed Engineer](https://boards.greenhouse.io/cloudflare/jobs/8385867?gh_jid=8385867) · Cloudflare · Hybrid · *senior (Senior)*
+- [Commissioning Manager](https://apply.careers.microsoft.com/careers/job/1970393556944757) · Microsoft — US Entry Level · *senior (Manager)*
+- [Data Center Critical Environment Program Manager](https://apply.careers.microsoft.com/careers/job/1970393556979109) · Microsoft — US Entry Level · *senior (Manager)*
+- [Senior Construction Project Management](https://apply.careers.microsoft.com/careers/job/1970393556956368) · Microsoft — US Entry Level · *senior (Senior)*
+- [Lease Commissioning Manager](https://apply.careers.microsoft.com/careers/job/1970393556981991) · Microsoft — US Entry Level · *senior (Manager)*
+- [Associate Event Manager, Creator Experiences](https://jobs.apple.com/en-us/details/200693999-0836/associate-event-manager-creator-experiences?team=MKTG) · Apple · *senior (Manager)*
+- [Operations Intern - Région Centre - Start Date 2027](https://www.amazon.jobs/en/jobs/10604240/operations-intern-region-centre-start-date-2027) · Amazon · *internship (Intern)*
+- [Asset & Wealth Management, Alternatives Capital Formation, External Investment Group, Alternative Investment Strategist, Vice President - New York New York · United States · Vice President](https://higher.gs.com/roles/179882) · Goldman Sachs · *senior (Vice President)*
+- [Asset & Wealth Management, Alternatives Capital Formation, External Investment Group, Senior Investment Writer, Vice President - New York New York · United States · Vice President](https://higher.gs.com/roles/188879) · Goldman Sachs · *senior (Senior)*
+- [Global Banking & Markets Operations-Dallas-Associate-Commodities Sales and Trading Services Dallas · United States · Associate](https://higher.gs.com/roles/188822) · Goldman Sachs · *not engineering (Operations)*
+- [Administrative Assistant \| Dallas, TX Dallas · United States · Support](https://higher.gs.com/roles/188587) · Goldman Sachs · *not engineering (Administrative)*
+- [AI Controls Enablement Strategy & Innovation - Asset and Wealth Management Controls - Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210772554) · JPMorgan Chase · NY, United States · *senior (Vice President)*
+- [AI Controls Enablement Strategy & Innovation - Asset and Wealth Management Controls -Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210772823) · JPMorgan Chase · NY, United States · *not engineering (Wealth)*
+- [Operations Senior Specialist I - Courier and Mail Delivery Driver - Operations](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805085) · JPMorgan Chase · Ruston, LA, United States · *senior (Senior)*
+- [Senior Lead Software Engineer - Container Platforms](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805706) · JPMorgan Chase · Seattle, WA, United States · *senior (Senior)*
+- [Collections: In House Recover Specialist III - Auto DBCO](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805942) · JPMorgan Chase · Tempe, AZ, United States · *not engineering (Specialist)*
+- [Senior Associate – Meta Platform Strategy, Chase Social Media](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807650) · JPMorgan Chase · New York, NY, United States · *senior (Senior)*
+- [Account Specialist II- Safe Box Vault](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808989) · JPMorgan Chase · San Antonio, TX, United States · *not engineering (Specialist)*
+- [Senior Customer Engineer - Digital Natives](https://boards.greenhouse.io/cloudflare/jobs/8076958?gh_jid=8076958) · Cloudflare · Hybrid · *senior (Senior)*
+- [Data Center Technician (Night Shift), ADC InfraOps DCO](https://www.amazon.jobs/en/jobs/10604202/data-center-technician-night-shift-adc-infraops-dco) · Amazon · *not engineering (Technician)*
+- [Operations Lead, Lead (m/w/d)](https://www.amazon.jobs/en/jobs/10604168/operations-lead-lead-m-w-d) · Amazon · *senior (Lead)*
+- [Data Center Technician (Night Shift), ADC InfraOps DCO](https://www.amazon.jobs/en/jobs/10604201/data-center-technician-night-shift-adc-infraops-dco) · Amazon · *not engineering (Technician)*
+- [Data Center Technician (Night Shift), ADC InfraOps DCO](https://www.amazon.jobs/en/jobs/10604178/data-center-technician-night-shift-adc-infraops-dco) · Amazon · *not engineering (Technician)*
+- [Research Scientist Intern, FAIR - Multimodal Foundations (PhD) Bellevue, WA ⋅ Menlo Park, CA ⋅ Seattle, WA ⋅ Boston, MA ⋅ New York, NY ⋅ +1 more University Grad - PhD & Postdoc Research](https://www.metacareers.com/profile/job_details/2322361288548512) · Meta · *internship (Intern)*
+- [Director, Enterprise Platform Menlo Park, CA Business Development & Partnerships Business Development](https://www.metacareers.com/profile/job_details/1168031035721735) · Meta · *senior (Director)*
+- [Mulesoft Customer Success Manager](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/District-of-Columbia---Washington/Mulesoft-Customer-Success-Manager_JR364936) · Salesforce · *senior (Manager)*
+- [Finance Pathways Rotation Analyst (Early Career)](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Indiana---Indianapolis/Finance-Pathways-Rotation-Analyst--Early-Career-_JR359637-1) · Salesforce · *not engineering (Finance)*
+- [Executive Director, Brand Strategy & Content Auto Marketing](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210762930) · JPMorgan Chase · Plano, TX, United States · *senior (Director)*
+- [Trading Operations Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805995) · JPMorgan Chase · Jersey City, NJ, United States · *not engineering (Operations)*
+- [Relationship Banker - Sparta Branch - Sparta, NJ](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806826) · JPMorgan Chase · Sparta, NJ, United States · *not engineering (Banker)*
+- [Client Service Analyst](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807543) · JPMorgan Chase · Tampa, FL, United States · *not engineering (Client Service)*
+- [Business Relationship Manager I - Officer](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808027) · JPMorgan Chase · Slidell, LA, United States · *senior (Manager)*
+- [Vice President, Agentic Product Delivery & AI Tooling](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808582) · JPMorgan Chase · New York, NY, United States · *senior (Vice President)*
+- [Sr Recruiter](https://jobs.uber.com/en/jobs/304678/) · Uber · *senior (Sr)*
+- [US-Technical Expert](https://jobs.apple.com/en-us/details/200693429-2642/us-technical-expert?team=APPST) · Apple · *not engineering (Expert)*
+- [Quant Marketing Analytics Vice President - Card Analytics](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210792444) · JPMorgan Chase · Wilmington, DE, United States · *senior (Vice President)*
+- [Branch Manager - Las Vegas West, Las Vegas, Nevada](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210794062) · JPMorgan Chase · Las Vegas, NV, United States · *senior (Manager)*
+- [Product Controls Strategy - Insurance](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801451) · JPMorgan Chase · Columbus, OH, United States · *not engineering (Insurance)*
+- [Senior Home Lending Advisor - Flushing, NY](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806903) · JPMorgan Chase · Flushing, NY, United States · *senior (Senior)*
+- [Loan Closing Analyst](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807316) · JPMorgan Chase · Chicago, IL, United States · *not engineering (Loan)*
+- [Product Delivery Vice President - Data and Analytics](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807367) · JPMorgan Chase · Wilmington, DE, United States · *senior (Vice President)*
+- [Business Relationship Manager I- Officer](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808493) · JPMorgan Chase · Corvallis, OR, United States · *senior (Manager)*
+- [Liquidity and Account Solutions-Project Finance Account Bank- Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808503) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Vice President)*
+- [Client Service Associate](https://morganstanley.eightfold.ai/careers/job/549801244997) · Morgan Stanley · *not engineering (Client Service)*
+- [Vice President, Lead Cybersecurity Engineer](https://morganstanley.eightfold.ai/careers/job/549798264252) · Morgan Stanley · *senior (Vice President)*
+- [Director, Lead Cybersecurity Engineer](https://morganstanley.eightfold.ai/careers/job/549798011299) · Morgan Stanley · *senior (Director)*
+- [Vice President, Lead Software Engineer](https://morganstanley.eightfold.ai/careers/job/549796478388) · Morgan Stanley · *senior (Vice President)*
+- [Operations Intern - Belgium START DATE 2027, Amazon Logistics](https://www.amazon.jobs/en/jobs/10604128/operations-intern-belgium-start-date-2027-amazon-logistics) · Amazon · *internship (Intern)*
+- [Product Manager- Lending Servicing Platform Modernization](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801809) · JPMorgan Chase · Columbus, OH, United States · *senior (Manager)*
+- [Cyber Operations Product Strategy Lead](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805619) · JPMorgan Chase · Wilmington, DE, United States · *senior (Lead)*
+- [Private Client Banker - South Jersey Market Hire - Glassboro, NJ](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806484) · JPMorgan Chase · Glassboro, NJ, United States · *not engineering (Banker)*
+- [Part Time (30 Hours) Associate Banker, Stockton St Chinatown SF Branch, San Francisco, CA Bilingual Cantonese Required](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807737) · JPMorgan Chase · San Francisco, CA, United States · *not engineering (Associate Banker)*
+- [Relationship Banker - Near West Market - Norridge, IL](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808391) · JPMorgan Chase · Norridge, IL, United States · *not engineering (Banker)*
+- [Business Relationship Manager Senior](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808692) · JPMorgan Chase · Peoria, AZ, United States · *senior (Manager)*
+- [Business Relationship Manager Senior Government- Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808924) · JPMorgan Chase · Jacksonville, FL, United States · *senior (Manager)*
+- [Technical Product Manager - GenAI Platforms - AI Infrastructure - CTO Office](https://bloomberg.avature.net/careers/JobDetail/Technical-Product-Manager-GenAI-Platforms-AI-Infrastructure-CTO-Office/46150) · Bloomberg · *senior (Manager)*
+- [Integrated Marketing Manager I](https://jobs.uber.com/en/jobs/302078/) · Uber · *senior (Manager)*
+- [Azure Digital Specialist](https://apply.careers.microsoft.com/careers/job/1970393557043717) · Microsoft — US Entry Level · *not engineering (Specialist)*
+- [Sr. Partner Solution Architect - AI Apps](https://apply.careers.microsoft.com/careers/job/1970393557056090) · Microsoft — US Entry Level · *senior (Sr)*
+- [Digital Solution Area Specialist - Enterprise](https://apply.careers.microsoft.com/careers/job/1970393556984598) · Microsoft — US Entry Level · *not engineering (Specialist)*
+- [Senior Penetration Testing Engineer](https://apply.careers.microsoft.com/careers/job/1970393557041735) · Microsoft — US Entry Level · *senior (Senior)*
+- [Solution Sales Leader, AI Business Process](https://apply.careers.microsoft.com/careers/job/1970393557055399) · Microsoft — US Entry Level · *senior (Leader)*
+- [Sr Software Engineer, Apple Ads](https://jobs.apple.com/en-us/details/200694621-0836/sr-software-engineer-apple-ads?team=SFTWR) · Apple · *senior (Sr)*
+- [Associate Account Executive](https://www.amazon.jobs/en/jobs/10604121/associate-account-executive) · Amazon · *not engineering (Account Executive)*
+- [Event Broadcast Specialist](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Event-Broadcast-Specialist_JR367654) · Salesforce · *not engineering (Specialist)*
+- [Communications Analyst](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808599) · JPMorgan Chase · New York, NY, United States · *not engineering (Communications)*
+- [Sr. Lead Software Engineer — Trust and Security](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808631) · JPMorgan Chase · NY, United States · *senior (Sr)*
+- [Data Scientist-Senior Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808974) · JPMorgan Chase · Columbus, OH, United States · *senior (Senior)*
+- [J.P. Morgan Wealth Management - Private Client Investment Associate Team Leader - Chicago, IL](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210809018) · JPMorgan Chase · Chicago, IL, United States · *senior (Leader)*
+- [EHS Specialist](https://www.amazon.jobs/en/jobs/10604115/ehs-specialist) · Amazon · *not engineering (Specialist)*
+- [Sr. Operations Manager, ZA Fulfillment & Operations](https://www.amazon.jobs/en/jobs/10604108/sr-operations-manager-za-fulfillment-operations) · Amazon · *senior (Sr)*
+- [Tax Analyst II, GST Tax Compliance, International Indirect Tax Team](https://www.amazon.jobs/en/jobs/10604110/tax-analyst-ii-gst-tax-compliance-international-indirect-tax-team) · Amazon · *not engineering (Tax)*
+- [Sr Manager, Business Operations](https://paypal.eightfold.ai/careers/job/274923409530) · PayPal · *senior (Sr)*
+- [Marketing Technology & Decision Science - Senior Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801825) · JPMorgan Chase · Columbus, OH, United States · *senior (Senior)*
+- [J.P. Morgan Wealth Management - Vice President - Supervisory Manager - New York, NY](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808429) · JPMorgan Chase · NY, United States · *senior (Vice President)*
+- [Relationship Banker - Madison Ave and 92nd St - New York, NY](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808910) · JPMorgan Chase · New York, NY, United States · *not engineering (Banker)*
+- [Installation Technician](https://www.amazon.jobs/en/jobs/10604106/installation-technician) · Amazon · *not engineering (Technician)*
+- [Reliability Maintenance Engineering (RME) Area Manager, RME](https://www.amazon.jobs/en/jobs/10604104/reliability-maintenance-engineering-rme-area-manager-rme) · Amazon · *senior (Manager)*
+- [Director, Compensation](https://sofi.com/careers/job/8200459003?gh_jid=8200459003) · SoFi · New York, New York · *senior (Director)*
+- [Part Time (30 Hours) Associate Banker, Junction Blvd Branch, Corona, NY, Bilingual Spanish Required](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798178) · JPMorgan Chase · Corona, NY, United States · *not engineering (Associate Banker)*
+- [Business Solutions Manager, Senior Associate - Search, Paid Social & Search Engine Optimization](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802168) · JPMorgan Chase · New York, NY, United States · *senior (Manager)*
+- [Lead Technical Program Manager - AI for Technology](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803036) · JPMorgan Chase · Plano, TX, United States · *senior (Lead)*
+- [Part Time (30 Hours) Associate Banker, Eastview Plaza Branch, Amherst, NY](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805656) · JPMorgan Chase · Amherst, NY, United States · *not engineering (Associate Banker)*
+- [Lead Software Engineer - AWS, Python/Java - AI/ML](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805710) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Lead)*
+- [Part-Time (20 Hours) Associate Banker, Cumberland Ave (New Build), Knoxville, TN](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806590) · JPMorgan Chase · Knoxville, TN, United States · *not engineering (Associate Banker)*
+- [Part-Time (20 hours) Associate Banker, Cumberland Ave (New Build), Knoxville, TN](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806595) · JPMorgan Chase · Knoxville, TN, United States · *not engineering (Associate Banker)*
+- [Sr. Lead Software Engineer- Full Stack/Java/Python/AWS/Rea](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806831) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Sr)*
+- [Branch Manager - (New Build) Festival Centre Dorchester - North Charleston, SC](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807266) · JPMorgan Chase · North Charleston, SC, United States · *senior (Manager)*
+- [Branch Manager - (New Build) Lake Wylie - Lake Wylie, SC](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807325) · JPMorgan Chase · Lake Wylie, SC, United States · *senior (Manager)*
+- [Relationship Banker - (New Build) Randleman - Greensboro, NC](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807895) · JPMorgan Chase · Greensboro, NC, United States · *not engineering (Banker)*
+- [Relationship Banker - (New Build) Randleman - Greensboro, NC](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807897) · JPMorgan Chase · Greensboro, NC, United States · *not engineering (Banker)*
+- [Senior Director of Software Engineering - Margin and Collateral / Post Trade Technology](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808245) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Senior)*
+- [Wealth Management Event Management Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808831) · JPMorgan Chase · Jersey City, NJ, United States · *not engineering (Wealth)*
+- [Branch Manager - (New Build) Mint Hill - Mint Hill, NC](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808890) · JPMorgan Chase · Mint Hill, NC, United States · *senior (Manager)*
+- [JPMorgan Wealth Management - Client Service Leader, Senior Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210809021) · JPMorgan Chase · Columbus, OH, United States · *senior (Leader)*
+- [Logistics Business Analyst – Finance & Controls](https://bloomberg.avature.net/careers/JobDetail/Logistics-Business-Analyst-Finance-Controls/46147) · Bloomberg · *not engineering (Finance)*
+- [Senior Automation Engineer](https://www.amazon.jobs/en/jobs/10604079/senior-automation-engineer) · Amazon · *senior (Senior)*
+- [Senior Staff Security Architect (Digital Assets)](https://sofi.com/careers/job/8202635003?gh_jid=8202635003) · SoFi · WA - Seattle; UT - Cottonwood Heights; CA - San Francisco; NY - New York City; TX - Frisco · *senior (Senior)*
+- [External Communications Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801718) · JPMorgan Chase · New York, NY, United States · *senior (Vice President)*
+- [Transaction Specialist I – Mail Extractor / 1st shift](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808870) · JPMorgan Chase · Van Buren Twp, MI, United States · *not engineering (Specialist)*
+- [SoC Infrastructure/NoC, Power & Performance Validation Lead, Staff (AI Accelerator Platform)](https://careers.qualcomm.com/careers/job/446721347444) · Qualcomm · *senior (Lead)*
+- [Sr. District Manager](https://jobs.ashbyhq.com/snowflake/3774369e-51b7-4ef8-86e7-1d20edd3e40d) · Snowflake · *senior (Sr)*
+- [Global Banking & Markets Operations - Equities Execution Client Ops - Analyst - Bengaluru Bengaluru · India · Associate](https://higher.gs.com/roles/188550) · Goldman Sachs · *not engineering (Operations)*
+- [RTL Design Engineer, Google](https://www.google.com/about/careers/applications/jobs/results/84385896404525766-rtl-design-engineer-google?location=United+States&target_level=EARLY&sort_by=date) · Google / Alphabet · *not software (RTL)*
+- [Data Center Facilities Technician, Mechanical](https://www.google.com/about/careers/applications/jobs/results/127896320294691526-data-center-facilities-technician-mechanical?location=United+States&target_level=EARLY&sort_by=date) · Google / Alphabet · *not engineering (Facilities)*
+- [Account Manager, Vendor Management, Retail Business Services (RBS)](https://www.amazon.jobs/en/jobs/10604006/account-manager-vendor-management-retail-business-services-rbs) · Amazon · *senior (Manager)*
+- [Program Lead, Strategic Projects, Global Consumer CX](https://jobs.uber.com/en/jobs/304186/) · Uber · *senior (Lead)*
+- [Data Center Facilities Technician](https://www.google.com/about/careers/applications/jobs/results/96409554270462662-data-center-facilities-technician?location=United+States&target_level=EARLY&sort_by=date) · Google / Alphabet · *not engineering (Facilities)*
+- [Drone Test and Simulation Hardware Development Engineer, Prime Air](https://www.amazon.jobs/en/jobs/10603988/drone-test-and-simulation-hardware-development-engineer-prime-air) · Amazon · *not software (Hardware)*
+- [AI Seller Experience Manager, Seller Compliance](https://www.amazon.jobs/en/jobs/10603986/ai-seller-experience-manager-seller-compliance) · Amazon · *senior (Manager)*
+- [The Core Engineering-L2-Hyderabad-Vice President-Software Engineering Hyderabad · India · Vice President](https://higher.gs.com/roles/188636) · Goldman Sachs · *senior (Vice President)*
+- [Enterprise Account Executive](https://jobs.ashbyhq.com/snowflake/237df466-e256-4b3d-b020-2f4ef569e39e) · Snowflake · *not engineering (Account Executive)*
+- [Electric Propulsion Systems, Hardware Manager, Prime Air](https://www.amazon.jobs/en/jobs/10603983/electric-propulsion-systems-hardware-manager-prime-air) · Amazon · *senior (Manager)*
+- [Global Banking & Markets, Equity Derivative & Structuring Operations - Derivatives Confirmations Analyst, Singapore Singapore · Singapore · Analyst](https://higher.gs.com/roles/188547) · Goldman Sachs · *not engineering (Operations)*
+- [Talent Advisor, AI Labs](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Talent-Advisor--AI-Labs_JR368057) · Salesforce · *not engineering (Talent)*
+- [icon Financial Reporting Associate (New York) : The D. E. Shaw group seeks an associate to join its Financial Reporting group within Financial Operations (FinOp), which handles the firm's investor and](https://www.deshaw.com/careers/financial-reporting-associate-new-york-6238) · DE Shaw · *not engineering (Financial)*
+- [Senior Staff Credit Risk Analyst, Loss Forecasting](https://jobs.intuit.com/job/mountain-view/senior-staff-credit-risk-analyst-loss-forecasting/27595/103237704640) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *senior (Senior)*
+- [Hardware Systems Design & Integration Engineer - AirPods](https://jobs.apple.com/en-us/details/200694768-0836/hardware-systems-design-integration-engineer-airpods?team=HRDWR) · Apple · *not software (Hardware)*
+- [Compensation Compliance & Administration Lead- Senior Program Manager](https://jobs.apple.com/en-us/details/200693696-0157/compensation-compliance-administration-lead-senior-program-manager?team=CORSV) · Apple · *senior (Lead)*
+- [Compensation Compliance & Administration Lead- Senior Program Manager](https://jobs.apple.com/en-us/details/200693696-0836/compensation-compliance-administration-lead-senior-program-manager?team=CORSV) · Apple · *senior (Lead)*
+- [Senior Computer Vision Architect](https://jobs.apple.com/en-us/details/200694834-3337/senior-computer-vision-architect?team=HRDWR) · Apple · *senior (Senior)*
+- [Senior Computer Vision Architect](https://jobs.apple.com/en-us/details/200694834-3956/senior-computer-vision-architect?team=HRDWR) · Apple · *senior (Senior)*
+- [Senior Data Governance Manager, Marcom](https://jobs.apple.com/en-us/details/200694791-3956/senior-data-governance-manager-marcom?team=MKTG) · Apple · *senior (Senior)*
+- [Senior Tools Governance Manager, Marcom](https://jobs.apple.com/en-us/details/200694798-3956/senior-tools-governance-manager-marcom?team=MKTG) · Apple · *senior (Senior)*
+- [Data Center Strategy & Planning Manager Bellevue, WA ⋅ Menlo Park, CA Data Center Infrastructure Data Engineering Data Center Operations Data Center Strategy](https://www.metacareers.com/profile/job_details/2034556683904635) · Meta · *senior (Manager)*
+- [Reliability Engineer, Hardware Sunnyvale, CA ⋅ Redmond, WA ⋅ Seattle, WA Facebook Reality Labs AR/VR Engineering Hardware Operations](https://www.metacareers.com/profile/job_details/1825752218582325) · Meta · *not software (Hardware)*
+- [Sr. Manager, Event Technology Systems](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Indiana---Indianapolis/Sr-Manager--Event-Technology-Systems_JR363765) · Salesforce · *senior (Sr)*
+- [Research Scientist Intern, GenAI Safety (PhD) Menlo Park, CA ⋅ San Francisco, CA AI Research Artificial Intelligence Generative AI Internship - PhD Research Engineering Machine Learning](https://www.metacareers.com/profile/job_details/993713283787464) · Meta · *internship (Intern)*
+- [Finance Manager, Credit Controllership & Financial Reporting](https://paypal.eightfold.ai/careers/job/274922621485) · PayPal · *senior (Manager)*
+- [Sr. Accountant, Securitization](https://paypal.eightfold.ai/careers/job/274922421823) · PayPal · *senior (Sr)*
+- [Regulatory Reporting Specialist](https://paypal.eightfold.ai/careers/job/274922721705) · PayPal · *not engineering (Regulatory)*
+- [Regulatory Reporting Specialist](https://paypal.eightfold.ai/careers/job/274922721735) · PayPal · *not engineering (Regulatory)*
+- [Finance Controller Manager](https://paypal.eightfold.ai/careers/job/274920128635) · PayPal · *senior (Manager)*
+- [Senior Response Engineer - Cloudflare Managed Defense Center (CMDC)](https://boards.greenhouse.io/cloudflare/jobs/8376867?gh_jid=8376867) · Cloudflare · Hybrid · *senior (Senior)*
+- [Principal Business Operations Program Manager, Stores Security](https://www.amazon.jobs/en/jobs/10603950/principal-business-operations-program-manager-stores-security) · Amazon · *senior (Principal)*
+- [Director, Entertainment Partnerships, NORAM Los Angeles, CA Business Development & Partnerships Partnerships](https://www.metacareers.com/profile/job_details/1151602707382306) · Meta · *senior (Director)*
+- [Staff Software Engineer - Compiler & Spark Runtime](https://jobs.ashbyhq.com/snowflake/57131f28-cdf8-4776-aa87-8f9339e494ab) · Snowflake · *senior (Staff)*
+- [Staff Software engineer - Storage](https://jobs.ashbyhq.com/snowflake/b861ddac-1fc4-4e42-9cde-a81be6f00fe2) · Snowflake · *senior (Staff)*
+- [Sr. Manager Product Manager - Technical, AWS Billing Product](https://www.amazon.jobs/en/jobs/10603951/sr-manager-product-manager-technical-aws-billing-product) · Amazon · *senior (Sr)*
+- [Principal Business Operations Program Manager , Stores-BST](https://www.amazon.jobs/en/jobs/10603950/principal-business-operations-program-manager-stores-bst) · Amazon · *senior (Principal)*
+- [Silicon Performance Architect, Reality Labs Sunnyvale, CA ⋅ Redmond, WA ⋅ Austin, TX ⋅ San Diego, CA AR/VR Hardware](https://www.metacareers.com/profile/job_details/1606482134524179) · Meta · *not software (Silicon)*
+- [Data Center Strategy & Planning Manager Bellevue, WA ⋅ Menlo Park, CA ⋅ San Francisco, CA Infrastructure Data Center Data Center Strategy Data Center Operations Design Engineering](https://www.metacareers.com/profile/job_details/1667236961501633) · Meta · *senior (Manager)*
+- [Field Business Management, Assistant Vice President](https://morganstanley.eightfold.ai/careers/job/549801154321) · Morgan Stanley · *senior (Vice President)*
+- [Corporate FP&A Manager](https://databricks.com/company/careers/open-positions/job?gh_jid=8936978002) · Databricks · Mountain View, California; San Francisco, California · *senior (Manager)*
+- [Senior Manager, Accounts Payable - Payments](https://jobs.ashbyhq.com/openai/1b62655e-87e5-4dfb-ad92-03dabeb8304f) · OpenAI · San Francisco · *senior (Senior)*
+- [IT Services Technician](https://job-boards.greenhouse.io/xai/jobs/5277827007) · xAI (Grok) · Palo Alto, CA · *not engineering (Technician)*
+- [Sr. Communication Sys Engineer, Modeling and Simulation](https://www.amazon.jobs/en/jobs/10603931/sr-communication-sys-engineer-modeling-and-simulation) · Amazon · *senior (Sr)*
+- [Business Development Representative Melbourne, Australia](https://block.xyz/careers/jobs/5481027008) · Square / Block · *not engineering (Business Development)*
+- [Business Development Representative Sydney, Australia](https://block.xyz/careers/jobs/5481026008) · Square / Block · *not engineering (Business Development)*
+- [Branch Manager - Olympus- Salt Lake City, UT](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808501) · JPMorgan Chase · Salt Lake City, UT, United States · *senior (Manager)*
+- [Commercial Activation Lead](https://job-boards.greenhouse.io/anthropic/jobs/5478939008) · Anthropic · San Francisco, CA \| New York City, NY · *senior (Lead)*
+- [Software Engineer, AI for Incident Response (Technical Leadership) Menlo Park, CA ⋅ New York, NY Software Engineering Infrastructure AI Infrastructure Artificial Intelligence Engineering](https://www.metacareers.com/profile/job_details/2647828669010630) · Meta · *senior (Technical Leadership)*
+- [Distinguised/Principal Platform Solution Engineer - Data Foundations](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Illinois---Chicago/Distinguised-Principal-Platform-Solution-Engineer---Data-Foundations_JR367618) · Salesforce · *senior (Principal)*
+- [Senior/Lead Platform Solution Engineer - Data Foundations](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Senior-Lead-Platform-Solution-Engineer---Data-Foundations_JR367612) · Salesforce · *senior (Senior)*
+- [Senior Product Marketing Lead - Keynote Demos](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Georgia---Atlanta/Senior-Product-Marketing-Lead---Keynote-Demos_JR365585) · Salesforce · *senior (Senior)*
+- [Senior Software Engineer, Trump Accounts](https://boards.greenhouse.io/robinhood/jobs/8384669?t=gh_src=&gh_jid=8384669) · Robinhood · Menlo Park, CA; New York, NY · *senior (Senior)*
+- [Senior Manager, Compensation - M&A](https://jobs.uber.com/en/jobs/304790/) · Uber · *senior (Senior)*
+- [Senior Security Technical Program Manager, AWS Security](https://www.amazon.jobs/en/jobs/10603922/senior-security-technical-program-manager-aws-security) · Amazon · *senior (Senior)*
+- [Research Scientist Intern, Monetization Ranking & AI Foundations (PhD) Sunnyvale, CA ⋅ Bellevue, WA ⋅ Menlo Park, CA AI Research Internship - PhD Research](https://www.metacareers.com/profile/job_details/1920724172670221) · Meta · *internship (Intern)*
+- [Business Development Data Access](https://plaid.com/careers/openings/network-partnerships/new-york-city-office/business-development-data-access/) · Plaid · *not engineering (Business Development)*
+- [Asset Movement Operations Senior Specialist](https://boards.greenhouse.io/robinhood/jobs/8318663?t=gh_src=&gh_jid=8318663) · Robinhood · Denver, CO; Westlake, TX · *senior (Senior)*
+- [Wealth Management - Fiduciary Consulting Group (FCG), Performance Analyst - Analyst / Associate](https://morganstanley.eightfold.ai/careers/job/549801066615) · Morgan Stanley · *not engineering (Wealth)*
+- [Intuit Consumer Group Head of Content Strategy and Editorial](https://jobs.intuit.com/job/san-diego/intuit-consumer-group-head-of-content-strategy-and-editorial/27595/103229453456) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *senior (Head of)*
+- [Risk Operations Manager 3](https://jobs.intuit.com/job/frisco/risk-operations-manager-3/27595/103229453408) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *senior (Manager)*
+- [RF Communications Systems Engineer](https://jobs.apple.com/en-us/details/200694829-3543/rf-communications-systems-engineer?team=HRDWR) · Apple · *not software (RF)*
+- [Hardware System Validation Engineer](https://jobs.apple.com/en-us/details/200694620-3749/hardware-system-validation-engineer?team=HRDWR) · Apple · *not software (Hardware)*
+- [Engineering Program Manager, CoreOS](https://jobs.apple.com/en-us/details/200694838-0836/engineering-program-manager-coreos?team=SFTWR) · Apple · *senior (Manager)*
+- [Senior Software Engineer, AI Inference Asset Delivery Platform](https://jobs.apple.com/en-us/details/200694541-3337/senior-software-engineer-ai-inference-asset-delivery-platform?team=SFTWR) · Apple · *senior (Senior)*
+- [Software Engineer, Container Infrastructure (Technical Leadership) Bellevue, WA ⋅ Menlo Park, CA ⋅ New York, NY Infrastructure AI Infrastructure Software Engineering Artificial Intelligence Engineerin](https://www.metacareers.com/profile/job_details/1153298343784841) · Meta · *senior (Technical Leadership)*
+- [Wearables Systems Architect Sunnyvale, CA Facebook Reality Labs Hardware](https://www.metacareers.com/profile/job_details/1880972626418157) · Meta · *not software (Hardware)*
+- [Staff Researcher, Rolling Research (Slack)](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Staff-Researcher--Rolling-Research--Slack-_JR368208) · Salesforce · *senior (Staff)*
+- [Product Marketing Lead - Keynote Messaging](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Product-Marketing-Lead---Keynote-Messaging_JR367467) · Salesforce · *senior (Lead)*
+- [Employee Success M&A Senior Director](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Washington---Seattle/Employee-Success-M-A-Senior-Director_JR367701) · Salesforce · *senior (Senior)*
+- [Employee Success M&A Director](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Washington---Seattle/Employee-Success-M-A-Director_JR367700) · Salesforce · *senior (Director)*
+- [Customer Marketing Lead, Startups](https://job-boards.greenhouse.io/anthropic/jobs/5477150008) · Anthropic · San Francisco, CA \| New York City, NY · *senior (Lead)*
+- [Audience & Content Growth Lead, SMB Ads](https://jobs.ashbyhq.com/openai/9d9d9fba-e955-4c4d-8e6f-e7fc80d7a919) · OpenAI · San Francisco · *senior (Lead)*
+- [Partner Director, IBM North America](https://jobs.ashbyhq.com/openai/5a55fa31-64fd-4bf9-8c12-48f0d6fe1d69) · OpenAI · New York City · *senior (Director)*
+- [Senior Scientist - Marketplace Rider Segmentation](https://jobs.uber.com/en/jobs/304105/) · Uber · *senior (Senior)*
+- [GIS Technician 1/2/3](https://newbraunfels.wd12.myworkdayjobs.com/CONB/job/New-Braunfels-TX/GIS-Technician-I-II-III_R456) · City of New Braunfels (via SimplifyJobs New Grad) · New Braunfels, TX · *not engineering (Technician)*
+- [ERP Master Data Specialist](https://job-boards.greenhouse.io/betatechnologiesinc/jobs/4262266009) · Beta Technologies (via SimplifyJobs New Grad) · South Burlington, VT · *not engineering (Specialist)*
+
+## 2026-11-12
+
+- [Analytics Program Manager Menlo Park, CA ⋅ Remote, US Data & Analytics Product Strategy](https://www.metacareers.com/profile/job_details/914881927910885) · Meta · *senior (Manager)*
+- [Engineering Product Configuration Manager Menlo Park, CA ⋅ Fremont, CA AI Infrastructure Data Center Operations](https://www.metacareers.com/profile/job_details/2158178461579459) · Meta · *senior (Manager)*
+- [Partner Director, EY North America](https://jobs.ashbyhq.com/openai/fcfc366b-354d-4604-9fc3-ede92e531a61) · OpenAI · New York City; San Francisco · *senior (Director)*
+- [Account Executive, Enterprise Acquisition](https://jobs.ashbyhq.com/snowflake/47f5b7af-eb56-40cc-b5e9-2881b602a2f8) · Snowflake · *not engineering (Account Executive)*
+- [Staff Software Engineer](https://jobs.ashbyhq.com/snowflake/1c8dbe2c-60b3-4d66-a73f-95dffe416626) · Snowflake · *senior (Staff)*
+- [Senior Director, Tools & Automation, Creator Relations](https://careers.roblox.com/jobs/8359458?gh_jid=8359458) · Roblox · San Mateo, CA, United States · *senior (Senior)*
+- [Sr Software Development Engineer, Nitro Card, Annapurna Labs, K2-US](https://www.amazon.jobs/en/jobs/10603869/sr-software-development-engineer-nitro-card-annapurna-labs-k2-us) · Amazon · *senior (Sr)*
+- [Global Category Manager, Compute and Network, Electro-Mechanical Strategic Sourcing Team](https://www.amazon.jobs/en/jobs/10603864/global-category-manager-compute-and-network-electro-mechanical-strategic-sourcing-team) · Amazon · *senior (Manager)*
+- [Data Center Lead Temple, TX Data Center Data Center Operations](https://www.metacareers.com/profile/job_details/1111221755150271) · Meta · *senior (Lead)*
+- [Talent Advisor](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Illinois---Chicago/Talent-Advisor_JR367674) · Salesforce · *not engineering (Talent)*
+- [Analyst Relations Senior Manager](https://stripe.com/jobs/search?gh_jid=8376775) · Stripe · Remote in the US · *senior (Senior)*
+- [Sr Manager, Partnership Marketing](https://paypal.eightfold.ai/careers/job/274923368695) · PayPal · *senior (Sr)*
+- [Thermal Engineer](https://jobs.ashbyhq.com/openai/343d9176-1bd5-48cf-a771-dd4ecf726b77) · OpenAI · San Francisco · *not software (Thermal)*
+- [Global Strategy and Operations Associate, YouTube Marketing](https://www.google.com/about/careers/applications/jobs/results/92373659401757382-global-strategy-and-operations-associate-youtube-marketing?location=United+States&target_level=EARLY&sort_by=date) · Google / Alphabet · *not engineering (Operations)*
+- [Senior People Business Partner](https://jobs.apple.com/en-us/details/200694818-0836/senior-people-business-partner?team=CORSV) · Apple · *senior (Senior)*
+- [Area Manager](https://www.amazon.jobs/en/jobs/10603858/area-manager) · Amazon · *senior (Manager)*
+- [Project Manager, Access & Compromise Operations Seattle, WA Online Operations Operations](https://www.metacareers.com/profile/job_details/1439592651663270) · Meta · *senior (Manager)*
+- [Product Manager, Consumer Bank Network](https://stripe.com/jobs/search?gh_jid=8384438) · Stripe · SF, SEA, NYC, Chicago, Toronto · *senior (Manager)*
+- [Staff Software Engineer, Code Forge](https://stripe.com/jobs/search?gh_jid=8293644) · Stripe · San Francisco, Seattle, US-Remote · *senior (Staff)*
+- [Assistant General Counsel, Derivatives](https://boards.greenhouse.io/robinhood/jobs/7997547?t=gh_src=&gh_jid=7997547) · Robinhood · Menlo Park, CA; New York, NY; Washington, DC · *not engineering (Assistant)*
+- [Tax, Asset Management Tax Advisory, Vice President, London London · United Kingdom · Vice President](https://higher.gs.com/roles/188357) · Goldman Sachs · *senior (Vice President)*
+- [Global Tax, Alternative Investments Tax Advisor, Associate, London London · United Kingdom · Associate](https://higher.gs.com/roles/171680) · Goldman Sachs · *not engineering (Tax)*
+- [Associate Banker, 30 Hours, Murfreesboro, TN - South Church Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806931) · JPMorgan Chase · Murfreesboro, TN, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 30 Hours, Springfield, TN - Shops at Mooreland Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807637) · JPMorgan Chase · Springfield, TN, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 30 Hours, Clemson, SC - Clemson Tiger Blvd Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807651) · JPMorgan Chase · Clemson, SC, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 30 Hours, Carencro, LA - Carencro Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807883) · JPMorgan Chase · Carencro, LA, United States · *not engineering (Associate Banker)*
+- [Engineering Manager - Notebook Dataplane](https://databricks.com/company/careers/open-positions/job?gh_jid=8940488002) · Databricks · Mountain View, California · *senior (Manager)*
+- [Account Executive, Navy](https://job-boards.greenhouse.io/scaleai/jobs/4753798005) · Scale AI · San Diego, CA; Washington, DC · *not engineering (Account Executive)*
+- [Sr Software Engineer - Data Infrastructure](https://jobs.uber.com/en/jobs/304218/) · Uber · *senior (Sr)*
+- [Strategy & Operations Associate, Global Membership](https://jobs.uber.com/en/jobs/303490/) · Uber · *not engineering (Operations)*
+- [Sr Software Engineer - ML Infrastructure](https://jobs.uber.com/en/jobs/304217/) · Uber · *senior (Sr)*
+- [Technical Program Manager, Security Austin, TX ⋅ Menlo Park, CA ⋅ Washington, DC ⋅ New York, NY ⋅ San Francisco, CA Legal, Finance, Facilities & Admin Technical Program Management Technical Security P](https://www.metacareers.com/profile/job_details/1136637545945716) · Meta · *senior (Manager)*
+- [CAD and Methodology Engineer, Silicon Sunnyvale, CA AR/VR Facebook Reality Labs Meta Quest Meta Portal Engineering Hardware](https://www.metacareers.com/profile/job_details/2051551862208705) · Meta · *not software (Silicon)*
+- [Ops Analyst, Slack Policy Operations](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/US-Remote/Ops-Analyst--Slack-Policy-Operations_JR367999) · Salesforce · *not engineering (Policy)*
+- [FINS IDO Manager](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/New-York---New-York-City-Metro---Remote/FINS-IDO-Manager_JR366239) · Salesforce · *senior (Manager)*
+- [Part Time (30 Hours) Associate Banker, Bay Parkway and 85th St Branch, Brooklyn, NY Bilingual Cantonese Speaking Required](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210793774) · JPMorgan Chase · Brooklyn, NY, United States · *not engineering (Associate Banker)*
+- [Program/Project Manager](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803536) · JPMorgan Chase · Chicago, IL, United States · *senior (Manager)*
+- [Branch Operations Lead Trainee - Middle Virginia Market - Stafford, VA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807142) · JPMorgan Chase · Stafford, VA, United States · *senior (Lead)*
+- [Private Client Banker - Middle Virginia Market - Fredericksburg, VA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807515) · JPMorgan Chase · Fredericksburg, VA, United States · *not engineering (Banker)*
+- [Partner Support Operations Lead](https://job-boards.greenhouse.io/anthropic/jobs/5453322008) · Anthropic · San Francisco, CA \| New York City, NY · *senior (Lead)*
+- [Tech Lead Manager, Growth Data Science](https://job-boards.greenhouse.io/anthropic/jobs/5478799008) · Anthropic · San Francisco, CA \| New York City, NY \| Seattle, WA · *senior (Lead)*
+- [Partner Sales & Development Leader](https://jobs.ashbyhq.com/openai/004959f2-4993-4671-be57-a9034c5427a9) · OpenAI · San Francisco; US - Remote · *senior (Leader)*
+- [Global Sales Program Manager (SMB Sales)](https://jobs.ashbyhq.com/openai/680833a1-01e4-4689-917c-71a4f00ff86c) · OpenAI · San Francisco · *senior (Manager)*
+- [Sr. Research Scientist - Agent Flywheel](https://databricks.com/company/careers/open-positions/job?gh_jid=8940421002) · Databricks · New York City, New York · *senior (Sr)*
+- [Senior Software Engineer, Reliability](https://careers.roblox.com/jobs/8283709?gh_jid=8283709) · Roblox · San Mateo, CA, United States · *senior (Senior)*
+- [Senior Critical Environment Technician](https://apply.careers.microsoft.com/careers/job/1970393557072870) · Microsoft — US Entry Level · *senior (Senior)*
+- [Executive Assistant - Admin Team Manager](https://jobs.apple.com/en-us/details/200694432-0836/executive-assistant-admin-team-manager?team=CORSV) · Apple · *senior (Manager)*
+- [Data Platform and Agentic Governance Lead, HR Technology Austin, TX ⋅ Menlo Park, CA ⋅ New York, NY Data & Analytics Global Operations Data Engineering HR IT](https://www.metacareers.com/profile/job_details/2153360122218717) · Meta · *senior (Lead)*
+- [Senior Financial Analyst Fp A](https://plaid.com/careers/openings/finance/san-francisco-hq/senior-financial-analyst-fp-a/) · Plaid · *senior (Senior)*
+- [Asset Management - Client Service - Institutional Contract Specialist - Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210798523) · JPMorgan Chase · New York, NY, United States · *senior (Vice President)*
+- [Relationship Banker - Newport Beach Market - Santa Ana, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807622) · JPMorgan Chase · Santa Ana, CA, United States · *not engineering (Banker)*
+- [Branch Operations Lead- Highland Park Branch-San Antonio, TX](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807980) · JPMorgan Chase · San Antonio, TX, United States · *senior (Lead)*
+- [JR044967 Fixed Income Division - Associate/Vice President, Interest Rate Structuring (New York)](https://morganstanley.eightfold.ai/careers/job/549801273567) · Morgan Stanley · *senior (Vice President)*
+- [Geo Core Account Executive - Digital Natives](https://databricks.com/company/careers/open-positions/job?gh_jid=8937118002) · Databricks · United States · *not engineering (Account Executive)*
+- [Financial Analyst – QCT OpEx Finance](https://careers.qualcomm.com/careers/job/446721660075) · Qualcomm · *not engineering (Financial)*
+- [Entry Level Sales, Account Representative, Dallas - January Start Date](https://jobs.uber.com/en/jobs/304349/) · Uber · *not engineering (Sales)*
+- [Senior Sales Manager, Higher Education](https://jobs.uber.com/en/jobs/304688/) · Uber · *senior (Senior)*
+- [Sr Manufacturing Test Engineer, Amazon LEO](https://www.amazon.jobs/en/jobs/10603699/sr-manufacturing-test-engineer-amazon-leo) · Amazon · *senior (Sr)*
+- [Retail Operations Manager New York, NY Facebook Reality Labs Sales & Marketing Operations Sales](https://www.metacareers.com/profile/job_details/996383829599423) · Meta · *senior (Manager)*
+- [Associate General Counsel, IP Product Los Angeles, CA ⋅ Atlanta, GA ⋅ Menlo Park, CA ⋅ Washington, DC ⋅ New York, NY ⋅ +2 more Legal, Finance, Facilities & Admin Legal](https://www.metacareers.com/profile/job_details/2097471921151118) · Meta · *not engineering (Counsel)*
+- [Senior Product Marketer](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Senior-Product-Marketer_JR368243) · Salesforce · *senior (Senior)*
+- [Field Marketing Manager](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Field-Marketing-Manager_JR368241) · Salesforce · *senior (Manager)*
+- [Partner Sales, Senior Manager - Energy, Utilities and Automotive](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Florida---Remote/Partner-Sales--Senior-Manager---Energy--Utilities-and-Automotive_JR368229) · Salesforce · *senior (Senior)*
+- [Lead Product Manager](https://paypal.eightfold.ai/careers/job/274923294851) · PayPal · *senior (Lead)*
+- [Customer Experience Team Lead, Money](https://boards.greenhouse.io/robinhood/jobs/8205711?t=gh_src=&gh_jid=8205711) · Robinhood · Westlake, TX · *senior (Lead)*
+- [Senior Product Associate, Rewards and loyalty](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210793305) · JPMorgan Chase · New York, NY, United States · *senior (Senior)*
+- [Readiness Measures & Insights Manager](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807340) · JPMorgan Chase · Jacksonville, FL, United States · *senior (Manager)*
+- [Associate Relationship Banker - Rogers - Rogers, MN](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807522) · JPMorgan Chase · Rogers, MN, United States · *not engineering (Banker)*
+- [Associate Relationship Banker - SC St Louis Market - St Louis, MO](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807708) · JPMorgan Chase · St Louis, MO, United States · *not engineering (Banker)*
+- [Associate Relationship Banker - Twin Cities Market](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808089) · JPMorgan Chase · Saint Paul, MN, United States · *not engineering (Banker)*
+- [Relationship Banker - Minnesota Northern Market](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808112) · JPMorgan Chase · Andover, MN, United States · *not engineering (Banker)*
+- [AI Deployment Manager (Korean Speaking)](https://jobs.ashbyhq.com/openai/e25b1543-679a-4577-ad37-6205c529d759) · OpenAI · San Francisco · *senior (Manager)*
+- [AI Deployment Manager (Japanese-Speaking)](https://jobs.ashbyhq.com/openai/8a98771d-c657-42cc-9542-6acae8fa9839) · OpenAI · San Francisco · *senior (Manager)*
+- [Enterprise Operations Talent Management Professional Entry Level Raleigh, US](https://careers.ibm.com/en_US/careers/JobDetail?jobId=141999&source=WEB_Search_NA) · IBM · *not engineering (Operations)*
+- [Critical Environment Technician](https://apply.careers.microsoft.com/careers/job/1970393557072869) · Microsoft — US Entry Level · *not engineering (Technician)*
+- [Critical Environment Technician (IUOE, Local 399)](https://apply.careers.microsoft.com/careers/job/1970393557053037) · Microsoft — US Entry Level · *not engineering (Technician)*
+- [Critical Environment Technician](https://apply.careers.microsoft.com/careers/job/1970393557053814) · Microsoft — US Entry Level · *not engineering (Technician)*
+- [Data Center Technicians Manager](https://apply.careers.microsoft.com/careers/job/1970393557055990) · Microsoft — US Entry Level · *senior (Manager)*
+- [Data Center Technician Manager (Night Shift)](https://apply.careers.microsoft.com/careers/job/1970393557050266) · Microsoft — US Entry Level · *senior (Manager)*
+- [Senior Logistics Technician](https://apply.careers.microsoft.com/careers/job/1970393557055988) · Microsoft — US Entry Level · *senior (Senior)*
+- [Logistics Technician](https://apply.careers.microsoft.com/careers/job/1970393557055989) · Microsoft — US Entry Level · *not engineering (Technician)*
+- [Head of Emerging Technology Strategy & Partnerships](https://jobs.apple.com/en-us/details/200694075-0836/head-of-emerging-technology-strategy-partnerships?team=SLDEV) · Apple · *senior (Head of)*
+- [Product Manager, Employee Experience & Productivity](https://jobs.apple.com/en-us/details/200694612-3956/product-manager-employee-experience-productivity?team=SFTWR) · Apple · *senior (Manager)*
+- [US-Manager](https://jobs.apple.com/en-us/details/200694549-2214/us-manager?team=APPST) · Apple · *senior (Manager)*
+- [Lead, Content Business Development Los Angeles, CA Business Development & Partnerships Business Development](https://www.metacareers.com/profile/job_details/3265249643659471) · Meta · *senior (Lead)*
+- [Data Scientist Intern, Product Analytics (Summer 2027) Menlo Park, CA ⋅ New York, NY Data & Analytics Internship - Engineering, Tech & Design Analytics Data Science](https://www.metacareers.com/profile/job_details/1633096478817942) · Meta · *internship (Intern)*
+- [Staff Product Manager, Custom Objects](https://stripe.com/jobs/search?gh_jid=8315951) · Stripe · San Francisco, California · *senior (Staff)*
+- [AML Investigations Manager](https://boards.greenhouse.io/robinhood/jobs/8259642?t=gh_src=&gh_jid=8259642) · Robinhood · Denver, CO; New York, NY; Westlake, TX · *senior (Manager)*
+- [Senior Staff Incident Response Engineer](https://sofi.com/careers/job/8200883003?gh_jid=8200883003) · SoFi · WA - Seattle; CA - San Francisco · *senior (Senior)*
+- [Asset Management - Investment Grade Credit Portfolio Manager - Executive Director](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210738651) · JPMorgan Chase · New York, NY, United States · *senior (Manager)*
+- [Content Design Senior Associate - Co-Brand Card](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210768319) · JPMorgan Chase · New York, NY, United States · *senior (Senior)*
+- [Associate Banker, 30 Hours, Pottstown, PA - Pottstown Shoemaker Rd Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802477) · JPMorgan Chase · Pottstown, PA, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 40 Hours, Hampton, VA - Peninsula Town Center Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805784) · JPMorgan Chase · Hampton, VA, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 20 Hours, Philadelphia, PA - Aramingo Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806455) · JPMorgan Chase · Philadelphia, PA, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 30 Hours, Royersford, PA - Royersford Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806525) · JPMorgan Chase · Royersford, PA, United States · *not engineering (Associate Banker)*
+- [Full Time (40 Hours) Associate Banker, Frederica Branch, Owensboro, KY](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807655) · JPMorgan Chase · Owensboro, KY, United States · *not engineering (Associate Banker)*
+- [Full Time (40 Hours) Associate Banker, The Summit Branch, Louisville, KY](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807659) · JPMorgan Chase · Louisville, KY, United States · *not engineering (Associate Banker)*
+- [Branch Operations Lead - Southern CO - Colorado Springs, CO](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808047) · JPMorgan Chase · Colorado Springs, CO, United States · *senior (Lead)*
+- [Branch Operations Lead - Doral Plaza - Doral, FL](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808070) · JPMorgan Chase · Doral, FL, United States · *senior (Lead)*
+- [Resale Operations Lead](https://job-boards.greenhouse.io/anthropic/jobs/5468548008) · Anthropic · San Francisco, CA \| New York City, NY · *senior (Lead)*
+- [Sr Client Partner, Uber Advertising - Tech/Telco/B2B/Auto](https://jobs.uber.com/en/jobs/304171/) · Uber · *senior (Sr)*
+- [Senior Staff Product Manager, Enterprise Data Platform](https://jobs.intuit.com/job/mountain-view/senior-staff-product-manager-enterprise-data-platform/27595/103221003216) · Intuit (TurboTax / QuickBooks) · Mountain View, California · *senior (Senior)*
+- [Senior Community Engagement Leader, Consumer Group](https://jobs.intuit.com/job/atlanta/senior-community-engagement-leader-consumer-group/27595/103221003152) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *senior (Senior)*
+- [US-Manager](https://jobs.apple.com/en-us/details/200694542-2579/us-manager?team=APPST) · Apple · *senior (Manager)*
+- [US Industry and Ecosystem Lead, Life Sciences](https://jobs.apple.com/en-us/details/200694764-0456/us-industry-and-ecosystem-lead-life-sciences?team=SLDEV) · Apple · *senior (Lead)*
+- [US Industry and Ecosystem Lead, Life Sciences](https://jobs.apple.com/en-us/details/200694764-1507/us-industry-and-ecosystem-lead-life-sciences?team=SLDEV) · Apple · *senior (Lead)*
+- [US Industry and Ecosystem Lead, Life Sciences](https://jobs.apple.com/en-us/details/200694764-2459/us-industry-and-ecosystem-lead-life-sciences?team=SLDEV) · Apple · *senior (Lead)*
+- [US Industry and Ecosystem Lead, Life Sciences](https://jobs.apple.com/en-us/details/200694764-3577/us-industry-and-ecosystem-lead-life-sciences?team=SLDEV) · Apple · *senior (Lead)*
+- [US Industry and Ecosystem Lead, Life Sciences](https://jobs.apple.com/en-us/details/200694764-4099/us-industry-and-ecosystem-lead-life-sciences?team=SLDEV) · Apple · *senior (Lead)*
+- [US-Lead Genius](https://jobs.apple.com/en-us/details/200694531-2168/us-lead-genius?team=APPST) · Apple · *senior (Lead)*
+- [Operations Manager, FC](https://www.amazon.jobs/en/jobs/10603714/operations-manager-fc) · Amazon · *senior (Manager)*
+- [Commercial Sourcing Manager, CPU Menlo Park, CA ⋅ Fremont, CA Data Center Data Center Operations](https://www.metacareers.com/profile/job_details/1137236809036629) · Meta · *senior (Manager)*
+- [Software Engineer, Agent Transformation Accelerator XFN (Technical Leadership) Menlo Park, CA Software Engineering Engineering](https://www.metacareers.com/profile/job_details/1476374641074357) · Meta · *senior (Technical Leadership)*
+- [CIC Strategic Programs Senior Architect](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Illinois---Chicago/CIC-Strategic-Programs-Senior-Architect_JR367247) · Salesforce · *senior (Senior)*
+- [Industry Advisor - MedTech (Sr. Director)](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Industry-Advisor---MedTech--Sr-Director-_JR365815) · Salesforce · *senior (Sr)*
+- [People Support Associate](https://sofi.com/careers/job/8201657003?gh_jid=8201657003) · SoFi · Cottonwood Heights, UT · *not engineering (People)*
+- [Personalization Product Senior Data Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801670) · JPMorgan Chase · New York, NY, United States · *senior (Senior)*
+- [Product Manager](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807871) · JPMorgan Chase · OH, United States · *senior (Manager)*
+- [Senior Product Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807882) · JPMorgan Chase · OH, United States · *senior (Senior)*
+- [Co-Branded Card Strategy Lead](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808252) · JPMorgan Chase · New York, NY, United States · *senior (Lead)*
+- [Private Client Banker - Sunny Isles Beach - Sunny Isles Beach, FL](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808294) · JPMorgan Chase · Sunny Isles Beach, FL, United States · *not engineering (Banker)*
+- [Executive Administrative Assistant](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808366) · JPMorgan Chase · GA, United States · *not engineering (Executive)*
+- [Sr Lead Software Engineer - AI Engineer](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808518) · JPMorgan Chase · NY, United States · *senior (Sr)*
+- [Private Client Banker - Tacoma Narrows Branch - Tacoma, WA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808534) · JPMorgan Chase · Tacoma, WA, United States · *not engineering (Banker)*
+- [Federal Account Director, Intelligence Community](https://jobs.ashbyhq.com/openai/fd5522f1-8e39-4d60-8b8a-34fae61104cb) · OpenAI · Washington, DC · *senior (Director)*
+- [Sr Staff Engineer - Uber for Business](https://jobs.uber.com/en/jobs/303355/) · Uber · *senior (Sr)*
+- [Director, AV Support Services](https://jobs.uber.com/en/jobs/302210/) · Uber · *senior (Director)*
+- [Sales Analytics Intern 2027 (USA)](https://www.pinterestcareers.com/jobs/8214783/sales-analytics-intern-2027-usa/?gh_jid=8214783) · Pinterest · *internship (Intern)*
+- [Senior Data Analyst, Moderation Operations](https://careers.roblox.com/jobs/8332448?gh_jid=8332448) · Roblox · San Mateo, CA, United States · *senior (Senior)*
+- [US-Lead Genius](https://jobs.apple.com/en-us/details/200694369-2489/us-lead-genius?team=APPST) · Apple · *senior (Lead)*
+- [Sr. Engineering Manager, ASE Efficiency](https://jobs.apple.com/en-us/details/200681810-0836/sr-engineering-manager-ase-efficiency?team=SFTWR) · Apple · *senior (Sr)*
+- [Apple Business Account Executive](https://jobs.apple.com/en-us/details/200694304-0157/apple-business-account-executive?team=SLDEV) · Apple · *not engineering (Account Executive)*
+- [AI Engineer, Specialist - VR - (Technical Leadership) Redmond, WA ⋅ Burlingame, CA ⋅ New York, NY ⋅ Seattle, WA Artificial Intelligence](https://www.metacareers.com/profile/job_details/1172768971855228) · Meta · *senior (Technical Leadership)*
+- [Senior Financial Analyst Corporate Finance Strategy](https://plaid.com/careers/openings/finance/senior-financial-analyst-corporate-finance-strategy/) · Plaid · *senior (Senior)*
+- [Petroleum Engineer- Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210757660) · JPMorgan Chase · Houston, TX, United States · *senior (Vice President)*
+- [Staff / Sr. ML Engineer, Web Indexing](https://jobs.apple.com/en-us/details/200682440-3760/staff-sr-ml-engineer-web-indexing?team=MLAI) · Apple · *senior (Staff)*
+- [Construction Manager, Data Center Project Development Temple, TX ⋅ Rayville, LA ⋅ Newton County, GA ⋅ El Paso, TX ⋅ Bowling Green, OH Data Center Infrastructure Data Center Design, Engineering, & Cons](https://www.metacareers.com/profile/job_details/2576133546201939) · Meta · *senior (Manager)*
+- [Know Your Customer Quality Manager- Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808385) · JPMorgan Chase · Columbus, OH, United States · *senior (Manager)*
+- [J.P. Morgan Wealth Management - Market Director of Wealth - Kansas City East / Nebraska Market](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808432) · JPMorgan Chase · Leawood, KS, United States · *senior (Director)*
+- [Branch Administrator](https://morganstanley.eightfold.ai/careers/job/549801248327) · Morgan Stanley · *not engineering (Branch)*
+- [Senior Brand Designer](https://careers.roblox.com/jobs/8374430?gh_jid=8374430) · Roblox · San Mateo, CA, United States · *senior (Senior)*
+- [Corporate FP&A Analyst](https://jobs.apple.com/en-us/details/200693769-0836/corporate-fp-a-analyst?team=CORSV) · Apple · *not engineering (FP&A)*
+- [2027 Software Dev Engineer Intern - Finland](https://www.amazon.jobs/en/jobs/10603649/2027-software-dev-engineer-intern-finland) · Amazon · *internship (Intern)*
+- [Executive Recruiting Partner Menlo Park, CA ⋅ New York, NY People & Recruiting Recruiting](https://www.metacareers.com/profile/job_details/2194663121400231) · Meta · *not engineering (Executive)*
+- [Director, Capacity Planning](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Director--Capacity-Planning_JR367943) · Salesforce · *senior (Director)*
+- [MuleSoft Senior Success Guide](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Washington---Seattle/MuleSoft-Senior-Success-Guide_JR365791-1) · Salesforce · *senior (Senior)*
+- [Manager, Quota Operations](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Washington---Seattle/Manager--Quota-Operations_JR367789-1) · Salesforce · *senior (Manager)*
+- [Channel Sales Technical Integration Manager Remote Melbourne, Australia](https://block.xyz/careers/jobs/5183226008) · Square / Block · *senior (Manager)*
+- [Senior Associate - Digital Account Opening](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210786418) · JPMorgan Chase · Columbus, OH, United States · *senior (Senior)*
+- [Associate Banker, 30 Hours, Lititz, PA - Lititz Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800221) · JPMorgan Chase · Lititz, PA, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 20 Hours, Lititz, PA - Lititz Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802472) · JPMorgan Chase · Lititz, PA, United States · *not engineering (Associate Banker)*
+- [Vice President, Project Controls](https://morganstanley.eightfold.ai/careers/job/549801045309) · Morgan Stanley · *senior (Vice President)*
+- [Hardware Reliability Engineer - Mac System Reliability](https://jobs.apple.com/en-us/details/200694149-0836/hardware-reliability-engineer-mac-system-reliability?team=HRDWR) · Apple · *not software (Hardware)*
+- [Process Assistant](https://www.amazon.jobs/en/jobs/10603519/process-assistant) · Amazon · *not engineering (Assistant)*
+- [Program Manager, Emerging Technical Talent Strategy Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA People & Recruiting G and A Recruiting](https://www.metacareers.com/profile/job_details/1851134056233013) · Meta · *senior (Manager)*
+- [Technical Program Manager - Wearables Experiences Sunnyvale, CA AR/VR Facebook Reality Labs Software Engineering Technical Program Management Engineering Program Management](https://www.metacareers.com/profile/job_details/1691722179032422) · Meta · *senior (Manager)*
+- [UX Research Scientist Intern, Contextual AI (PhD) Redmond, WA AI Research AI Infrastructure Infrastructure Internship - PhD Research](https://www.metacareers.com/profile/job_details/1447131743482590) · Meta · *internship (Intern)*
+- [Engineering Manager, Collaboration Engineering](https://stripe.com/jobs/search?gh_jid=8383655) · Stripe · NYC, San Francisco, Seattle · *senior (Manager)*
+- [Sr Product Manager - Virality, Referrals & KOL](https://jobs.ashbyhq.com/kraken.com/f1887fed-06e8-404c-815f-8a7918da3c18) · Kraken · United States · *senior (Sr)*
+- [Customer Experience Strategy Manager - Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210797040) · JPMorgan Chase · New York, NY, United States · *senior (Manager)*
+- [Community Director - Wilmington, DE](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803402) · JPMorgan Chase · Wilmington, DE, United States · *senior (Director)*
+- [Business Relationship Area Manager- Executive Director](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808128) · JPMorgan Chase · Minneapolis, MN, United States · *senior (Manager)*
+- [Staff Brand Design (Art/Design/Motion) — Spring, In-House Agency for TurboTax](https://jobs.intuit.com/job/oakland/staff-brand-design-art-design-motion-spring-in-house-agency-for-turbotax/27595/103215826432) · Intuit (TurboTax / QuickBooks) · Multiple Locations · *senior (Staff)*
+- [Pre-Silicon Digital Verification Engineer](https://jobs.apple.com/en-us/details/200692449-3956/pre-silicon-digital-verification-engineer?team=HRDWR) · Apple · *not software (Silicon)*
+- [Senior Analyst, Demo Enablement Lead - Slack](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Georgia---Atlanta/Senior-Analyst--Demo-Enablement-Lead---Slack_JR367806) · Salesforce · *senior (Senior)*
+- [Partner Account Director, Accenture Edge](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Partner-Account-Director--Accenture-Edge_JR367278) · Salesforce · *senior (Director)*
+- [Customer Success Manager, Director](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Illinois---Chicago/Customer-Success-Manager--Director_JR367325) · Salesforce · *senior (Manager)*
+- [Learning Experience Design Senior Analyst](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Texas---Houston-Metro---Remote/Learning-Experience-Design-Senior-Analyst_JR367256) · Salesforce · *senior (Senior)*
+- [Analytics Solutions, Senior Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210785428) · JPMorgan Chase · New York, NY, United States · *senior (Senior)*
+- [Community Manager - La Puente, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210800232) · JPMorgan Chase · La Puente, CA, United States · *senior (Manager)*
+- [Business Banking Deposits – Product, Senior Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802577) · JPMorgan Chase · Columbus, OH, United States · *senior (Senior)*
+- [Prime Financial Services Client Onboarding Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210803597) · JPMorgan Chase · NY, United States · *not engineering (Financial)*
+- [Associate Banker, 30 Hours, Strongsville, OH - Strongsville Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806052) · JPMorgan Chase · Strongsville, OH, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 20 Hours, Findlay, OH - Findlay Main Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806386) · JPMorgan Chase · Findlay, OH, United States · *not engineering (Associate Banker)*
+- [Associate Banker, 30 Hours, Rogers, AR - New Hope and S Promenade Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806876) · JPMorgan Chase · Rogers, AR, United States · *not engineering (Associate Banker)*
+- [Visual Designer, Events – Wealth Management Marketing](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806948) · JPMorgan Chase · Columbus, OH, United States · *not engineering (Designer)*
+- [Quantitative Trading & Research - Cash Equity Sales - Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808621) · JPMorgan Chase · New York, NY, United States · *senior (Vice President)*
+- [U.S. Private Bank - Private Banker - Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808919) · JPMorgan Chase · San Francisco, CA, United States · *senior (Vice President)*
+- [Securitized Products Group - ABS Principal Finance - Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808958) · JPMorgan Chase · New York, NY, United States · *senior (Principal)*
+- [Associate, Fund Services-Accounting](https://morganstanley.eightfold.ai/careers/job/549793865404) · Morgan Stanley · *not engineering (Accounting)*
+- [Director, Quality Assurance Engineer](https://morganstanley.eightfold.ai/careers/job/549786603679) · Morgan Stanley · *senior (Director)*
+- [Director Software Product Management & RE](https://morganstanley.eightfold.ai/careers/job/549785629977) · Morgan Stanley · *senior (Director)*
+- [Staff Software Engineer, Support Technology](https://job-boards.greenhouse.io/anthropic/jobs/5478876008) · Anthropic · San Francisco, CA \| New York City, NY · *senior (Staff)*
+- [Sr Staff ML Engineer - Applied AI](https://jobs.uber.com/en/jobs/146988/) · Uber · *senior (Sr)*
+- [Senior Customer Success Manager, Strategic Account Services - Premium Beauty](https://www.amazon.jobs/en/jobs/10603421/senior-customer-success-manager-strategic-account-services-premium-beauty) · Amazon · *senior (Senior)*
+- [Sr Delivery Mgr, Intl Theatrical Post, Amazon MGM Studios Movies Post Production](https://www.amazon.jobs/en/jobs/10603424/sr-delivery-mgr-intl-theatrical-post-amazon-mgm-studios-movies-post-production) · Amazon · *senior (Sr)*
+- [Staff Software Engineer, Code Forge](https://stripe.com/jobs/search?gh_jid=8383466) · Stripe · na · *senior (Staff)*
+- [Director, Legal Counsel, Consumer Credit](https://paypal.eightfold.ai/careers/job/274923403914) · PayPal · *senior (Director)*
+- [Category Manager](https://jobs.ashbyhq.com/chainalysis-careers/c026ee0f-6967-4bcf-8846-342cec8ff523) · Chainalysis · Remote - USA · *senior (Manager)*
+- [Relationship Banker - Greater Maryland Market- Ijamsville, Maryland](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804968) · JPMorgan Chase · Ijamsville, MD, United States · *not engineering (Banker)*
+- [Account Specialist II- Safe Box Vault](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805983) · JPMorgan Chase · San Antonio, TX, United States · *not engineering (Specialist)*
+- [Lead Technical Program Manager](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806558) · JPMorgan Chase · Wilmington, DE, United States · *senior (Lead)*
+- [Sales Product Solutions Manager - Healthcare Payments - Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807644) · JPMorgan Chase · Philadelphia, PA, United States · *senior (Manager)*
+- [Relationship Banker-Greater Northwest Market-Katy, TX](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807733) · JPMorgan Chase · Katy, TX, United States · *not engineering (Banker)*
+- [Part Time (30 hour) Associate Banker (New Build) - Madison Blvd - Madison, AL](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807930) · JPMorgan Chase · Madison, AL, United States · *not engineering (Associate Banker)*
+- [Project Manager II- Markets Ops Platform Transformation](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808262) · JPMorgan Chase · Brooklyn, NY, United States · *senior (Manager)*
+- [J.P. Morgan Advisors - Senior Client Associate - San Francisco, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808445) · JPMorgan Chase · San Francisco, CA, United States · *senior (Senior)*
+- [Manager, Planning and Compensation, Advertising](https://jobs.uber.com/en/jobs/303641/) · Uber · *senior (Manager)*
+- [Lead Product Manager, AV Labs](https://jobs.uber.com/en/jobs/157802/) · Uber · *senior (Lead)*
+- [Ops Analyst, Slack Policy Operations](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Ops-Analyst--Slack-Policy-Operations_JR367999) · Salesforce · *not engineering (Policy)*
+- [Accounts Receivable Operations Analyst](https://boards.greenhouse.io/robinhood/jobs/8379685?t=gh_src=&gh_jid=8379685) · Robinhood · Menlo Park, CA · *not engineering (Operations)*
+- [Business Controls Testing Senior Analyst](https://sofi.com/careers/job/8200888003?gh_jid=8200888003) · SoFi · United States · *senior (Senior)*
+- [Vice President, Editorial and Thought Leadership](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210753463) · JPMorgan Chase · Chicago, IL, United States · *senior (Vice President)*
+- [Client Service Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210779930) · JPMorgan Chase · Irvine, CA, United States · *not engineering (Client Service)*
+- [Program Manager - Data and Analytics](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210793784) · JPMorgan Chase · New York, NY, United States · *senior (Manager)*
+- [J.P. Morgan Wealth Management - Private Client Investment Associate - Westerville, OH](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210799627) · JPMorgan Chase · Westerville, OH, United States · *not engineering (Wealth)*
+- [U.S. Private Bank, J.P. Morgan Private Advisory – Senior Cyber Advisor, Executive Director (New York, Miami, Dallas, Los Angeles)](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808091) · JPMorgan Chase · New York, NY, United States · *senior (Senior)*
+- [Early Careers Event Specialist](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808565) · JPMorgan Chase · Chicago, IL, United States · *not engineering (Specialist)*
+- [Client Service Associate](https://morganstanley.eightfold.ai/careers/job/549801290252) · Morgan Stanley · *not engineering (Client Service)*
+- [2027 Financial Services Representative (SIE) \| Chicago, IL](https://morganstanley.eightfold.ai/careers/job/549800143367) · Morgan Stanley · *not engineering (Financial)*
+- [Security Incident Response Team Manager](https://jobs.ashbyhq.com/openai/f23e6564-d8a4-403c-87ac-5c77c810bf3d) · OpenAI · San Francisco; US - Remote · *senior (Manager)*
+- [Threat Detection Engineering Manager](https://jobs.ashbyhq.com/openai/b8ee8378-63a1-4741-a07f-647ece282dea) · OpenAI · San Francisco; US - Remote · *senior (Manager)*
+- [Delivery Practice Manager, Public Sector Professional Services](https://www.amazon.jobs/en/jobs/10603301/delivery-practice-manager-public-sector-professional-services) · Amazon · *senior (Manager)*
+- [Business Development Manager, Monetization Menlo Park, CA ⋅ New York, NY ⋅ San Francisco, CA Business Development & Partnerships Business Development](https://www.metacareers.com/profile/job_details/2875011329549610) · Meta · *senior (Manager)*
+- [Senior Internal Auditor](https://circle.wd1.myworkdayjobs.com/en-US/Circle/job/San-Francisco---remote-first-in-US/Senior-Internal-Auditor_JR101207) · Circle (USDC) · *senior (Senior)*
+- [Associate Banker, 20 Hours, Dallas, TX - Coit and Campbell Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210789613) · JPMorgan Chase · Dallas, TX, United States · *not engineering (Associate Banker)*
+- [Lead Security Engineer](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210791873) · JPMorgan Chase · Wilmington, DE, United States · *senior (Lead)*
+- [Director of Software Engineering- Performance Engineering](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808358) · JPMorgan Chase · Seattle, WA, United States · *senior (Director)*
+- [GIS Field Technician](https://careers.sam.biz/jobs/8219?icims=1&lang=en-us) · SAM (via SimplifyJobs New Grad) · Merriam, KS; Maryville, MO · *not engineering (Technician)*
+- [AI Acceleration Specialist](https://jobs.ashbyhq.com/neko-health/555d3020-e769-4d2d-bb64-d94107b1b79f/application?embed=true) · Neko Health (via SimplifyJobs New Grad) · NYC · *not engineering (Specialist)*
+- [Network Development Manager Menlo Park, CA ⋅ Remote, US Infrastructure Network Engineering](https://www.metacareers.com/profile/job_details/2101025473811894) · Meta · *senior (Manager)*
+- [Legal Operations Associate - Case Oversight and Administration Team](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802705) · JPMorgan Chase · Columbus, OH, United States · *not engineering (Legal)*
+- [J.P. Morgan Wealth Management - Private Client Investment Associate - Midtown Manhattan, NY](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807537) · JPMorgan Chase · New York, NY, United States · *not engineering (Wealth)*
+- [2027 Financial Services Representative \| Chicago, IL](https://morganstanley.eightfold.ai/careers/job/549800142533) · Morgan Stanley · *not engineering (Financial)*
+- [Senior Software Engineer, Agent Oversight](https://job-boards.greenhouse.io/scaleai/jobs/4714509005) · Scale AI · San Francisco, CA; New York, NY · *senior (Senior)*
+- [Senior Software Engineer](https://sidley.wd501.myworkdayjobs.com/US/job/Chicago/Senior-Software-Engineer_R00993) · Sidley Austin (via SimplifyJobs New Grad) · Palo Alto, CA; Boston, MA; Houston, TX; Washington, DC; Miami, FL; Dallas, TX; Chicago, IL; NYC · *senior (Senior)*
+- [Senior RME Technician](https://www.amazon.jobs/en/jobs/10603226/senior-rme-technician) · Amazon · *senior (Senior)*
+- [Senior Software Engineer: Assets](https://job-boards.greenhouse.io/consensys/jobs/8374566) · Consensys (Greenhouse) · United States - Remote · *senior (Senior)*
+- [Asset Management - DCIO Internal Client Advisor - Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210789662) · JPMorgan Chase · Columbus, OH, United States · *not engineering (Advisor)*
+- [Asset Management - Internal Client Advisor - Retirement Plan Specialist - Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210796837) · JPMorgan Chase · Chicago, IL, United States · *not engineering (Advisor)*
+- [Asset Management - Everyday 401K Internal Client Advisor - Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210802994) · JPMorgan Chase · Chicago, IL, United States · *not engineering (Advisor)*
+- [Business Banking Product Controller](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805878) · JPMorgan Chase · Columbus, OH, United States · *not engineering (Controller)*
+- [Vice President, JPMorgan Chase Private Client Financial Product Manager - Affluent Segment](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807205) · JPMorgan Chase · New York, NY, United States · *senior (Vice President)*
+- [Product Solutions Manager - Employee Experience, Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807251) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Manager)*
+- [J.P. Morgan Wealth Management - Private Client Investment Associate - Midtown Manhattan](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807506) · JPMorgan Chase · New York, NY, United States · *not engineering (Wealth)*
+- [Asset Wealth Management Operations Legal Entity Management Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807894) · JPMorgan Chase · Newark, DE, United States · *not engineering (Wealth)*
+- [Associate Banker, 40 Hours, Cheyenne, WY - Dell Range District Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807916) · JPMorgan Chase · Cheyenne, WY, United States · *not engineering (Associate Banker)*
+- [Branch Manager- West Central Market-Houston, TX](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808139) · JPMorgan Chase · Houston, TX, United States · *senior (Manager)*
+- [Product Manager - Acquisition Recruiting Onboarding Platform - Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808392) · JPMorgan Chase · Jersey City, NJ, United States · *senior (Manager)*
+- [Mobility Programmatic Operations Manager, Uber Advertising](https://jobs.uber.com/en/jobs/303638/) · Uber · *senior (Manager)*
+- [Senior Product Manager, Habituation](https://jobs.uber.com/en/jobs/159938/) · Uber · *senior (Senior)*
+- [Staff Software Engineer, Agentic Workflows](https://jobs.intuit.com/job/new-york/staff-software-engineer-agentic-workflows/27595/103208841152) · Intuit (TurboTax / QuickBooks) · New York, New York · *senior (Staff)*
+- [Maintenance Team Leader](https://www.amazon.jobs/en/jobs/10603226/maintenance-team-leader) · Amazon · *senior (Leader)*
+- [AI Labs Rotational Fellowship, Emerging Talent](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/AI-Labs-Rotational-Fellowship--Emerging-Talent_JR367643-1) · Salesforce · *not engineering (Talent)*
+- [Sr. Security Risk Management Analyst](https://jobs.ashbyhq.com/kraken.com/c64e0a79-c3a9-4c12-b378-68cd79d3d932) · Kraken · United States · *senior (Sr)*
+- [Regulatory Capital Reporting & Analysis – Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210771547) · JPMorgan Chase · Brooklyn, NY, United States · *not engineering (Regulatory)*
+- [Client Tax Associate I](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210804737) · JPMorgan Chase · Tampa, FL, United States · *not engineering (Tax)*
+- [Product Controller, Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807662) · JPMorgan Chase · New York, NY, United States · *not engineering (Controller)*
+- [Relationship Banker - Geary and 21st - Cantonese Bilingual Preferred - San Francisco, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808129) · JPMorgan Chase · San Francisco, CA, United States · *not engineering (Banker)*
+- [Data Scientist Lead (Customer Analytics)-Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808145) · JPMorgan Chase · Columbus, OH, United States · *senior (Lead)*
+- [Relationship Banker - Rancho Penasquitos Branch - San Diego, CA](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808149) · JPMorgan Chase · San Diego, CA, United States · *not engineering (Banker)*
+- [Associate Relationship Banker - Logan Main Branch - Logan, WV.](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808204) · JPMorgan Chase · Logan, WV, United States · *not engineering (Banker)*
+- [Relationship Banker -Northwest Dallas Market - Carrollton TX](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808331) · JPMorgan Chase · Carrollton, TX, United States · *not engineering (Banker)*
+- [Private Client Banker - Greater Milwaukee Market - Brookfield, WI](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808535) · JPMorgan Chase · Brookfield, WI, United States · *not engineering (Banker)*
+- [Visual Designer for Client-facing Design System – Private Bank Digital, Senior Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808860) · JPMorgan Chase · New York, NY, United States · *senior (Senior)*
+- [Wealth Management Associate](https://morganstanley.eightfold.ai/careers/job/549801249932) · Morgan Stanley · *not engineering (Wealth)*
+- [SLT Mechanical Design Intern](https://intel.wd1.myworkdayjobs.com/en-US/External/job/US-Oregon-Hillsboro/SLT-Mechanical-Design-Intern_JR0286720) · Intel · *internship (Intern)*
+- [Associate Delivery Consultant](https://www.amazon.jobs/en/jobs/10603179/associate-delivery-consultant) · Amazon · *not engineering (Consultant)*
+- [Associate Banker, 30 Hours, Oregon, OH - Oregon Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806963) · JPMorgan Chase · Toledo, OH, United States · *not engineering (Associate Banker)*
+- [Branch Operations Lead, Walnut Branch, New Braunfels, TX](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807364) · JPMorgan Chase · New Braunfels, TX, United States · *senior (Lead)*
+- [Cyber Intelligence Vice President](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807496) · JPMorgan Chase · Washington, DC, United States · *senior (Vice President)*
+- [Branch Manager - Lexington Market - Lexington, KY](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808206) · JPMorgan Chase · KY, United States · *senior (Manager)*
+- [Sr. Client Account Manager (Growth) - Greater China Region](https://www.pinterestcareers.com/jobs/8081002/sr-client-account-manager-growth-greater-china-region/?gh_jid=8081002) · Pinterest · *senior (Sr)*
+- [Staff Product Manager, App Install](https://www.pinterestcareers.com/jobs/7940537/staff-product-manager-app-install/?gh_jid=7940537) · Pinterest · *senior (Staff)*
+- [Lead SMB & Channel Sales Program Manager](https://www.pinterestcareers.com/jobs/8209905/lead-smb-channel-sales-program-manager/?gh_jid=8209905) · Pinterest · *senior (Lead)*
+- [Client Account Manager II](https://www.pinterestcareers.com/jobs/8016642/client-account-manager-ii/?gh_jid=8016642) · Pinterest · *senior (Manager)*
+- [Staff Security Software Engineer, Detection & Response](https://www.pinterestcareers.com/jobs/8230775/staff-security-software-engineer-detection-response/?gh_jid=8230775) · Pinterest · *senior (Staff)*
+- [Sr. Client Account Manager, Financial Services](https://www.pinterestcareers.com/jobs/8331469/sr-client-account-manager-financial-services/?gh_jid=8331469) · Pinterest · *senior (Sr)*
+- [Staff Software Engineer, Product Infrastructure](https://www.pinterestcareers.com/jobs/8055266/staff-software-engineer-product-infrastructure/?gh_jid=8055266) · Pinterest · *senior (Staff)*
+- [Lead Industry Manager](https://www.pinterestcareers.com/jobs/8239002/lead-industry-manager/?gh_jid=8239002) · Pinterest · *senior (Lead)*
+- [Sr. Qualitative Product Researcher, Search & Home Personalization](https://www.pinterestcareers.com/jobs/7683734/sr-qualitative-product-researcher-search-home-personalization/?gh_jid=7683734) · Pinterest · *senior (Sr)*
+- [Staff Software Engineer](https://www.pinterestcareers.com/jobs/8262940/staff-software-engineer/?gh_jid=8262940) · Pinterest · *senior (Staff)*
+- [Director of Product Management, Advertiser Growth](https://www.pinterestcareers.com/jobs/8132504/director-of-product-management-advertiser-growth/?gh_jid=8132504) · Pinterest · *senior (Director)*
+- [Sales Finance Analyst II](https://www.pinterestcareers.com/jobs/7507652/sales-finance-analyst-ii/?gh_jid=7507652) · Pinterest · *not engineering (Sales)*
+- [Staff Machine Learning Engineer, Homefeed](https://www.pinterestcareers.com/jobs/8279563/staff-machine-learning-engineer-homefeed/?gh_jid=8279563) · Pinterest · *senior (Staff)*
+- [Sr. Business Analyst, Strategy & Operations (12 month contract)](https://www.pinterestcareers.com/jobs/8350415/sr-business-analyst-strategy-operations-12-month-contract/?gh_jid=8350415) · Pinterest · *senior (Sr)*
+- [Chief of Staff to GM, Ads](https://www.pinterestcareers.com/jobs/7488432/chief-of-staff-to-gm-ads/?gh_jid=7488432) · Pinterest · *senior (Chief)*
+- [Sr. Product Designer - Measurement, Data, & AI](https://www.pinterestcareers.com/jobs/8249279/sr-product-designer-measurement-data-ai/?gh_jid=8249279) · Pinterest · *senior (Sr)*
+- [Associate Banker, 30 Hours, Slidell, LA - East Gause Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805923) · JPMorgan Chase · Slidell, LA, United States · *not engineering (Associate Banker)*
+- [Finance Control Management Associate – Business Resiliency & Third-Party Oversight](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805970) · JPMorgan Chase · Brooklyn, NY, United States · *not engineering (Finance)*
+- [2027 Asset & Wealth Management International Private Bank LatAm MBA Summer Associate Program](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210806333) · JPMorgan Chase · Houston, TX, United States · *internship (Summer Associate)*
+- [Associate Banker, 30 Hours, Braintree, MA - Braintree Branch](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807197) · JPMorgan Chase · Braintree, MA, United States · *not engineering (Associate Banker)*
+- [Director of Software Engineering](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807558) · JPMorgan Chase · Wilmington, DE, United States · *senior (Director)*
+- [Executive Director, Talent & Performance Management](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808823) · JPMorgan Chase · New York, NY, United States · *senior (Director)*
+- [Data Center Technician III](https://www.google.com/about/careers/applications/jobs/results/80400458811613894-data-center-technician-iii?location=United+States&target_level=EARLY&sort_by=date) · Google / Alphabet · *not engineering (Technician)*
+- [Manager III, Corporate Dev – AMZ004544](https://www.amazon.jobs/en/jobs/10603150/manager-iii-corporate-dev-amz004544) · Amazon · *senior (Manager)*
+- [Vice President, Central Planning & Analysis (P&A) and Transformation](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210805220) · JPMorgan Chase · Brooklyn, NY, United States · *senior (Vice President)*
+- [Principal Technical Program Manager (TPM) - Threat Response](https://apply.careers.microsoft.com/careers/job/1970393557050066) · Microsoft — US Entry Level · *senior (Principal)*
+- [Senior Technical Program Manager (TPM) - Threat Response](https://apply.careers.microsoft.com/careers/job/1970393557050367) · Microsoft — US Entry Level · *senior (Senior)*
+- [Principal Technical Program Manager (TPM) - Engineering Operations](https://apply.careers.microsoft.com/careers/job/1970393557040547) · Microsoft — US Entry Level · *senior (Principal)*
+- [Senior Technical Program Manager - FDE](https://apply.careers.microsoft.com/careers/job/1970393556939563) · Microsoft — US Entry Level · *senior (Senior)*
+- [Principal Technical Program Manager - FDE](https://apply.careers.microsoft.com/careers/job/1970393556939562) · Microsoft — US Entry Level · *senior (Principal)*
+- [Principal Technical Program Manager](https://apply.careers.microsoft.com/careers/job/1970393557048060) · Microsoft — US Entry Level · *senior (Principal)*
+- [Technical Program Manager II](https://apply.careers.microsoft.com/careers/job/1970393557004247) · Microsoft — US Entry Level · *senior (Manager)*
+- [Principal Technical Program Manager](https://apply.careers.microsoft.com/careers/job/1970393556983205) · Microsoft — US Entry Level · *senior (Principal)*
+- [Senior Technical Program Manager - FD&E](https://apply.careers.microsoft.com/careers/job/1970393557055297) · Microsoft — US Entry Level · *senior (Senior)*
+- [Technical Program Manager II / FDE](https://apply.careers.microsoft.com/careers/job/1970393557024135) · Microsoft — US Entry Level · *senior (Manager)*
+- [Operations Supervisor](https://www.amazon.jobs/en/jobs/10603148/operations-supervisor) · Amazon · *not engineering (Operations)*
+- [Senior Construction Manager, Construction Team](https://www.amazon.jobs/en/jobs/10603140/senior-construction-manager-construction-team) · Amazon · *senior (Senior)*
+- [SME Program Manager Automation , Quick Commerce](https://www.amazon.jobs/en/jobs/10603137/sme-program-manager-automation-quick-commerce) · Amazon · *senior (Manager)*
+- [Marketing Automation Senior Associate](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210716473) · JPMorgan Chase · Plano, TX, United States · *senior (Senior)*
+- [Branch Operations Lead - Columbus Central West - Columbus, OH](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210793348) · JPMorgan Chase · Columbus, OH, United States · *senior (Lead)*
+- [Auto - Underwriter III](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808561) · JPMorgan Chase · Tempe, AZ, United States · *not engineering (Underwriter)*
+- [Operational Excellence Manager, FBA, 3P Marketplace](https://www.amazon.jobs/en/jobs/10603114/operational-excellence-manager-fba-3p-marketplace) · Amazon · *senior (Manager)*
+- [Senior Construction Manager, Data Centre Planning & Delivery (DCPD)](https://www.amazon.jobs/en/jobs/10603113/senior-construction-manager-data-centre-planning-delivery-dcpd) · Amazon · *senior (Senior)*
+- [Controllers - Regulatory Controllers - Vice President - Bengaluru Bengaluru · India · Vice President](https://higher.gs.com/roles/188786) · Goldman Sachs · *senior (Vice President)*
+- [Senior Manager, Project Delivery](https://jobs.ashbyhq.com/snowflake/0efeec18-5623-4c69-b58b-1ffc6db5734c) · Snowflake · *senior (Senior)*
+- [Director, People Planning Operations](https://jobs.apple.com/en-us/details/200694657-0157/director-people-planning-operations?team=SLDEV) · Apple · *senior (Director)*
+- [Data Center Technician II](https://www.google.com/about/careers/applications/jobs/results/129773478701081286-data-center-technician-ii?location=United+States&target_level=EARLY&sort_by=date) · Google / Alphabet · *not engineering (Technician)*
+- [Vendor Consultant, Arabic, Vendor Consultant Program](https://www.amazon.jobs/en/jobs/10603091/vendor-consultant-arabic-vendor-consultant-program) · Amazon · *not engineering (Consultant)*
+- [Relocation to Spain - Senior Financial Analyst, AWS DC Finance](https://www.amazon.jobs/en/jobs/10603096/relocation-to-spain-senior-financial-analyst-aws-dc-finance) · Amazon · *senior (Senior)*
+- [Vendor Consultant, Arabic, Vendor Consultant Program](https://www.amazon.jobs/en/jobs/10603087/vendor-consultant-arabic-vendor-consultant-program) · Amazon · *not engineering (Consultant)*
+- [Vendor Consultant, Arabic, Vendor Consultant Program](https://www.amazon.jobs/en/jobs/10603085/vendor-consultant-arabic-vendor-consultant-program) · Amazon · *not engineering (Consultant)*
+- [Associate Delivery Consultant](https://www.amazon.jobs/en/jobs/10603073/associate-delivery-consultant) · Amazon · *not engineering (Consultant)*
+- [Senior Product Manager, Flora](https://boards.greenhouse.io/cloudflare/jobs/8365223?gh_jid=8365223) · Cloudflare · Hybrid; In-Office · *senior (Senior)*
+- [Technical Program Manager, External Evaluators](https://job-boards.greenhouse.io/anthropic/jobs/5479122008) · Anthropic · San Francisco, CA \| New York City, NY · *senior (Manager)*
+- [Technical Program Manager, Pacing](https://job-boards.greenhouse.io/anthropic/jobs/5479135008) · Anthropic · San Francisco, CA \| New York City, NY · *senior (Manager)*
+- [Senior Solution Engineer](https://jobs.ashbyhq.com/snowflake/598e3053-884a-44b7-88fb-1505838e4097) · Snowflake · *senior (Senior)*
+- [Asset and Wealth Management-Bengaluru- WFM(RTA) Bengaluru · India · Call Center Representative](https://higher.gs.com/roles/146230) · Goldman Sachs · *not engineering (Wealth)*
+- [The Core Engineering-L2-Bengaluru-Vice President-Software Engineering Bengaluru · India · Vice President](https://higher.gs.com/roles/185870) · Goldman Sachs · *senior (Vice President)*
+- [Private Client Banker- Lawrenceville Shoprite - New Jersey Princeton Market](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210801945) · JPMorgan Chase · Lawrenceville, NJ, United States · *not engineering (Banker)*
+- [Account Manager, Large Customer Sales, Technology](https://www.google.com/about/careers/applications/jobs/results/86464540316705478-account-manager-large-customer-sales-technology?location=United+States&target_level=EARLY&sort_by=date) · Google / Alphabet · *senior (Manager)*
+- [Data Center Technician, Global Server Ops, 24/7 Operations, Third Shift](https://www.google.com/about/careers/applications/jobs/results/114908906127270598-data-center-technician-global-server-ops-247-operations-third-shift?location=United+States&target_level=EARLY&sort_by=date) · Google / Alphabet · *not engineering (Technician)*
+- [Private Client Banker - New Jersey Waterfront Market](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807986) · JPMorgan Chase · Ridgefield, NJ, United States · *not engineering (Banker)*
+- [Associate Relationship Banker - Hazlet Branch - Hazlet, NJ](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808010) · JPMorgan Chase · Hazlet, NJ, United States · *not engineering (Banker)*
+- [Branch Manager - New Jersey Monmouth County Market](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210808023) · JPMorgan Chase · Manasquan, NJ, United States · *senior (Manager)*
+- [Frontend Engineer New Grad](https://apply.workable.com/bask-health-1/j/95FB1074E4/apply) · Bask Health (via SimplifyJobs New Grad) · Remote in USA · *frontend (Frontend)*
+- [Private Client Banker- New Jersey Princeton Market](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210807958) · JPMorgan Chase · West Windsor, NJ, United States · *not engineering (Banker)*
+- [The Core Engineering-L2-Hyderabad-Vice President-Software Engineering Hyderabad · India · Vice President](https://higher.gs.com/roles/184630) · Goldman Sachs · *senior (Vice President)*
+- [Engineering-L2-Bengaluru-Vice President-Product Management Bengaluru · India · Vice President](https://higher.gs.com/roles/179747) · Goldman Sachs · *senior (Vice President)*
+- [Partnerships & External Affairs Associate, Global Affairs](https://jobs.ashbyhq.com/openai/a00fce27-16ef-47f0-a584-a1ea37adbc96) · OpenAI · San Francisco · *not engineering (Partnerships)*
+- [Certified Pharmacy Technician, Amazon Pharmacy](https://www.amazon.jobs/en/jobs/10603027/certified-pharmacy-technician-amazon-pharmacy) · Amazon · *not engineering (Technician)*
+- [Construction Manager - Data Center Design, Engineering, & Construction Beaver Dam, WI ⋅ Lebanon, IN ⋅ Tulsa, OK ⋅ Eagle Mountain, UT Infrastructure Data Center Design, Engineering, & Construction](https://www.metacareers.com/profile/job_details/1276926793901855) · Meta · *senior (Manager)*
+- [Enterprise Account Executive, Thailand](https://boards.greenhouse.io/cloudflare/jobs/8378851?gh_jid=8378851) · Cloudflare · Hybrid · *not engineering (Account Executive)*
+- [Named Account Executive, Thailand](https://boards.greenhouse.io/cloudflare/jobs/8378849?gh_jid=8378849) · Cloudflare · Hybrid · *not engineering (Account Executive)*
+- [Staff Security Engineer - AI Driven Security Assurance](https://jobs.apple.com/en-us/details/200685546-3337/staff-security-engineer-ai-driven-security-assurance?team=MLAI) · Apple · *senior (Staff)*
+- [Logistics Specialist,](https://www.amazon.jobs/en/jobs/10603002/logistics-specialist) · Amazon · *not engineering (Specialist)*
+- [Logistics Specialist, KUL Logistics](https://www.amazon.jobs/en/jobs/10602979/logistics-specialist-kul-logistics) · Amazon · *not engineering (Specialist)*
+- [Strategic Partner Program Manager, Key Partners](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/Illinois---Chicago/Strategic-Partner-Program-Manager--Key-Partners_JR367323) · Salesforce · *senior (Manager)*
+- [Business Operations Analyst](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---Remote/Business-Operations-Analyst_JR365816) · Salesforce · *not engineering (Operations)*
+- [Global Banking and Markets, Operations, Settlements, Analyst, Tokyo Minato-Ku · Japan · Analyst](https://higher.gs.com/roles/188705) · Goldman Sachs · *not engineering (Operations)*
+- [iPad & Input Product Design Engineering Program Manager](https://jobs.apple.com/en-us/details/200694568-0836/ipad-input-product-design-engineering-program-manager?team=HRDWR) · Apple · *senior (Manager)*
+- [System Engineering Program Manager (EPM) - Vision Products](https://jobs.apple.com/en-us/details/200694547-3543/system-engineering-program-manager-epm-vision-products?team=HRDWR) · Apple · *senior (Manager)*
+- [System Engineering Program Manager (EPM) - Vision Products](https://jobs.apple.com/en-us/details/200694547-3749/system-engineering-program-manager-epm-vision-products?team=HRDWR) · Apple · *senior (Manager)*
+- [RF Design Engineer – Next-Gen Wireless](https://jobs.apple.com/en-us/details/200694556-3543/rf-design-engineer-next-gen-wireless?team=HRDWR) · Apple · *not software (RF)*
+- [Lead Software Engineer - Full Stack/Java/ React](https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210793824) · JPMorgan Chase · Palo Alto, CA, United States · *senior (Lead)*
+- [Mac Touch Electrical Engineer](https://jobs.apple.com/en-us/details/200694589-3401/mac-touch-electrical-engineer?team=HRDWR) · Apple · *not software (Electrical)*
+- [Privacy Data Analyst, Evidencing and Monitoring Remote, US Communications & Public Policy Program Management](https://www.metacareers.com/profile/job_details/2091420381760990) · Meta · *not engineering (Communications)*
+- [Senior Product Manager, Emerging Technology](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/New-York---New-York/Senior-Product-Manager--Emerging-Technology_JR363267) · Salesforce · *senior (Senior)*
+- [Research Scientist Intern, Ranking & Recommendations (PhD) Bellevue, WA ⋅ Menlo Park, CA ⋅ New York, NY AI Infrastructure AI Research Generative AI Artificial Intelligence Machine Learning Research](https://www.metacareers.com/profile/job_details/1625515955324134) · Meta · *internship (Intern)*
+- [Principal Software Engineering Manager](https://apply.careers.microsoft.com/careers/job/1970393557056033) · Microsoft — US Entry Level · *senior (Principal)*
+- [Senior Director, Engineering Leader](https://apply.careers.microsoft.com/careers/job/1970393557026898) · Microsoft — US Entry Level · *senior (Senior)*
+- [Senior (SMTS) Enterprise Application Engineer (Enterprise Security - Security AI)](https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site/job/California---San-Francisco/Senior--SMTS--Enterprise-Application-Engineer--Enterprise-Security---Security-AI-_JR368128) · Salesforce · *senior (Senior)*
+- [Product Marketing Manager](https://ripple.com/careers/all-jobs/job/8372949?gh_jid=8372949) · Ripple · New York, NY, United States · *senior (Manager)*
+- [Product Marketing Manager](https://ripple.com/careers/all-jobs/job/8372970?gh_jid=8372970) · Ripple · Chicago, Illinois, United States · *senior (Manager)*
+- [Senior Machine Learning Engineer - Computer Vision](https://jobs.apple.com/en-us/details/200694663-3956/senior-machine-learning-engineer-computer-vision?team=MLAI) · Apple · *senior (Senior)*
+- [Software Development Manager, Operations and Debug Tools, Amazon Leo, D2D Software](https://www.amazon.jobs/en/jobs/10602935/software-development-manager-operations-and-debug-tools-amazon-leo-d2d-software) · Amazon · *senior (Manager)*
+- [Principal, Senior Principal and Distinguished Engineer, AWS Agentic AI](https://www.amazon.jobs/en/jobs/10602945/principal-senior-principal-and-distinguished-engineer-aws-agentic-ai) · Amazon · *senior (Principal)*
+- [Next-Gen, High-Speed HBM, LPDDR Memory Subsystem ASIC Digital Design Engineer (](https://careers.qualcomm.com/careers/job/446721198367) · Qualcomm · *not software (ASIC)*
