@@ -164,6 +164,17 @@ in a registry that only grows:
   companies that hire interns usually hire new grads too). These lists are only used to find
   companies; their postings aren't emailed.
 
+Companies of any size on **Workday** (about 40% of what the new-grad lists link to: defense,
+banks, chips, enterprise software) join the same registry, as their Workday career site.
+Workday lists thousands of postings 20 at a time, newest first, so only the newest pages are
+read: down to postings already seen (one request, most hours), at most 5 pages. A posting
+seen there for the first time counts as new only if Workday says it went up in the last 7
+days, so an older one that moves up the list isn't emailed. Sites are read a few at a time
+with pauses; if Workday answers "too many requests", the rest wait for the next check. A site
+whose robots.txt asks crawlers not to read it (some companies' internal or private-posting
+sites) is skipped, and robots.txt is read again monthly. A Workday site you already have an
+entry for (like NVIDIA's new-grad search) isn't checked twice.
+
 A company, once in, stays even when the lists drop it. `boards.md` (on the `monitor-state`
 branch, next to `left_out.md`) lists every board checked, when it was added and where it was
 found. Boards the config already has an entry for aren't checked twice.

@@ -2531,6 +2531,202 @@ class BoardTests(MonitorTestCase):
         self.assertNotIn(ASHBY_ZETA, self.saved_state())
 
 
+WD_SITE = "https://acme.wd5.myworkdayjobs.com/External"
+WD_API = "https://acme.wd5.myworkdayjobs.com/wday/cxs/acme/External/jobs"
+WD_ROBOTS = "https://acme.wd5.myworkdayjobs.com/robots.txt"
+
+
+def wd_link(rid, title="Software Engineer"):
+    """A link to a posting on Acme's Workday site, as the new-grad lists give it."""
+    return f"https://acme.wd5.myworkdayjobs.com/en-US/External/job/New-York-NY/{title.replace(' ', '-')}_R{rid}"
+
+
+class WorkdayBoardTests(MonitorTestCase):
+    """Company Workday sites found through the feeds (the "boards" entry with "workday")."""
+
+    def setUp(self):
+        super().setUp()
+        self.patch(jm, "WORKDAY_DELAY_SECONDS", 0)
+        self.wd = {WD_API: []}   # each site's postings, newest first: (id, title, postedOn[, location]), or an HTTP status
+        self.posts = []          # (API URL, offset) of every request
+        self.pages[WD_ROBOTS] = "User-agent: *\nDisallow: /refreshFacet/\n"
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Acme", "New Grad Software Engineer", url=wd_link(1, "New Grad Software Engineer"))])
+
+        def post(url, *args, json=None, **kwargs):
+            self.posts.append((url, (json or {}).get("offset")))
+            site = self.wd.get(url)
+            if isinstance(site, int):
+                return FakeResponse("", status_code=site)
+            if site is None:
+                raise jm.requests.ConnectionError(f"no fake Workday site at {url}")
+            start, limit = json["offset"], json["limit"]
+            return FakeResponse(globals()["json"].dumps({"total": len(site), "jobPostings": [
+                {"title": title, "externalPath": f"/job/New-York-NY/{title.replace(' ', '-')}_R{rid}",
+                 "postedOn": posted, "locationsText": rest[0] if rest else "New York, NY"}
+                for rid, title, posted, *rest in site[start:start + limit]]}))
+
+        self.patch(jm.requests, "post", post)
+
+    def entry(self, **extra):
+        return {"name": "Company job boards", "mode": "boards", "every_hours": 1, "catch_up_days": 3,
+                "platforms": ["greenhouse", "ashby", "lever", "workday"],
+                "tech_titles": ["software", "ml", "infrastructure", "new grad"], **extra}
+
+    def run_wd(self, *extra_targets, **entry_extra):
+        targets = [target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                          categories=["Software"], max_age_days=7), *extra_targets, self.entry(**entry_extra)]
+        return self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)[1]
+
+    def known(self):
+        return self.saved_state().get(jm.BOARDS_KEY, {}).get("known", {})
+
+    def age_board_check(self, hours=2):
+        meta = self.saved_state()[jm.BOARDS_KEY]
+        meta["checked_at"] = (datetime.now() - timedelta(hours=hours)).isoformat(timespec="seconds")
+        jm.save_state({}, boards=meta)
+
+    def test_workday_links_are_recognised(self):
+        cases = {
+            wd_link(5): WD_SITE,
+            "https://acme.wd5.myworkdayjobs.com/External/job/Remote/SWE_R5/apply": WD_SITE,
+            "https://ebay.wd5.myworkdayjobs.com/apply/job/Toronto/Engineer_R0076353": "https://ebay.wd5.myworkdayjobs.com/apply",
+            "https://acme.wd5.myworkdayjobs.com/en-us/External": WD_SITE,
+            "https://wd5.myworkdaysite.com/en-US/recruiting/chewy/CHEWY/job/Boston/SWE_R1":
+                "https://wd5.myworkdaysite.com/recruiting/chewy/CHEWY",
+        }
+        for link, site in cases.items():
+            self.assertEqual(jm.board_api_url(link), ("workday", site), link)
+        for link in ("https://acme.wd5.myworkdayjobs.com/", "https://acme.wd5.myworkdayjobs.com/wday/cxs/acme/External/jobs",
+                     "https://wd5.myworkdaysite.com/recruiting/chewy", "https://acme.myworkdayjobs.com/External"):
+            self.assertIsNone(jm.board_api_url(link), link)
+        self.assertEqual(jm._workday_api("https://wd5.myworkdaysite.com/recruiting/chewy/CHEWY"),
+                         ("https://wd5.myworkdaysite.com/wday/cxs/chewy/CHEWY/jobs",
+                          "https://wd5.myworkdaysite.com/en-US/recruiting/chewy/CHEWY"))
+
+    def test_only_the_newest_pages_of_a_workday_site_are_read(self):
+        self.wd[WD_API] = [(i, f"Software Engineer {i}", "Posted Today") for i in range(1, 46)]
+        jobs = jm.fetch_workday_board(WD_SITE)
+        self.assertEqual((len(jobs), [o for _, o in self.posts]), (45, [0, 20, 40]))  # to the end of the list
+        self.assertEqual((jobs[0]["url"], jobs[0]["location"]), (wd_link(1, "Software Engineer 1"), "New York, NY"))
+        self.assertTrue(jm._posted_since(jobs[0], datetime.now(timezone.utc) - timedelta(minutes=5)))
+        # Up to the first page with a posting seen before...
+        self.posts.clear()
+        seen = {jm.compute_job_id({"url": wd_link(25, "Software Engineer 25")})}
+        self.assertEqual((len(jm.fetch_workday_board(WD_SITE, seen=seen)), len(self.posts)), (40, 2))
+        # ...or one older than a week, and never more than WORKDAY_MAX_PAGES.
+        self.posts.clear()
+        self.wd[WD_API] = [(i, "Software Engineer", "Posted 2 Days Ago") for i in range(1, 30)] + \
+                          [(i, "Software Engineer", "Posted 8 Days Ago") for i in range(30, 200)]
+        self.assertEqual(len(jm.fetch_workday_board(WD_SITE)), 40)
+        self.posts.clear()
+        self.wd[WD_API] = [(i, "Software Engineer", "Posted Yesterday") for i in range(1, 200)]
+        self.assertEqual(len(jm.fetch_workday_board(WD_SITE)), 20 * jm.WORKDAY_MAX_PAGES)
+        now = datetime(2026, 11, 16, 12, tzinfo=timezone.utc)
+        self.assertEqual([jm._workday_posted(t, now) for t in ("Posted Today", "Posted Yesterday", "Posted 3 Days Ago",
+                                                               "Posted 30+ Days Ago", "Recently", None)],
+                         ["2026-11-16T12:00:00+00:00", "2026-11-15T12:00:00+00:00", "2026-11-13T12:00:00+00:00",
+                          "2026-10-17T12:00:00+00:00", None, None])
+
+    def test_a_workday_site_found_through_a_feed_is_checked_like_a_board(self):
+        self.wd[WD_API] = [
+            (2, "Software Engineer", "Posted Today"),
+            (1, "New Grad Software Engineer", "Posted Yesterday"),   # the new-grad list has it already
+            (4, "Software Engineer", "Posted 2 Days Ago", "Bengaluru, India"),
+            (5, "Account Executive", "Posted 2 Days Ago"),
+            (3, "ML Engineer", "Posted 30+ Days Ago"),               # too old to catch up
+        ]
+        self.assertEqual(self.run_wd(), {})  # the feed's first check
+        # The next run finds Acme's Workday site: its first check emails its recent tech roles.
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer"]})
+        info = self.known()[jm._url_key(WD_SITE)]
+        self.assertEqual((info["name"], info["robots"]["allowed"], bool(info["caught_up"])), ("Acme", True, True))
+        self.assertIn("1 Workday.", jm.boards_page_path().read_text())
+        # An hour later: a new posting is emailed; an old one we hadn't seen (it moved up the list) isn't.
+        self.age_board_check()
+        self.wd[WD_API][:0] = [(7, "Software Engineer, Infrastructure", "Posted Today"), (6, "Software Engineer II", "Posted 30+ Days Ago")]
+        self.posts.clear()
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer, Infrastructure"]})
+        self.assertEqual(len(self.posts), 1)  # its first page had postings seen before
+        self.assertEqual(len([u for u, _ in self.requests_made if u == WD_ROBOTS]), 1)  # robots.txt read once
+
+    def test_a_workday_site_whose_robots_txt_says_no_is_not_read(self):
+        self.pages[WD_ROBOTS] = "User-agent: *\nDisallow: /EXTERNAL/\n"  # Workday's paths ignore case
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
+        self.run_wd()
+        self.assertEqual(self.run_wd(), {})
+        self.assertEqual((self.posts, self.known()[jm._url_key(WD_SITE)]["robots"]["allowed"]), ([], False))
+        self.assertIn("0 boards", jm.boards_page_path().read_text())
+        self.assertIn("1 Workday site is skipped as its robots.txt asks", jm.boards_page_path().read_text())
+        # Not asked again for a month; then robots.txt is read again.
+        self.age_board_check()
+        self.run_wd()
+        self.assertEqual(len([u for u, _ in self.requests_made if u == WD_ROBOTS]), 1)
+        meta = self.saved_state()[jm.BOARDS_KEY]
+        meta["known"][jm._url_key(WD_SITE)]["robots"]["checked"] = (datetime.now() - timedelta(days=31)).isoformat()
+        jm.save_state({}, boards=meta)
+        self.pages[WD_ROBOTS] = "User-agent: *\nDisallow: /refreshFacet/\n"
+        self.run_wd()
+        self.assertEqual((len([u for u, _ in self.requests_made if u == WD_ROBOTS]), len(self.posts)), (2, 1))
+
+    def test_when_workday_asks_to_slow_down_the_rest_wait_for_the_next_check(self):
+        self.patch(jm, "WORKDAY_MAX_THROTTLED", 1)
+        self.patch(jm, "WORKDAY_WORKERS", 1)
+        other_api = "https://beta.wd1.myworkdayjobs.com/wday/cxs/beta/Careers/jobs"
+        self.wd[WD_API], self.wd[other_api] = 429, [(9, "Software Engineer", "Posted Today")]
+        self.pages["https://beta.wd1.myworkdayjobs.com/robots.txt"] = ""
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Acme", "New Grad Software Engineer", url=wd_link(1)),
+            simplify_row("Beta", "Software Engineer", url="https://beta.wd1.myworkdayjobs.com/Careers/job/X/SWE_R9")])
+        self.run_wd()
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            self.run_wd()
+        self.assertIn("Workday asked to slow down", "\n".join(logs.output))
+        self.assertEqual([u for u, _ in self.posts], [WD_API])  # Acme first (by name), then nothing more
+        self.assertNotIn(other_api.replace("/wday/cxs/beta", ""), self.saved_state())
+        # Next time both are read.
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
+        self.posts.clear()
+        self.run_wd()
+        self.assertEqual(sorted(u for u, _ in self.posts), sorted([WD_API, other_api]))
+
+    def test_a_workday_site_the_config_already_checks_is_not_checked_twice(self):
+        mine = target(name="Acme", url="https://acme.wd5.myworkdayjobs.com/en-US/External?workerSubType=abc", mode="api")
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
+        self.run_wd(mine)
+        self.run_wd(mine)
+        self.assertNotIn(jm._url_key(WD_SITE), [jm._url_key(b) for b in self.saved_state() if "myworkday" in b and "?" not in b])
+        self.assertEqual([u for u, _ in self.requests_made if u == WD_ROBOTS], [])
+
+    def test_an_hourly_check_reads_a_workday_site_only_down_to_what_it_saw_before(self):
+        self.wd[WD_API] = [(i, "Account Executive", "Posted Today") for i in range(60, 0, -1)]
+        self.run_wd()
+        self.run_wd()  # the site's first check reads all three pages
+        self.age_board_check()
+        self.wd[WD_API].insert(0, (61, "Software Engineer", "Posted Today"))
+        self.posts.clear()
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer"]})
+        self.assertEqual(self.posts, [(WD_API, 0)])
+
+    def test_a_workday_site_keeps_only_its_latest_postings(self):
+        self.patch(jm, "WORKDAY_RETENTION", 3)
+        self.patch(jm, "WORKDAY_PAGE_SIZE", 2)
+        self.patch(jm, "WORKDAY_MAX_PAGES", 1)
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today"), (1, "ML Engineer", "Posted Today")]
+        self.run_wd()
+        self.run_wd()
+        self.age_board_check()
+        self.wd[WD_API][:0] = [(4, "Software Engineer II", "Posted Today"), (3, "ML Engineer II", "Posted Today")]
+        self.run_wd()
+        # The two read now, and the newest of those that scrolled out of view.
+        self.assertEqual([r["url"] for r in self.saved_state()[WD_SITE]],
+                         [wd_link(4, "Software Engineer II"), wd_link(3, "ML Engineer II"), wd_link(2)])
+
+    def test_the_shipped_boards_entry_reads_workday_sites(self):
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        self.assertIn("workday", entry["platforms"])
+
+
 class UsFilterTests(MonitorTestCase):
     def test_location_classification(self):
         outside = ["London, UK", "Singapore", "Bengaluru, India; Mumbai, India", "Dublin OR London",

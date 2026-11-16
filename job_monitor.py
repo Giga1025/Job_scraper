@@ -29,6 +29,8 @@ import ssl
 import logging
 import tempfile
 import time
+import threading
+import urllib.robotparser
 import html as html_lib
 import xml.etree.ElementTree as ET
 from collections import Counter
@@ -1398,6 +1400,16 @@ BOARD_WORKERS = 8
 LEVER_WORKERS = 3            # Lever boards are read at most this many at a time,
 LEVER_DELAY_SECONDS = 0.5    # each reader pausing this long between boards
 BOARD_MISSING_RETRY_HOURS = 24  # a board that answers 404 is tried again a day later
+# Workday sites list thousands of postings, 20 per request, newest first: only the newest
+# pages are read (until postings seen before, or older than WORKDAY_NEW_WITHIN_DAYS).
+WORKDAY_WORKERS = 4
+WORKDAY_DELAY_SECONDS = 0.5     # each reader pausing this long between requests
+WORKDAY_PAGE_SIZE = 20          # the most Workday returns per request
+WORKDAY_MAX_PAGES = 5
+WORKDAY_MAX_THROTTLED = 5       # after this many "too many requests" answers, the rest wait for the next check
+WORKDAY_NEW_WITHIN_DAYS = 7     # a posting seen for the first time but older than this isn't new
+WORKDAY_RETENTION = 300         # postings remembered per Workday site (only its newest pages are read)
+ROBOTS_RECHECK_DAYS = 30        # a Workday site's robots.txt is read again this often
 _GREENHOUSE_BOARD_HOST = re.compile(r"^(?:job-)?boards(?:\.[a-z]{2,3})?\.greenhouse\.io$")
 _BOARD_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
@@ -1419,9 +1431,137 @@ def board_api_url(job_url) -> tuple[str, str] | None:
     elif host in ("jobs.lever.co", "jobs.eu.lever.co"):
         api_host = "api.eu.lever.co" if host == "jobs.eu.lever.co" else "api.lever.co"
         platform, api, slug = "lever", f"https://{api_host}/v0/postings/{{}}", (parts[:1] or [""])[0].lower()
+    elif host.endswith(".myworkdayjobs.com") or host.endswith(".myworkdaysite.com"):
+        return _workday_site(host, parts)
     else:
         return None
     return (platform, api.format(slug)) if _BOARD_SLUG.match(slug) else None
+
+
+_WORKDAY_JOBS_HOST = re.compile(r"^([a-z0-9][a-z0-9-]*)\.(wd\d+)\.myworkdayjobs\.com$")
+_WORKDAY_SITE_HOST = re.compile(r"^wd\d+\.myworkdaysite\.com$")
+_WORKDAY_NOT_SITES = {"wday", "refreshfacet", "robots.txt"}  # Workday's own paths, not career sites
+
+
+def _workday_site(host: str, parts: list[str]) -> tuple[str, str] | None:
+    """("workday", the company's Workday site) for the path of a link on one:
+    <tenant>.wdN.myworkdayjobs.com/[locale/]<site>/... or wdN.myworkdaysite.com/[locale/]recruiting/<tenant>/<site>/..."""
+    if parts and re.fullmatch(r"[a-z]{2}-[a-z]{2}", parts[0].lower()):
+        parts = parts[1:]
+    if _WORKDAY_JOBS_HOST.match(host) and parts:
+        tenant, site = _WORKDAY_JOBS_HOST.match(host).group(1), parts[0]
+        board = f"https://{host}/{site}"
+    elif _WORKDAY_SITE_HOST.match(host) and len(parts) >= 3 and parts[0].lower() == "recruiting":
+        tenant, site = parts[1], parts[2]
+        board = f"https://{host}/recruiting/{tenant}/{site}"
+    else:
+        return None
+    if not (_BOARD_SLUG.match(tenant) and _BOARD_SLUG.match(site)) or site.lower() in _WORKDAY_NOT_SITES:
+        return None
+    return "workday", board
+
+
+def _workday_api(board_url: str) -> tuple[str, str]:
+    """(the jobs API URL, the start of its postings' links) of a Workday site from _workday_site."""
+    parsed = urlparse(board_url)
+    host, parts = parsed.netloc, [p for p in parsed.path.split("/") if p]
+    if host.endswith(".myworkdaysite.com"):
+        tenant, site = parts[1], parts[2]
+        return f"https://{host}/wday/cxs/{tenant}/{site}/jobs", f"https://{host}/en-US/recruiting/{tenant}/{site}"
+    tenant, site = host.split(".")[0], parts[0]
+    return f"https://{host}/wday/cxs/{tenant}/{site}/jobs", f"https://{host}/en-US/{site}"
+
+
+def _workday_posted(text, now: datetime) -> str | None:
+    """A Workday "postedOn" ("Posted Today", "Posted Yesterday", "Posted 3 Days Ago",
+    "Posted 30+ Days Ago") as a UTC time that many days before now; None if unknown."""
+    text = str(text or "").lower()
+    if "today" in text:
+        days = 0
+    elif "yesterday" in text:
+        days = 1
+    else:
+        match = re.search(r"(\d+)\+?\s*days?\s+ago", text)
+        if not match:
+            return None
+        days = int(match.group(1))
+    return (now - timedelta(days=days)).isoformat(timespec="seconds")
+
+
+def fetch_workday_board(url: str, post_json=None, seen=frozenset()) -> list[dict] | None:
+    """The newest postings of a company's Workday site (a URL from _workday_site): pages of
+    20, newest first, read until a page has a posting already seen (seen: compute_job_id
+    values), one older than WORKDAY_NEW_WITHIN_DAYS, the end of the list or WORKDAY_MAX_PAGES.
+    None if the first page can't be read; what was read if a later one can't."""
+    post_json = post_json or _board_post_json({})
+    api, prefix = _workday_api(url)
+    now = datetime.now(timezone.utc)
+    too_old = now - timedelta(days=WORKDAY_NEW_WITHIN_DAYS)
+    jobs: list[dict] = []
+    for page in range(WORKDAY_MAX_PAGES):
+        data = post_json(api, {"appliedFacets": {}, "limit": WORKDAY_PAGE_SIZE,
+                               "offset": page * WORKDAY_PAGE_SIZE, "searchText": ""})
+        postings = data.get("jobPostings") if isinstance(data, dict) else None
+        if not isinstance(postings, list):
+            return None if page == 0 else _dedupe_jobs(jobs)
+        batch = []
+        for post in postings:
+            if not isinstance(post, dict) or not _to_text(post.get("title")) or not _to_text(post.get("externalPath")):
+                continue
+            job = {"title": _to_text(post["title"])[:200],
+                   "url": prefix + "/" + _to_text(post["externalPath"]).lstrip("/"),
+                   "location": _to_text(post.get("locationsText"))}
+            if _workday_posted(post.get("postedOn"), now):
+                job["posted"] = _workday_posted(post.get("postedOn"), now)
+            batch.append(job)
+        jobs += batch
+        if len(postings) < WORKDAY_PAGE_SIZE or any(compute_job_id(j) in seen for j in batch) \
+                or any(j.get("posted") and not _posted_since(j, too_old) for j in batch):
+            break
+    return _dedupe_jobs(jobs)
+
+
+def _board_post_json(outcome: dict):
+    """A JSON POST for one Workday site that notes the HTTP status in outcome (and
+    "throttled" on "429 Too Many Requests")."""
+    def post(url, payload, timeout=30):
+        try:
+            resp = requests.post(url, json=payload, headers={**HEADERS, "Accept": "application/json"}, timeout=timeout)
+        except Exception as exc:
+            outcome["status"] = f"error ({exc.__class__.__name__})"
+            return None
+        outcome["status"] = resp.status_code
+        if resp.status_code == 429:
+            outcome["throttled"] = True
+        if resp.status_code != 200:
+            return None
+        try:
+            return resp.json()
+        except ValueError:
+            outcome["status"] = "error (not JSON)"
+            return None
+    return post
+
+
+def workday_robots_allow(board_url: str) -> bool | None:
+    """Whether the site's robots.txt lets a crawler read this Workday site (its pages and its
+    jobs API); None if robots.txt couldn't be read. Matched ignoring case, like Workday's paths."""
+    parsed = urlparse(board_url)
+    try:
+        resp = requests.get(f"https://{parsed.netloc}/robots.txt", headers=HEADERS, timeout=15)
+    except Exception:
+        return None
+    if resp.status_code in (401, 403):
+        return False
+    if resp.status_code >= 500 or resp.status_code == 429:
+        return None
+    if resp.status_code != 200:
+        return True  # no robots.txt
+    rules = urllib.robotparser.RobotFileParser()
+    rules.parse(resp.text.lower().splitlines())
+    agent = HEADERS["User-Agent"].lower()
+    return all(rules.can_fetch(agent, link.lower())
+               for link in (f"https://{parsed.netloc}{parsed.path.rstrip('/')}/", _workday_api(board_url)[0]))
 
 
 def _url_key(url) -> str:
@@ -1434,6 +1574,8 @@ def _board_page(api_url: str) -> str:
     """The job-board page people visit, for a board's API URL."""
     parts = urlparse(api_url).path.rstrip("/").split("/")
     host = urlparse(api_url).netloc
+    if _board_platform(api_url) == "workday":
+        return api_url  # (a Workday board is kept as its site's address)
     if host.endswith("greenhouse.io"):
         return f"https://job-boards.greenhouse.io/{parts[-2]}"
     if host.endswith("ashbyhq.com"):
@@ -1443,6 +1585,8 @@ def _board_page(api_url: str) -> str:
 
 def _board_platform(api_url: str) -> str:
     host = urlparse(api_url).netloc
+    if host.endswith(".myworkdayjobs.com") or host.endswith(".myworkdaysite.com"):
+        return "workday"
     return "greenhouse" if host.endswith("greenhouse.io") else "ashby" if host.endswith("ashbyhq.com") else "lever"
 
 
@@ -1464,7 +1608,8 @@ def grow_board_registry(known: dict, links, via: str, today: str) -> int:
         if str(company or "").strip():
             names[key][str(company).strip()] += 1
     for key in sorted(urls):
-        slug = urls[key].rstrip("/").split("/")[-2 if "greenhouse" in key else -1]
+        slug = (urlparse(urls[key]).netloc.split(".")[0] if _board_platform(urls[key]) == "workday"
+                else urls[key].rstrip("/").split("/")[-2 if "greenhouse" in key else -1])
         name = names[key].most_common(1)[0][0] if names[key] else slug
         known[key] = {"url": urls[key], "name": name, "added": today, "via": via}
     return len(urls)
@@ -1506,13 +1651,37 @@ def _board_get_json(etag: str | None, outcome: dict):
     return get
 
 
-def fetch_boards(boards: list[dict], etags: dict) -> dict[str, tuple]:
+def fetch_boards(boards: list[dict], etags: dict, seen: dict | None = None, robots: dict | None = None) -> dict[str, tuple]:
     """Fetch these boards. Returns {url: (status, jobs, etag)}, status being "ok" (jobs is
-    the list), "unchanged" (304), "missing" (404) or "failed"."""
+    the list), "unchanged" (304), "missing" (404), "blocked" (a Workday site its robots.txt
+    asks crawlers not to read) or "failed".
+
+    Workday sites (only their newest pages; seen: {url: compute_job_id values already
+    recorded}) are read by a few paced readers, robots.txt first where the board asks for it
+    ("_robots_due"; the answers are put in robots as {url: allowed}). After
+    WORKDAY_MAX_THROTTLED "too many requests" answers, the rest are left for the next check."""
+    seen = seen or {}
+    robots = robots if robots is not None else {}
+    throttled = [0]
+    lock = threading.Lock()
+
     def one(board):
         outcome: dict = {}
         try:
-            jobs = job_board_api_reader(board["url"])[1](board["url"], get_json=_board_get_json(etags.get(board["url"]), outcome))
+            if _board_platform(board["url"]) == "workday":
+                if board.get("_robots_due"):
+                    allowed = workday_robots_allow(board["url"])
+                    if allowed is None:
+                        return "failed", None, None
+                    robots[board["url"]] = allowed
+                    if not allowed:
+                        return "blocked", None, None
+                jobs = fetch_workday_board(board["url"], _board_post_json(outcome), seen.get(board["url"], frozenset()))
+                if outcome.get("throttled"):
+                    with lock:
+                        throttled[0] += 1
+            else:
+                jobs = job_board_api_reader(board["url"])[1](board["url"], get_json=_board_get_json(etags.get(board["url"]), outcome))
         except Exception as exc:
             jobs, outcome["status"] = None, f"error ({exc.__class__.__name__})"
         status = outcome.get("status")
@@ -1526,7 +1695,8 @@ def fetch_boards(boards: list[dict], etags: dict) -> dict[str, tuple]:
         return "ok", jobs, outcome.get("etag")
 
     lever = [b for b in boards if _board_platform(b["url"]) == "lever"]
-    others = [b for b in boards if _board_platform(b["url"]) != "lever"]
+    workday = [b for b in boards if _board_platform(b["url"]) == "workday"]
+    others = [b for b in boards if _board_platform(b["url"]) not in ("lever", "workday")]
     results: dict[str, tuple] = {}
 
     def lever_reader(share):
@@ -1535,12 +1705,25 @@ def fetch_boards(boards: list[dict], etags: dict) -> dict[str, tuple]:
                 time.sleep(LEVER_DELAY_SECONDS)
             results[board["url"]] = one(board)
 
-    with ThreadPoolExecutor(max_workers=BOARD_WORKERS + LEVER_WORKERS) as pool:
-        lever_done = [pool.submit(lever_reader, lever[i::LEVER_WORKERS]) for i in range(LEVER_WORKERS)]
+    def workday_reader(share):
+        for i, board in enumerate(share):
+            if throttled[0] >= WORKDAY_MAX_THROTTLED:
+                results[board["url"]] = ("failed", None, None)  # Workday asked us to slow down: next check
+                continue
+            if i:
+                time.sleep(WORKDAY_DELAY_SECONDS)
+            results[board["url"]] = one(board)
+
+    with ThreadPoolExecutor(max_workers=BOARD_WORKERS + LEVER_WORKERS + WORKDAY_WORKERS) as pool:
+        paced = [pool.submit(lever_reader, lever[i::LEVER_WORKERS]) for i in range(LEVER_WORKERS)]
+        paced += [pool.submit(workday_reader, workday[i::WORKDAY_WORKERS]) for i in range(WORKDAY_WORKERS)]
         for board, result in zip(others, pool.map(one, others)):
             results[board["url"]] = result
-        for done in lever_done:
+        for done in paced:
             done.result()
+    if throttled[0] >= WORKDAY_MAX_THROTTLED:
+        log.warning(f"  [boards] Workday asked to slow down; {sum(1 for b in workday if results[b['url']][0] == 'failed')} "
+                    f"Workday site(s) are left for the next check.")
     return results
 
 
@@ -1573,7 +1756,13 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
                     log.info(f"  [boards] {item.get('name') or item['url']}: {added} new company board(s)")
 
     platforms = set(entry.get("platforms") or ("greenhouse", "ashby", "lever"))
-    skip = {_url_key(t.get("url")) for t in targets if t.get("url")}
+    skip = set()
+    for t in targets:  # boards a config entry already checks (by its API URL or a link to the board)
+        if t.get("url"):
+            skip.add(_url_key(t["url"]))
+            covered = board_api_url(t["url"])
+            if covered:
+                skip.add(_url_key(covered[1]))
     skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
     tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
     skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
@@ -1583,12 +1772,24 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
         days = 0.0
     days = min(days, 365.0) if days > 0 else 0.0  # (not a number: 0)
     since = datetime.now(timezone.utc) - timedelta(days=days) if days else None
-    return [{"name": info["name"], "url": info["url"], "mode": "api", "_board": True, "_board_key": key,
-             "_tech_titles": tech, "_skip_titles": skip_titles, "_compact": True, "_quiet": True,
-             "_catch_up_since": since if since and not info.get("caught_up") else None}
-            for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
-            if key not in skip and _board_platform(info["url"]) in platforms
-            and _entry_key(info.get("name")) not in skip_companies]
+    def robots_due(info):
+        return not isinstance(info.get("robots"), dict) or _hours_since(info["robots"].get("checked")) >= ROBOTS_RECHECK_DAYS * 24
+
+    boards = []
+    for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0])):
+        platform = _board_platform(info["url"])
+        if key in skip or platform not in platforms or _entry_key(info.get("name")) in skip_companies:
+            continue
+        board = {"name": info["name"], "url": info["url"], "mode": "api", "_board": True, "_board_key": key,
+                 "_tech_titles": tech, "_skip_titles": skip_titles, "_compact": True, "_quiet": True,
+                 "_catch_up_since": since if since and not info.get("caught_up") else None}
+        if platform == "workday":
+            if not robots_due(info) and info["robots"].get("allowed") is False:
+                continue  # its robots.txt asks crawlers not to read it (read again monthly)
+            board.update(_robots_due=robots_due(info), _new_within_days=WORKDAY_NEW_WITHIN_DAYS,
+                         _retention=WORKDAY_RETENTION)
+        boards.append(board)
+    return boards
 
 
 def boards_due(entry: dict, meta: dict) -> bool:
@@ -1604,6 +1805,8 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
     """boards.md: every company job board the monitor checks."""
     counts = Counter(_board_platform(b["url"]) for b in checked)
     checked_keys = {_url_key(b["url"]) for b in checked}
+    blocked = sum(1 for info in meta["known"].values()
+                  if isinstance(info.get("robots"), dict) and info["robots"].get("allowed") is False)
     missing = {_url_key(u) for u in meta.get("missing") or {}}
     rows = sorted((info for key, info in meta["known"].items() if key in checked_keys),
                   key=lambda i: (str(i.get("name")).lower(), i["url"]))
@@ -1611,11 +1814,14 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
         "# Company job boards the monitor checks",
         "",
         "Checked about every hour for tech roles. A company is added the first time one of the lists "
-        "the monitor reads links to its Greenhouse, Ashby or Lever board, and stays from then on. To add "
+        "the monitor reads links to its Greenhouse, Ashby, Lever or Workday board, and stays from then on. To add "
         "one yourself, add it under `companies` in targets/startups.json.",
         "",
-        f"{len(rows)} boards: {counts['greenhouse']} Greenhouse, {counts['ashby']} Ashby, {counts['lever']} Lever."
-        + (f" {len(missing & checked_keys)} weren't found at the last try (tried again daily)." if missing & checked_keys else ""),
+        f"{len(rows)} boards: {counts['greenhouse']} Greenhouse, {counts['ashby']} Ashby, {counts['lever']} Lever"
+        + (f", {counts['workday']} Workday." if counts['workday'] else ".")
+        + (f" {len(missing & checked_keys)} weren't found at the last try (tried again daily)." if missing & checked_keys else "")
+        + (f" {blocked} Workday site{' is' if blocked == 1 else 's are'} skipped as {'its' if blocked == 1 else 'their'} "
+           f"robots.txt asks." if blocked else ""),
         "",
         "| Company | Board | Added | Found in |",
         "|---|---|---|---|",
@@ -2588,6 +2794,7 @@ def check_target(
     quiet = bool(target.get("_quiet"))
     say = log.debug if quiet else log.info
     catch_up = target.get("_catch_up_since")
+    keep = target.get("_retention", STATE_RETENTION_PER_TARGET)
 
     say(f"Checking: {name}")
     say(f"  URL: {url}")
@@ -2625,7 +2832,7 @@ def check_target(
                 return [], []
         # First check of this target: record what's already listed without
         # alerting, so adding a target doesn't email every job it has.
-        state[url] = merge_jobs_new_first([], to_record(current_jobs), STATE_RETENTION_PER_TARGET)
+        state[url] = merge_jobs_new_first([], to_record(current_jobs), keep)
         if not catch_up:
             say(
                 f"  [baseline] First check: recorded {len(current_jobs)} job(s). "
@@ -2643,6 +2850,11 @@ def check_target(
             skip_ids = {compute_job_id(j) for j in new_jobs} | {
                 compute_job_id(j) for j in previous_jobs if isinstance(j, dict) and j.get(REPORTED_MARK)}
             new_jobs += [j for j in current_jobs if _posted_since(j, catch_up) and compute_job_id(j) not in skip_ids]
+    if target.get("_new_within_days"):
+        # Only a site's newest pages are read, so a posting seen for the first time can be an old
+        # one that moved up the list: it's new only if it went up recently (or its date is unknown).
+        recent = datetime.now(timezone.utc) - timedelta(days=target["_new_within_days"])
+        new_jobs = [j for j in new_jobs if not j.get("posted") or _posted_since(j, recent)]
     # A posting marked "listed": False (closed, e.g. in a feed) is remembered but not alerted.
     new_jobs = [j for j in new_jobs if j.get("listed", True) is not False]
     if target.get("us_only", us_only):
@@ -2670,7 +2882,7 @@ def check_target(
         log.info(f"  [filtered]{where} {len(left_out)} new posting(s) left out by the filters")
 
     if previous_jobs is not None:
-        state[url] = merge_jobs_new_first(previous_jobs, to_record(current_jobs), STATE_RETENTION_PER_TARGET)
+        state[url] = merge_jobs_new_first(previous_jobs, to_record(current_jobs), keep)
     return new_jobs, left_out
 
 
@@ -2722,8 +2934,15 @@ def run(config_override: str | None = None) -> bool:
         log.info(f"Checking {len(to_fetch)} of {len(board_targets)} company job boards"
                  f"{'' if boards_now else ' (new ones, or catching up)'}...")
         catching_up = {b["url"] for b in to_fetch if b["_catch_up_since"]}
+        seen = {b["url"]: {compute_job_id(j) for j in state.get(b["url"]) or [] if isinstance(j, dict) and j.get("url")}
+                for b in to_fetch if _board_platform(b["url"]) == "workday" and b["url"] not in catching_up}
+        robots: dict = {}
         fetched = fetch_boards(to_fetch, {u: e for u, e in board_meta["etags"].items()
-                                          if u in state and u not in catching_up})
+                                          if u in state and u not in catching_up}, seen, robots)
+        for b in to_fetch:
+            if b["url"] in robots and b["_board_key"] in board_meta["known"]:
+                board_meta["known"][b["_board_key"]]["robots"] = {
+                    "checked": datetime.now().isoformat(timespec="seconds"), "allowed": robots[b["url"]]}
     targets = targets + board_targets
     board_urls = {b["url"] for b in board_targets}
     siblings = _sibling_urls(targets)
@@ -2811,7 +3030,7 @@ def run(config_override: str | None = None) -> bool:
     if fetched or boards_now:
         _finish_board_check(board_meta, fetched, board_urls, full=boards_now)
     if board_entries:
-        page = format_boards_page(board_meta, board_targets)
+        page = format_boards_page(board_meta, [b for b in board_targets if (fetched.get(b["url"]) or ("",))[0] != "blocked"])
         if not boards_page_path().exists() or boards_page_path().read_text(encoding="utf-8") != page:
             save_text(boards_page_path(), page)
     boards_changed = board_meta != loaded_board_meta
@@ -2886,7 +3105,8 @@ def _finish_board_check(meta: dict, fetched: dict, board_urls: set, full: bool):
     meta["missing"] = {u: t for u, t in meta["missing"].items() if u in board_urls}
     counts = Counter(status for status, _, _ in fetched.values())
     log.info(f"[boards] {counts['ok']} read, {counts['unchanged']} unchanged since the last check, "
-             f"{counts['missing']} not found, {counts['failed']} could not be read this time.")
+             f"{counts['missing']} not found, {counts['failed']} could not be read this time"
+             + (f", {counts['blocked']} Workday site(s) skipped as their robots.txt asks." if counts['blocked'] else "."))
 
 
 def _group_name(job: dict, target_name: str, is_feed: bool) -> str:
