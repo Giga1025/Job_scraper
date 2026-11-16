@@ -29,7 +29,6 @@ import ssl
 import logging
 import tempfile
 import time
-import threading
 import urllib.robotparser
 import html as html_lib
 import xml.etree.ElementTree as ET
@@ -1402,11 +1401,14 @@ LEVER_DELAY_SECONDS = 0.5    # each reader pausing this long between boards
 BOARD_MISSING_RETRY_HOURS = 24  # a board that answers 404 is tried again a day later
 # Workday sites list thousands of postings, 20 per request, newest first: only the newest
 # pages are read (until postings seen before, or older than WORKDAY_NEW_WITHIN_DAYS).
-WORKDAY_WORKERS = 4
-WORKDAY_DELAY_SECONDS = 0.5     # each reader pausing this long between requests
-WORKDAY_PAGE_SIZE = 20          # the most Workday returns per request
-WORKDAY_MAX_PAGES = 5
-WORKDAY_MAX_THROTTLED = 5       # after this many "too many requests" answers, the rest wait for the next check
+# Workday limits how fast one machine may ask, across all its customers' sites (a burst of
+# ~20 requests is answered "429 Too Many Requests" for minutes), so the sites are read one
+# request at a time, after every other target, for a few minutes per run, most overdue
+# first; the first 429 ends Workday reading for that run.
+WORKDAY_PAGE_SIZE = 20                   # the most Workday returns per request
+WORKDAY_MAX_PAGES = 3
+WORKDAY_SECONDS_BETWEEN_REQUESTS = 2.0   # "workday_seconds_between_requests" on the boards entry
+WORKDAY_MINUTES_PER_RUN = 6.0            # "workday_minutes_per_run" on the boards entry
 WORKDAY_NEW_WITHIN_DAYS = 7     # a posting seen for the first time but older than this isn't new
 WORKDAY_RETENTION = 300         # postings remembered per Workday site (only its newest pages are read)
 ROBOTS_RECHECK_DAYS = 30        # a Workday site's robots.txt is read again this often
@@ -1521,10 +1523,12 @@ def fetch_workday_board(url: str, post_json=None, seen=frozenset()) -> list[dict
     return _dedupe_jobs(jobs)
 
 
-def _board_post_json(outcome: dict):
+def _board_post_json(outcome: dict, wait=None):
     """A JSON POST for one Workday site that notes the HTTP status in outcome (and
-    "throttled" on "429 Too Many Requests")."""
+    "throttled" on "429 Too Many Requests"), calling wait() before each request."""
     def post(url, payload, timeout=30):
+        if wait:
+            wait()
         try:
             resp = requests.post(url, json=payload, headers={**HEADERS, "Accept": "application/json"}, timeout=timeout)
         except Exception as exc:
@@ -1543,10 +1547,13 @@ def _board_post_json(outcome: dict):
     return post
 
 
-def workday_robots_allow(board_url: str) -> bool | None:
+def workday_robots_allow(board_url: str, wait=None) -> bool | str | None:
     """Whether the site's robots.txt lets a crawler read this Workday site (its pages and its
-    jobs API); None if robots.txt couldn't be read. Matched ignoring case, like Workday's paths."""
+    jobs API); None if robots.txt couldn't be read, "throttled" if Workday answered 429. Matched
+    ignoring case, like Workday's paths. wait() is called before the request."""
     parsed = urlparse(board_url)
+    if wait:
+        wait()
     try:
         resp = requests.get(f"https://{parsed.netloc}/robots.txt", headers=HEADERS, timeout=15)
     except Exception:
@@ -1554,7 +1561,7 @@ def workday_robots_allow(board_url: str) -> bool | None:
     if resp.status_code in (401, 403):
         return False
     if resp.status_code >= 500 or resp.status_code == 429:
-        return None
+        return "throttled" if resp.status_code == 429 else None
     if resp.status_code != 200:
         return True  # no robots.txt
     rules = urllib.robotparser.RobotFileParser()
@@ -1651,37 +1658,13 @@ def _board_get_json(etag: str | None, outcome: dict):
     return get
 
 
-def fetch_boards(boards: list[dict], etags: dict, seen: dict | None = None, robots: dict | None = None) -> dict[str, tuple]:
-    """Fetch these boards. Returns {url: (status, jobs, etag)}, status being "ok" (jobs is
-    the list), "unchanged" (304), "missing" (404), "blocked" (a Workday site its robots.txt
-    asks crawlers not to read) or "failed".
-
-    Workday sites (only their newest pages; seen: {url: compute_job_id values already
-    recorded}) are read by a few paced readers, robots.txt first where the board asks for it
-    ("_robots_due"; the answers are put in robots as {url: allowed}). After
-    WORKDAY_MAX_THROTTLED "too many requests" answers, the rest are left for the next check."""
-    seen = seen or {}
-    robots = robots if robots is not None else {}
-    throttled = [0]
-    lock = threading.Lock()
-
+def fetch_boards(boards: list[dict], etags: dict) -> dict[str, tuple]:
+    """Fetch these Greenhouse, Ashby and Lever boards. Returns {url: (status, jobs, etag)},
+    status being "ok" (jobs is the list), "unchanged" (304), "missing" (404) or "failed"."""
     def one(board):
         outcome: dict = {}
         try:
-            if _board_platform(board["url"]) == "workday":
-                if board.get("_robots_due"):
-                    allowed = workday_robots_allow(board["url"])
-                    if allowed is None:
-                        return "failed", None, None
-                    robots[board["url"]] = allowed
-                    if not allowed:
-                        return "blocked", None, None
-                jobs = fetch_workday_board(board["url"], _board_post_json(outcome), seen.get(board["url"], frozenset()))
-                if outcome.get("throttled"):
-                    with lock:
-                        throttled[0] += 1
-            else:
-                jobs = job_board_api_reader(board["url"])[1](board["url"], get_json=_board_get_json(etags.get(board["url"]), outcome))
+            jobs = job_board_api_reader(board["url"])[1](board["url"], get_json=_board_get_json(etags.get(board["url"]), outcome))
         except Exception as exc:
             jobs, outcome["status"] = None, f"error ({exc.__class__.__name__})"
         status = outcome.get("status")
@@ -1695,8 +1678,7 @@ def fetch_boards(boards: list[dict], etags: dict, seen: dict | None = None, robo
         return "ok", jobs, outcome.get("etag")
 
     lever = [b for b in boards if _board_platform(b["url"]) == "lever"]
-    workday = [b for b in boards if _board_platform(b["url"]) == "workday"]
-    others = [b for b in boards if _board_platform(b["url"]) not in ("lever", "workday")]
+    others = [b for b in boards if _board_platform(b["url"]) != "lever"]
     results: dict[str, tuple] = {}
 
     def lever_reader(share):
@@ -1705,25 +1687,63 @@ def fetch_boards(boards: list[dict], etags: dict, seen: dict | None = None, robo
                 time.sleep(LEVER_DELAY_SECONDS)
             results[board["url"]] = one(board)
 
-    def workday_reader(share):
-        for i, board in enumerate(share):
-            if throttled[0] >= WORKDAY_MAX_THROTTLED:
-                results[board["url"]] = ("failed", None, None)  # Workday asked us to slow down: next check
-                continue
-            if i:
-                time.sleep(WORKDAY_DELAY_SECONDS)
-            results[board["url"]] = one(board)
-
-    with ThreadPoolExecutor(max_workers=BOARD_WORKERS + LEVER_WORKERS + WORKDAY_WORKERS) as pool:
-        paced = [pool.submit(lever_reader, lever[i::LEVER_WORKERS]) for i in range(LEVER_WORKERS)]
-        paced += [pool.submit(workday_reader, workday[i::WORKDAY_WORKERS]) for i in range(WORKDAY_WORKERS)]
+    with ThreadPoolExecutor(max_workers=BOARD_WORKERS + LEVER_WORKERS) as pool:
+        lever_done = [pool.submit(lever_reader, lever[i::LEVER_WORKERS]) for i in range(LEVER_WORKERS)]
         for board, result in zip(others, pool.map(one, others)):
             results[board["url"]] = result
-        for done in paced:
+        for done in lever_done:
             done.result()
-    if throttled[0] >= WORKDAY_MAX_THROTTLED:
-        log.warning(f"  [boards] Workday asked to slow down; {sum(1 for b in workday if results[b['url']][0] == 'failed')} "
-                    f"Workday site(s) are left for the next check.")
+    return results
+
+
+_monotonic, _sleep = time.monotonic, time.sleep  # (replaced in tests)
+
+
+def fetch_workday_sites(sites: list[dict], seen: dict, robots: dict, seconds_between: float, minutes: float) -> dict[str, tuple]:
+    """Read these Workday sites one request at a time, in this order, each request seconds_between
+    after the last, until minutes have passed or Workday answers "429 Too Many Requests" (the
+    rest wait for the next run). robots.txt is read first where a site asks for it
+    ("_robots_due"; answers go into robots as {url: allowed}). seen: {url: compute_job_id values
+    already recorded}. Returns {url: (status, jobs, None)} for the sites tried: "ok", "missing"
+    (404), "blocked" (robots.txt says no) or "failed"."""
+    results: dict[str, tuple] = {}
+    started, last = _monotonic(), [None]
+
+    def wait():
+        if last[0] is not None:
+            _sleep(max(0.0, last[0] + seconds_between - _monotonic()))
+        last[0] = _monotonic()
+
+    for i, site in enumerate(sites):
+        if _monotonic() - started >= minutes * 60:
+            log.info(f"  [workday] {len(sites) - i} site(s) wait for the next run (time's up for this one).")
+            break
+        outcome: dict = {}
+        try:
+            if site.get("_robots_due"):
+                allowed = workday_robots_allow(site["url"], wait)
+                if allowed == "throttled":
+                    outcome["throttled"] = True
+                    raise LookupError("robots.txt: 429")
+                if allowed is None:
+                    results[site["url"]] = ("failed", None, None)
+                    continue
+                robots[site["url"]] = allowed
+                if not allowed:
+                    results[site["url"]] = ("blocked", None, None)
+                    continue
+            jobs = fetch_workday_board(site["url"], _board_post_json(outcome, wait), seen.get(site["url"], frozenset()))
+        except Exception as exc:
+            jobs = None
+            outcome.setdefault("status", f"error ({exc.__class__.__name__})")
+        if outcome.get("throttled"):
+            results[site["url"]] = ("failed", None, None) if jobs is None else ("ok", jobs, None)
+            log.warning(f"  [workday] Workday asked to slow down after {i} site(s); the other {len(sites) - i - 1} wait for the next run.")
+            break
+        status = outcome.get("status")
+        results[site["url"]] = ("missing", None, None) if status == 404 else ("failed", None, None) if jobs is None else ("ok", jobs, None)
+    log.info(f"  [workday] {sum(1 for r in results.values() if r[0] == 'ok')} of {len(sites)} Workday site(s) read "
+             f"in {_monotonic() - started:.0f} s.")
     return results
 
 
@@ -2928,22 +2948,31 @@ def run(config_override: str | None = None) -> bool:
             board_targets, boards_now = [], False
     # All boards when due; boards new to the registry, or still to be caught up, right away
     # (their first check, which records what they list and emails only what's recent).
-    to_fetch = [b for b in board_targets if boards_on and (boards_now or b["url"] not in state or b["_catch_up_since"])
-                and _hours_since(board_meta["missing"].get(b["url"])) >= BOARD_MISSING_RETRY_HOURS]
+    reachable = [b for b in board_targets if boards_on
+                 and _hours_since(board_meta["missing"].get(b["url"])) >= BOARD_MISSING_RETRY_HOURS]
+    workday_sites = [b for b in reachable if _board_platform(b["url"]) == "workday"]
+    to_fetch = [b for b in reachable if _board_platform(b["url"]) != "workday"
+                and (boards_now or b["url"] not in state or b["_catch_up_since"])]
     if to_fetch:
-        log.info(f"Checking {len(to_fetch)} of {len(board_targets)} company job boards"
+        log.info(f"Checking {len(to_fetch)} of {len(board_targets) - len(workday_sites)} company job boards"
                  f"{'' if boards_now else ' (new ones, or catching up)'}...")
         catching_up = {b["url"] for b in to_fetch if b["_catch_up_since"]}
-        seen = {b["url"]: {compute_job_id(j) for j in state.get(b["url"]) or [] if isinstance(j, dict) and j.get("url")}
-                for b in to_fetch if _board_platform(b["url"]) == "workday" and b["url"] not in catching_up}
-        robots: dict = {}
         fetched = fetch_boards(to_fetch, {u: e for u, e in board_meta["etags"].items()
-                                          if u in state and u not in catching_up}, seen, robots)
-        for b in to_fetch:
-            if b["url"] in robots and b["_board_key"] in board_meta["known"]:
-                board_meta["known"][b["_board_key"]]["robots"] = {
-                    "checked": datetime.now().isoformat(timespec="seconds"), "allowed": robots[b["url"]]}
-    targets = targets + board_targets
+                                          if u in state and u not in catching_up})
+    # Workday sites are read last (see WORKDAY_SECONDS_BETWEEN_REQUESTS), every run, as many as
+    # time allows: those never tried first (found through a new-grad list first), then the
+    # longest untried.
+    feed_names = {t.get("name") for t in targets if t.get("mode") == "feed"}
+
+    def workday_turn(b):
+        info = board_meta["known"].get(b["_board_key"]) or {}
+        tried = info.get("tried_at")
+        return (0 if not tried and info.get("via") in feed_names else 1 if not tried else 2, str(tried or ""))
+
+    workday_sites.sort(key=workday_turn)
+    workday_order = {b["url"] for b in workday_sites}
+    workday_read = False
+    targets = targets + [b for b in board_targets if b["url"] not in workday_order] + workday_sites
     board_urls = {b["url"] for b in board_targets}
     siblings = _sibling_urls(targets)
     # The postings waiting to be emailed are shared with any other config using the same
@@ -2967,6 +2996,24 @@ def run(config_override: str | None = None) -> bool:
             log.info(f"Paused (\"enabled\": false): {name}")
             continue
         is_board = bool(target.get("_board"))
+        if url in workday_order and not workday_read:
+            # Every other target is done: now the Workday sites (one request at a time).
+            workday_read = True
+            entry = board_entries[0]
+            seen = {b["url"]: {compute_job_id(j) for j in state.get(b["url"]) or [] if isinstance(j, dict) and j.get("url")}
+                    for b in workday_sites if not b["_catch_up_since"]}
+            robots: dict = {}
+            read = fetch_workday_sites(workday_sites, seen, robots,
+                                       _setting(entry, "workday_seconds_between_requests", WORKDAY_SECONDS_BETWEEN_REQUESTS, 0.5, 60),
+                                       _setting(entry, "workday_minutes_per_run", WORKDAY_MINUTES_PER_RUN, 0, 20))
+            fetched.update(read)
+            now = datetime.now().isoformat(timespec="seconds")
+            for b in workday_sites:
+                info = board_meta["known"].get(b["_board_key"])
+                if info is not None and b["url"] in read:
+                    info["tried_at"] = now
+                if info is not None and b["url"] in robots:
+                    info["robots"] = {"checked": now, "allowed": robots[b["url"]]}
         if is_board:
             status, board_jobs, etag = fetched.get(url) or (None, None, None)
             if status != "ok":
@@ -3080,6 +3127,15 @@ def run(config_override: str | None = None) -> bool:
         last_email=datetime.now().isoformat(timespec="seconds") if show_left_out or email_every_hours else None,
     )
     return True
+
+
+def _setting(entry: dict, key: str, default: float, low: float, high: float) -> float:
+    """A number from a config entry, kept between low and high (default if missing or not a number)."""
+    try:
+        value = float(entry.get(key, default))
+    except (TypeError, ValueError):
+        return default
+    return min(max(value, low), high) if value == value else default
 
 
 def _board_meta(state: dict) -> dict:

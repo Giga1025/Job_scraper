@@ -166,14 +166,23 @@ in a registry that only grows:
 
 Companies of any size on **Workday** (about 40% of what the new-grad lists link to: defense,
 banks, chips, enterprise software) join the same registry, as their Workday career site.
-Workday lists thousands of postings 20 at a time, newest first, so only the newest pages are
-read: down to postings already seen (one request, most hours), at most 5 pages. A posting
-seen there for the first time counts as new only if Workday says it went up in the last 7
-days, so an older one that moves up the list isn't emailed. Sites are read a few at a time
-with pauses; if Workday answers "too many requests", the rest wait for the next check. A site
-whose robots.txt asks crawlers not to read it (some companies' internal or private-posting
-sites) is skipped, and robots.txt is read again monthly. A Workday site you already have an
-entry for (like NVIDIA's new-grad search) isn't checked twice.
+Workday answers "too many requests" for several minutes after a quick burst from one machine
+(for every company's site, including entries you added by hand), so these sites are read
+differently:
+
+- after every other company in the run, so a slowdown never affects your own entries;
+- one request at a time, `workday_seconds_between_requests` (2) apart, for at most
+  `workday_minutes_per_run` (6) minutes per run; the first "too many requests" ends Workday
+  reading until the next run;
+- in turns: sites never tried first (those found through a new-grad list before the others),
+  then the ones tried longest ago. So each Workday site is checked every few hours rather than
+  hourly, still well ahead of the new-grad lists;
+- only the newest pages (20 postings each, newest first): down to postings already seen (one
+  request, most of the time), at most 3 pages. A posting seen for the first time counts as new
+  only if Workday says it went up in the last 7 days, so an older one moving up isn't emailed;
+- a site whose robots.txt asks crawlers not to read it (some companies' internal or
+  private-posting sites) is skipped; robots.txt is read again monthly. A Workday site you
+  already have an entry for (like NVIDIA's new-grad search) isn't checked twice.
 
 A company, once in, stays even when the lists drop it. `boards.md` (on the `monitor-state`
 branch, next to `left_out.md`) lists every board checked, when it was added and where it was

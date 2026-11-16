@@ -2546,7 +2546,8 @@ class WorkdayBoardTests(MonitorTestCase):
 
     def setUp(self):
         super().setUp()
-        self.patch(jm, "WORKDAY_DELAY_SECONDS", 0)
+        self.slept = []
+        self.patch(jm, "_sleep", self.slept.append)
         self.wd = {WD_API: []}   # each site's postings, newest first: (id, title, postedOn[, location]), or an HTTP status
         self.posts = []          # (API URL, offset) of every request
         self.pages[WD_ROBOTS] = "User-agent: *\nDisallow: /refreshFacet/\n"
@@ -2668,26 +2669,82 @@ class WorkdayBoardTests(MonitorTestCase):
         self.run_wd()
         self.assertEqual((len([u for u, _ in self.requests_made if u == WD_ROBOTS]), len(self.posts)), (2, 1))
 
-    def test_when_workday_asks_to_slow_down_the_rest_wait_for_the_next_check(self):
-        self.patch(jm, "WORKDAY_MAX_THROTTLED", 1)
-        self.patch(jm, "WORKDAY_WORKERS", 1)
+    def two_sites(self):
         other_api = "https://beta.wd1.myworkdayjobs.com/wday/cxs/beta/Careers/jobs"
-        self.wd[WD_API], self.wd[other_api] = 429, [(9, "Software Engineer", "Posted Today")]
+        self.wd[other_api] = [(9, "Software Engineer", "Posted Today")]
         self.pages["https://beta.wd1.myworkdayjobs.com/robots.txt"] = ""
         self.pages[SIMPLIFY_URL] = json.dumps([
             simplify_row("Acme", "New Grad Software Engineer", url=wd_link(1)),
             simplify_row("Beta", "Software Engineer", url="https://beta.wd1.myworkdayjobs.com/Careers/job/X/SWE_R9")])
+        return other_api
+
+    def test_when_workday_asks_to_slow_down_the_rest_wait_for_the_next_run(self):
+        other_api = self.two_sites()
+        self.wd[WD_API] = 429
         self.run_wd()
         with self.assertLogs(jm.log, "WARNING") as logs:
             self.run_wd()
         self.assertIn("Workday asked to slow down", "\n".join(logs.output))
         self.assertEqual([u for u, _ in self.posts], [WD_API])  # Acme first (by name), then nothing more
-        self.assertNotIn(other_api.replace("/wday/cxs/beta", ""), self.saved_state())
-        # Next time both are read.
+        self.assertNotIn("https://beta.wd1.myworkdayjobs.com/Careers", self.saved_state())
+        # Next run, Beta's turn comes first (Acme was tried last time), then Acme's.
         self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
         self.posts.clear()
         self.run_wd()
-        self.assertEqual(sorted(u for u, _ in self.posts), sorted([WD_API, other_api]))
+        self.assertEqual([u for u, _ in self.posts], [other_api, WD_API])
+
+    def test_a_slow_down_answer_to_robots_txt_also_ends_workday_reading(self):
+        self.two_sites()
+        real_get = self.fake_get
+        self.patch(jm.requests, "get", lambda url, *a, **k: FakeResponse("", status_code=429) if url == WD_ROBOTS else real_get(url, *a, **k))
+        self.run_wd()
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            self.run_wd()
+        self.assertIn("Workday asked to slow down", "\n".join(logs.output))
+        self.assertEqual(self.posts, [])
+        self.assertNotIn("robots", self.known()[jm._url_key(WD_SITE)])
+
+    def test_workday_sites_are_read_one_request_at_a_time_after_everything_else(self):
+        other_api = self.two_sites()
+        self.wd[WD_API] = [(i, "Software Engineer", "Posted Today") for i in range(30, 0, -1)]
+        order = []
+        real_get, real_post = jm.requests.get, jm.requests.post
+        self.patch(jm.requests, "get", lambda url, *a, **k: order.append(url) or real_get(url, *a, **k))
+        self.patch(jm.requests, "post", lambda url, *a, **k: order.append(url) or real_post(url, *a, **k))
+        self.mark_known(GH_ACME)
+        self.pages[GH_ACME] = gh_board((1, "Software Engineer"))
+        mine = target(name="Zed", url=GH_ACME, mode="api")  # (after the Workday sites by name)
+        self.run_wd(mine)
+        order.clear()
+        self.slept.clear()
+        self.run_wd(mine, workday_seconds_between_requests=3)
+        workday = [i for i, u in enumerate(order) if "myworkday" in u]
+        self.assertLess(order.index(GH_ACME), workday[0])
+        # robots.txt, then two pages of Acme's (30 postings), robots.txt and one page of Beta's:
+        # a pause before each request but the first.
+        self.assertEqual(len(workday), 5)
+        self.assertEqual(len(self.slept), 4)
+        self.assertTrue(all(2.9 < pause <= 3 for pause in self.slept), self.slept)
+
+    def test_workday_reading_stops_when_its_time_is_up_and_continues_next_run(self):
+        other_api = self.two_sites()
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
+        clock = [0.0]
+
+        def tick():
+            clock[0] += 50
+            return clock[0]
+
+        self.patch(jm, "_monotonic", tick)
+        self.run_wd()
+        self.posts.clear()
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.run_wd(workday_minutes_per_run=1)
+        self.assertIn("1 site(s) wait for the next run", "\n".join(logs.output))
+        self.assertEqual([u for u, _ in self.posts], [WD_API])
+        self.posts.clear()
+        self.run_wd(workday_minutes_per_run=1)
+        self.assertEqual([u for u, _ in self.posts], [other_api])
 
     def test_a_workday_site_the_config_already_checks_is_not_checked_twice(self):
         mine = target(name="Acme", url="https://acme.wd5.myworkdayjobs.com/en-US/External?workerSubType=abc", mode="api")
