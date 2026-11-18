@@ -1803,6 +1803,7 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
     skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
     tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
     skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
+    level = _phrase_pattern(entry.get("level_titles")) if entry.get("level_titles") else None
     try:
         days = float(entry.get("catch_up_days") or 0)
     except (TypeError, ValueError):
@@ -1810,7 +1811,7 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
     days = min(days, 365.0) if days > 0 else 0.0  # (not a number: 0)
     since = datetime.now(timezone.utc) - timedelta(days=days) if days else None
     return [{"name": info["name"], "url": info["url"], "mode": "api", "_board": True, "_board_key": key,
-             "_tech_titles": tech, "_skip_titles": skip_titles, "_compact": True, "_quiet": True,
+             "_tech_titles": tech, "_skip_titles": skip_titles, "_level_titles": level, "_compact": True, "_quiet": True,
              "_catch_up_since": since if since and not info.get("caught_up") else None}
             for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
             if key not in skip and _board_platform(info["url"]) in platforms
@@ -2897,10 +2898,13 @@ def check_target(
             say(f"  [location] Skipped {len(outside)} new posting(s) outside the US")
             new_jobs = [j for j in new_jobs if not is_outside_us(j)]
     tech, skip = target.get("_tech_titles"), target.get("_skip_titles")
+    # "new grad" and the like count as tech only with an engineering word ("Entry-Level Geologist" doesn't).
+    level, engineering = target.get("_level_titles"), (role_patterns or {}).get("engineering_signals")
     if tech is not None or skip is not None:
         def wanted(job):
             title = _title_core(job["title"])
-            return (tech is None or tech.search(title)) and not (skip and skip.search(title))
+            techy = tech is None or tech.search(title) or (level and level.search(title) and (engineering is None or engineering.search(title)))
+            return techy and not (skip and skip.search(title))
         other = [j for j in new_jobs if not wanted(j)]
         if other:
             say(f"  [tech] Skipped {len(other)} new posting(s) that aren't tech roles")

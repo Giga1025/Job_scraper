@@ -2223,6 +2223,22 @@ class BoardTests(MonitorTestCase):
         _, reported = self.run_boards()
         self.assertEqual(reported, {"Acme": ["AI Software Engineer"]})
 
+    def test_new_grad_words_count_only_with_an_engineering_word(self):
+        self.patch(self, "boards_entry", lambda **extra: {
+            "name": "Company job boards", "mode": "boards", "tech_titles": ["software"], "level_titles": ["new grad", "entry level"], **extra})
+        self.start((1, "New Grad Software Engineer"))
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Entry-Level Geologist"), (3, "Supply Chain (New Grad)"),
+                                       (4, "Build & Release Engineer - New Grad"), (5, "Software Developer"))
+        _, reported = self.run_boards()
+        self.assertEqual(sorted(reported["Acme"]), ["Build & Release Engineer - New Grad", "Software Developer"])
+
+    def test_the_shipped_level_words_need_an_engineering_word(self):
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        self.assertEqual(entry["level_titles"], ["new grad", "early career", "entry level"])
+        self.assertFalse(set(entry["level_titles"]) & set(entry["tech_titles"]))
+
     def test_an_unchanged_board_answers_304_and_is_not_read(self):
         self.start((1, "New Grad Software Engineer"))
         sent = []
