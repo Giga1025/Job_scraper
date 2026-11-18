@@ -521,8 +521,8 @@ What to do:
   update the entry's `url` (keep its `name`, so nothing is lost or emailed twice).
 - **Refused (429/403):** the site blocks automated visitors from GitHub's machines. That can't
   be fixed by the monitor without getting around the site's protection, which it doesn't do.
-  Pause the entry with `"enabled": false`; its roles usually still reach you through the
-  new-grad lists, a day or two later.
+  Pause the entry with `"enabled": false` (the warning then stops); its roles usually still
+  reach you through the new-grad lists, a day or two later.
 
 ### Changing things
 

@@ -3136,11 +3136,13 @@ def run(config_override: str | None = None) -> bool:
         if not boards_page_path().exists() or boards_page_path().read_text(encoding="utf-8") != page:
             save_text(boards_page_path(), page)
     boards_changed = board_meta != loaded_board_meta
-    # Entries of this config that are gone from it aren't reported any more.
+    # Entries of this config that are gone from it, or paused ("enabled": false, as the README
+    # says to do with a site that refuses us), aren't reported any more.
+    checked_urls = {t.get("url") for t in targets if t.get("enabled", True) is not False}
     health_updates.update({url: None for url, rec in health.items() if isinstance(rec, dict)
-                           and rec.get("config") == this_config and url not in own_urls})
+                           and rec.get("config") == this_config and url not in checked_urls})
     health_updates = {url: rec for url, rec in health_updates.items() if rec != health.get(url)}
-    problems = broken_checks({**health, **health_updates}, own_urls)
+    problems = broken_checks({**health, **health_updates}, checked_urls)
     if problems:
         log.warning(f"[health] {len(problems)} of your entries aren't working: "
                     + "; ".join(f"{p['name']} ({p['why']})" for p in problems))
