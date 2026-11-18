@@ -1,5 +1,5 @@
 {
-  "_help": "New-grad lists that people maintain on GitHub. Their postings are emailed like any other (once each), and the companies they link to on Greenhouse, Ashby or Lever are added to the startup boards (targets/startups.json).",
+  "_help": "New-grad lists that people maintain on GitHub. Their postings are emailed like any other (once each), and the companies they link to on Greenhouse, Ashby, Lever, Workable or SmartRecruiters are added to the startup boards (targets/startups.json).",
   "targets": [
     {
       "_section": "New-grad lists maintained on GitHub by others (many startups and mid-size companies). A posting already found by a company's own entry above, or by another list, isn't emailed again."

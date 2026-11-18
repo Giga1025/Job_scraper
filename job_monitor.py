@@ -1371,8 +1371,12 @@ def _read_speedyapply_feed(resp, target: dict, max_age_days: float) -> list[dict
 FEED_READERS = {"simplify": _read_simplify_feed, "speedyapply": _read_speedyapply_feed}
 
 
+_LIST_WORKABLE_LINKS: list[str] = []  # every Workable posting link in the lists read this run (see run())
+
+
 def fetch_feed_jobs(target: dict) -> list[dict] | None:
-    """Postings from a "feed" target, or None if it couldn't be read."""
+    """Postings from a "feed" target, or None if it couldn't be read. Every Workable posting
+    link in it, whatever its date or category, is noted in _LIST_WORKABLE_LINKS (newest first)."""
     reader = FEED_READERS.get(str(target.get("format", "")).lower())
     if reader is None:
         log.error(f"  [feed] Unknown feed format {target.get('format')!r}; use one of: {', '.join(FEED_READERS)}")
@@ -1388,6 +1392,8 @@ def fetch_feed_jobs(target: dict) -> list[dict] | None:
     except Exception as exc:
         log.warning(f"  [feed] Failed to read {target['url']}: {exc}")
         return None
+    links = re.findall(r"https?://apply\.workable\.com/[A-Za-z0-9-]+/j/[0-9A-Fa-f]{10}", getattr(resp, "text", "") or "")
+    _LIST_WORKABLE_LINKS.extend(reversed(links) if str(target.get("format", "")).lower() == "simplify" else links)
     listed = sum(1 for j in jobs if j.get("listed", True))
     log.info(f"  [feed] Found {listed} open postings from the last {max_age_days:g} days ({len(jobs) - listed} closed)")
     today = datetime.now().date().isoformat()
@@ -1474,7 +1480,8 @@ SMARTRECRUITERS_MAX_PAGES = 3          # more than one page only while a full pa
 SMARTRECRUITERS_RECENT_DAYS = 3
 MONITOR_USER_AGENT = "job-monitor/1.0 (personal job alerts; reads public job listings once an hour)"
 WORKABLE_CODES_KEPT = 20        # job codes remembered per Workable account, to match it in the file
-WORKABLE_MIN_ROWS_SHARE = 0.5   # a file with fewer rows than this share of the last one is a cut-off download
+WORKABLE_MIN_ROWS_SHARE = 0.5   # a file with fewer rows than this share of the last one is skipped...
+WORKABLE_SMALL_ACCEPT_HOURS = 6 # ...unless it has stayed that small this long: then it's the new normal
 _GREENHOUSE_BOARD_HOST = re.compile(r"^(?:job-)?boards(?:\.[a-z]{2,3})?\.greenhouse\.io$")
 _BOARD_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
@@ -1570,12 +1577,21 @@ def grow_board_registry(known: dict, links, via: str, today: str) -> int:
         slug = urls[key].rstrip("/").split("/")[-2 if "greenhouse" in key else -1]
         name = names[key].most_common(1)[0][0] if names[key] else slug
         known[key] = {"url": urls[key], "name": name, "added": today, "via": via}
-    for key, found in codes.items():  # (the codes linked most recently first)
-        if key in known:
-            kept = list(dict.fromkeys(found + list(known[key].get("codes") or [])))[:WORKABLE_CODES_KEPT]
-            if kept != known[key].get("codes"):
-                known[key]["codes"] = kept
+    _add_workable_codes(known, codes)
     return len(urls)
+
+
+def _add_workable_codes(known: dict, codes: dict):
+    """Remember these job codes ({key: [code, ...], most recently linked first}) for Workable
+    accounts already in the registry and not matched in Workable's file yet (a matched account
+    is matched again through the postings it lists). Only a different set of codes is a change."""
+    for key, found in codes.items():
+        info = known.get(key)
+        if info is None or info.get("tenant") or not found:
+            continue
+        kept = list(dict.fromkeys(found + list(info.get("codes") or [])))[:WORKABLE_CODES_KEPT]
+        if set(kept) != set(info.get("codes") or []):
+            info["codes"] = kept
 
 
 def read_company_list(item: dict, etags: dict) -> list[tuple] | None:
@@ -1590,7 +1606,8 @@ def read_company_list(item: dict, etags: dict) -> list[tuple] | None:
         log.warning(f"  [boards] Could not read {item.get('name') or url} ({outcome.get('status')})")
         return None
     etags[url] = outcome.get("etag")
-    return [(row.get("url"), row.get("company_name")) for row in data if isinstance(row, dict)]
+    # (listings.json adds new rows at the end: newest first, so the newest job codes are kept)
+    return [(row.get("url"), row.get("company_name")) for row in reversed(data) if isinstance(row, dict)]
 
 
 def _board_get_json(etag: str | None, outcome: dict, user_agent: str | None = None):
@@ -1681,11 +1698,13 @@ def _workable_code(link) -> str | None:
     return match.group(1).upper() if match else None
 
 
-def fetch_workable_feed(boards: list[dict], meta: dict) -> dict[str, tuple]:
+def fetch_workable_feed(boards: list[dict], meta: dict, recorded: dict | None = None) -> dict[str, tuple]:
     """Read WORKABLE_FEED_URL once for these Workable boards. Returns {url: (status, jobs, None)}:
-    "ok" with the postings of the board's company (matched through a job code the lists linked
-    it to: meta["known"][key]["tenant"], learned here), "unchanged" (304) or "failed". Boards
-    not matched yet are left out (they are tried again when the file next changes)."""
+    "ok" with the postings of the board's company, "unchanged" (304) or "failed". A board is
+    matched to its company in the file (meta["known"][key]["tenant"]) through a job code: one
+    the lists linked it to, or one of its own postings recorded at earlier checks (recorded:
+    {url: [code, ...]}), every time, so a company that renames itself or changes its website
+    in Workable stays matched. Boards not matched yet are left out (tried again next time)."""
     state = meta.setdefault("workable", {})
     headers = {**HEADERS, "Accept-Encoding": "gzip"}
     if state.get("last_modified"):
@@ -1702,7 +1721,8 @@ def fetch_workable_feed(boards: list[dict], meta: dict) -> dict[str, tuple]:
         log.warning(f"  [workable] Workable's job file answered {resp.status_code}"
                     + (f" (retry after {resp.headers.get('Retry-After')} s)" if resp.headers.get("Retry-After") else ""))
         return every("failed")
-    by_code = {code: b["_board_key"] for b in boards for code in (meta["known"].get(b["_board_key"]) or {}).get("codes") or []}
+    by_code = {code: b["_board_key"] for b in boards
+               for code in list((meta["known"].get(b["_board_key"]) or {}).get("codes") or []) + list((recorded or {}).get(b["url"]) or [])}
     rows: dict[tuple, list] = {}
     learned: dict[str, tuple] = {}
     count = 0
@@ -1729,15 +1749,23 @@ def fetch_workable_feed(boards: list[dict], meta: dict) -> dict[str, tuple]:
         log.warning(f"  [workable] Workable's job file was cut off or unreadable ({exc.__class__.__name__}); next check retries.")
         return every("failed")
     if count < WORKABLE_MIN_ROWS_SHARE * (state.get("rows") or 0):
-        log.warning(f"  [workable] Workable's job file had {count} jobs (last time {state.get('rows')}): looks cut off, skipped.")
-        return every("failed")
+        since = state.setdefault("small_since", datetime.now().isoformat(timespec="seconds"))
+        if _hours_since(since) < WORKABLE_SMALL_ACCEPT_HOURS:
+            log.warning(f"  [workable] Workable's job file has {count} jobs (last time {state.get('rows')}): skipped "
+                        f"for now; if it stays this small for {WORKABLE_SMALL_ACCEPT_HOURS} hours, it's the new normal.")
+            return every("failed")
+        log.warning(f"  [workable] Workable's job file has had about {count} jobs for {WORKABLE_SMALL_ACCEPT_HOURS} hours: "
+                    f"taking that as the new normal.")
+    state.pop("small_since", None)
     state.update(last_modified=resp.headers.get("Last-Modified") or resp.headers.get("last-modified"), rows=count)
     results = {}
     for b in boards:
         info = meta["known"].get(b["_board_key"])
         if info is None:
             continue
-        if not info.get("tenant") and b["_board_key"] in learned:
+        if b["_board_key"] in learned and list(learned[b["_board_key"]]) != info.get("tenant"):
+            if info.get("tenant"):
+                log.info(f"  [workable] {info.get('name')} is now {learned[b['_board_key']][0]!r} in Workable's file.")
             info["tenant"] = list(learned[b["_board_key"]])
         if info.get("tenant"):
             results[b["url"]] = ("ok", _workable_jobs(rows.get(tuple(info["tenant"]), [])), None)
@@ -1810,9 +1838,22 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
         days = 0.0
     days = min(days, 365.0) if days > 0 else 0.0  # (not a number: 0)
     since = datetime.now(timezone.utc) - timedelta(days=days) if days else None
+
+    def catch_up(info):
+        """When a board not caught up yet catches up from: catch_up_days ago; a Workable account,
+        which waits until it's matched in Workable's file, from the day it was added if earlier."""
+        if not since or info.get("caught_up"):
+            return None
+        if _board_platform(info["url"]) == "workable":
+            try:
+                return min(since, datetime.fromisoformat(str(info.get("added"))).replace(tzinfo=timezone.utc))
+            except ValueError:
+                pass
+        return since
+
     return [{"name": info["name"], "url": info["url"], "mode": "api", "_board": True, "_board_key": key,
              "_tech_titles": tech, "_skip_titles": skip_titles, "_level_titles": level, "_compact": True, "_quiet": True,
-             "_catch_up_since": since if since and not info.get("caught_up") else None}
+             "_catch_up_since": catch_up(info)}
             for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
             if key not in skip and _board_platform(info["url"]) in platforms
             and _entry_key(info.get("name")) not in skip_companies]
@@ -1834,15 +1875,18 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
     missing = {_url_key(u) for u in meta.get("missing") or {}}
     rows = sorted((info for key, info in meta["known"].items() if key in checked_keys),
                   key=lambda i: (str(i.get("name")).lower(), i["url"]))
+    waiting = sum(1 for i in rows if _board_platform(i["url"]) == "workable" and not i.get("tenant"))
     lines = [
         "# Company job boards the monitor checks",
         "",
         "Checked about every hour for tech roles. A company is added the first time one of the lists "
         "the monitor reads links to its Greenhouse, Ashby, Lever, Workable or SmartRecruiters board, and stays from then on. To add "
-        "one yourself, add it under `companies` in targets/startups.json.",
+        "one yourself, add it under `companies` in targets/startups.json (for a Workable company, with a link to "
+        "one of its current postings: it is matched in Workable's job file through that posting).",
         "",
         f"{len(rows)} boards: {counts['greenhouse']} Greenhouse, {counts['ashby']} Ashby, {counts['lever']} Lever, "
-        f"{counts['workable']} Workable, {counts['smartrecruiters']} SmartRecruiters."
+        f"{counts['workable']} Workable" + (f" ({waiting} not matched in Workable's file yet, so not checked yet)" if waiting else "")
+        + f", {counts['smartrecruiters']} SmartRecruiters."
         + (f" {len(missing & checked_keys)} weren't found at the last try (tried again daily)." if missing & checked_keys else ""),
         "",
         "| Company | Board | Added | Found in |",
@@ -1850,6 +1894,8 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
     ]
     for info in rows:
         flag = " (not found lately)" if _url_key(info["url"]) in missing else ""
+        if _board_platform(info["url"]) == "workable" and not info.get("tenant"):
+            flag = " (not matched yet: waiting for a list to link one of its current jobs)"
         lines.append(f"| {_md_escape(info.get('name'))} | [{_board_platform(info['url']).title()}]({_board_page(info['url'])}){flag} "
                      f"| {_md_escape(info.get('added'))} | {_md_escape(info.get('via'))} |")
     return "\n".join(lines) + "\n"
@@ -2928,6 +2974,7 @@ def run(config_override: str | None = None) -> bool:
     """Check every target once, and email what's waiting if an email is due.
     Returns False if an email was due but couldn't be sent."""
     config = ensure_config(config_override)
+    _LIST_WORKABLE_LINKS.clear()
     state = load_state()
     loaded_state = copy.deepcopy(state)
     keywords = config.get("keyword_filters", [])
@@ -2971,7 +3018,10 @@ def run(config_override: str | None = None) -> bool:
     workable = [b for b in to_fetch if _board_platform(b["url"]) == "workable"]
     to_fetch = [b for b in to_fetch if _board_platform(b["url"]) != "workable"]
     if workable and boards_now:  # (Workable's file changes hourly: new accounts wait for the next check)
-        fetched.update(fetch_workable_feed([b for b in board_targets if _board_platform(b["url"]) == "workable"], board_meta))
+        accounts = [b for b in board_targets if _board_platform(b["url"]) == "workable"]
+        recorded = {b["url"]: [c for c in (_workable_code(r.get("url")) for r in (state.get(b["url"]) or [])[:WORKABLE_CODES_KEPT]
+                                         if isinstance(r, dict)) if c] for b in accounts}
+        fetched.update(fetch_workable_feed(accounts, board_meta, recorded))
     if to_fetch:
         log.info(f"Checking {len(to_fetch)} of {len(board_targets)} company job boards"
                  f"{'' if boards_now else ' (new ones, or catching up)'}...")
@@ -3072,6 +3122,13 @@ def run(config_override: str | None = None) -> bool:
     changed = {url: jobs for url, jobs in state.items() if not url.startswith("_") and loaded_state.get(url) != jobs}
     baselines = {url: jobs for url, jobs in changed.items() if url in first_checks}
     updates = {url: jobs for url, jobs in changed.items() if url not in baselines}
+    # Job codes of Workable accounts not matched yet, from every Workable link the lists hold now.
+    found: dict[str, list] = {}
+    for link in _LIST_WORKABLE_LINKS:
+        board, code = board_api_url(link), _workable_code(link)
+        if board and code and code not in found.setdefault(_url_key(board[1]), []):
+            found[_url_key(board[1])].append(code)
+    _add_workable_codes(board_meta["known"], found)
     if fetched or boards_now:
         _finish_board_check(board_meta, fetched, board_urls, full=boards_now)
     if board_entries:

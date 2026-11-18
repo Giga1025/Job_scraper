@@ -5,6 +5,7 @@ Run from the repo root:
     python -m unittest discover -s tests -v
 """
 
+import copy
 import email.utils
 import hashlib
 import errno
@@ -2846,6 +2847,94 @@ class WorkableTests(MonitorTestCase):
                 self.assertEqual(self.run_wk(), {})
             self.assertEqual(self.saved_state()[self.BASK], saved)
             self.assertEqual(self.meta()["workable"]["rows"], 11)
+
+    def matched(self, *rows):
+        """Bask Health registered, matched and caught up, its file listing these rows."""
+        self.file = wk_file(("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1), *rows)
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()
+        self.assertTrue(self.meta()["known"][self.BASK_KEY].get("caught_up"))
+
+    def test_a_company_that_renames_itself_in_workable_stays_checked(self):
+        # (ColdQuanta became Infleqtion: same account and job codes, new name and website in the file)
+        self.matched(("A00000000A", "Software Engineer", "Bask Health", "US", 5))
+        self.file = (wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 5),
+                             ("F00000000F", "Software Engineer, Infrastructure", "Bask Health", "US", 0))
+                     .replace("Bask Health", "Bask").replace("https://baskhealth.example", "https://bask.example"))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer, Infrastructure"]})  # (the list's job closed meanwhile)
+        self.assertEqual(self.meta()["known"][self.BASK_KEY]["tenant"], ["Bask", "https://bask.example"])
+
+    def test_a_lastingly_smaller_file_becomes_the_new_normal(self):
+        self.matched(*[(f"A0000000{i:02d}", "Data Analyst", "Bask Health", "US", 5) for i in range(10)])
+        self.file = wk_file(("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1),
+                            ("F00000000F", "Software Engineer", "Bask Health", "US", 0))
+        self.next_hour()
+        with self.assertLogs(jm.log, "WARNING"):
+            self.assertEqual(self.run_wk(), {})       # a sudden drop: skipped for now
+        meta = self.meta()
+        meta["workable"]["small_since"] = (datetime.now() - timedelta(hours=7)).isoformat(timespec="seconds")
+        meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+        jm.save_state({}, boards=meta)
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer"]})  # still that small hours later: accepted
+        self.assertEqual((self.meta()["workable"]["rows"], "small_since" in self.meta()["workable"]), (2, False))
+
+    def test_the_internship_lists_newest_job_codes_are_kept(self):
+        # listings.json adds new rows at the end
+        self.pages[INTERNSHIPS_URL] = json.dumps([{"url": wk_link(f"{i:010X}", "altom-transport"), "company_name": "Altom"}
+                                                  for i in range(30)])
+        self.run_wk(find_companies_in=[{"name": "SimplifyJobs Internships", "url": INTERNSHIPS_URL}])
+        codes = self.meta()["known"]["https://apply.workable.com/altom-transport"]["codes"]
+        self.assertEqual((len(codes), codes[0]), (jm.WORKABLE_CODES_KEPT, f"{29:010X}"))
+
+    def test_any_workable_link_in_the_lists_helps_match_an_account(self):
+        # Bask's recent list row points to a closed job; an older row (outside the list's 7 days) to an open one.
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60")),
+                                               simplify_row("Bask Health", "ML Engineer", days_ago=40, url=wk_link("B00000000B"))])
+        self.file = wk_file(("B00000000B", "ML Engineer", "Bask Health", "US", 40), ("A00000000A", "Software Engineer", "Bask Health", "US", 1))
+        self.run_wk()
+        self.run_wk()  # (the account is added from the list's saved rows; boards not due)
+        self.assertEqual(set(self.meta()["known"][self.BASK_KEY]["codes"]), {"472CF47F60", "B00000000B"})
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer"]})
+
+    def test_an_account_matched_late_catches_up_from_the_day_it_was_added(self):
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1))  # the list's job is closed
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()
+        meta = self.meta()
+        meta["known"][self.BASK_KEY]["added"] = (datetime.now() - timedelta(days=10)).date().isoformat()
+        jm.save_state({}, boards=meta)
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60")),
+                                               simplify_row("Bask Health", "Data Analyst", url=wk_link("C00000000C"))])
+        self.run_wk()
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1),
+                            ("D00000000D", "ML Engineer", "Bask Health", "US", 8),            # posted while it waited
+                            ("E00000000E", "Software Engineer, Payments", "Bask Health", "US", 12),  # before it was added
+                            ("C00000000C", "Data Analyst", "Bask Health", "US", 0))
+        self.next_hour()
+        self.assertEqual(sorted(self.run_wk()["Bask Health"]), ["ML Engineer", "Software Engineer"])
+
+    def test_boards_md_marks_accounts_not_matched_yet(self):
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1))
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()
+        page = jm.boards_page_path().read_text()
+        self.assertIn("1 Workable (1 not matched in Workable's file yet, so not checked yet)", page)
+        self.assertIn("(not matched yet: waiting for a list to link one of its current jobs)", page)
+
+    def test_job_codes_change_only_while_unmatched_and_only_as_a_set(self):
+        known = {}
+        jm.grow_board_registry(known, [(wk_link("AAAAAAAAAA"), "Bask"), (wk_link("BBBBBBBBBB"), "Bask")], "list", "2026-11-18")
+        before = copy.deepcopy(known)
+        jm.grow_board_registry(known, [(wk_link("BBBBBBBBBB"), "Bask"), (wk_link("AAAAAAAAAA"), "Bask")], "list", "2026-11-18")
+        self.assertEqual(known, before)  # a reorder isn't a change (nothing to save)
+        known[self.BASK_KEY]["tenant"] = ["Bask", "https://bask.example"]
+        jm.grow_board_registry(known, [(wk_link("CCCCCCCCCC"), "Bask")], "list", "2026-11-18")
+        self.assertEqual(known[self.BASK_KEY]["codes"], before[self.BASK_KEY]["codes"])  # matched: matched again by its own jobs
 
     def test_the_registry_keeps_the_latest_job_codes_of_an_account(self):
         known = {}
