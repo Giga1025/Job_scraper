@@ -23,7 +23,7 @@ to check split into three files it lists under `target_files`:
 |---|---|
 | `targets/big_tech.json` | Big tech and other companies with a hand-made entry each (finance, crypto, AI labs, data and infrastructure; about 60) |
 | `targets/new_grad_lists.json` | New-grad lists maintained on GitHub by others |
-| `targets/startups.json` | Startups, unicorns and mid-size companies on Greenhouse, Ashby or Lever (see [Startup and mid-size company job boards](#startup-and-mid-size-company-job-boards)) |
+| `targets/startups.json` | Startups, unicorns and mid-size companies on Greenhouse, Ashby, Lever, Workable or SmartRecruiters (see [Startup and mid-size company job boards](#startup-and-mid-size-company-job-boards)) |
 
 Each file holds a list of entries (under `"targets"`); a config can also have its own
 `"targets"` list, checked first. Which config is used:
@@ -151,8 +151,9 @@ lists without emailing.
 
 ### Startup and mid-size company job boards
 
-Most startups and mid-size companies post on Greenhouse, Ashby or Lever, whose job boards can
-be read one company at a time (none of them offers a list of every company's postings). The
+Most startups and mid-size companies post on Greenhouse, Ashby, Lever, Workable or
+SmartRecruiters, whose job boards can be read one company at a time (Workable's through one
+file of all its customers' jobs, see below). The
 `"mode": "boards"` entry in `targets/startups.json` checks the whole board of each company
 in a registry that only grows:
 
@@ -170,9 +171,13 @@ publishes one file of every customer's published jobs, updated hourly, for exact
 the monitor reads it once per check (about a minute; "not modified", in under a second, when
 it hasn't changed). The file names companies, not their accounts, so an account is matched
 to its company there through a job a list linked it to (an exact job code, never a guessed
-name). An account whose linked jobs have all closed waits until a list links a current one;
-its roles still reach you through the lists meanwhile. Job links are emailed as Workable
-gives them.
+name), and matched again every hour through the jobs it lists, so a company that renames
+itself in Workable stays checked. An account whose linked jobs have all closed waits until a
+list links a current one (any Workable link in the lists counts, whatever its date); roles
+the lists carry still reach you meanwhile, and once it's matched, its first check catches up
+on everything it posted since it was added. To add a Workable company yourself, link one of
+its current postings (`apply.workable.com/<account>/j/<code>`), not its board page.
+`boards.md` marks accounts not matched yet. Job links are emailed as Workable gives them.
 
 Companies on **SmartRecruiters** join it too, read through SmartRecruiters' public Posting API
 (no key needed; its robots.txt asks bots other than LinkedIn's to stay away, and you chose to
@@ -183,7 +188,7 @@ until the next check. A company that left SmartRecruiters just answers with an e
 
 A company, once in, stays even when the lists drop it. `boards.md` (on the `monitor-state`
 branch, next to `left_out.md`) lists every board checked, when it was added and where it was
-found. Boards the config already has an entry for aren't checked twice.
+found (and Workable accounts not matched yet, marked as such). Boards the config already has an entry for aren't checked twice.
 
 The boards are checked about every `every_hours` (1), in parallel, and a company new to the
 registry right away. Its first check records what its board lists and emails only the roles
@@ -268,7 +273,7 @@ Each target has these fields:
 **Several links for one company:** add one entry per link and give them the same `name`
 (Uber, for example, has one entry for its University team and one for all its US openings).
 A posting both links show is emailed once, under that name, whichever entry finds it first,
-when both pages link it the same way or with the same Greenhouse, Ashby or Lever job id (a
+when both pages link it the same way or with the same Greenhouse, Ashby, Lever, Workable or SmartRecruiters job id (a
 job the two pages link differently can be listed twice). The order of the entries doesn't
 matter, and a new entry's first run, which records what its page lists without emailing,
 never hides a posting from the other entry; nor does one entry's own filter (`keyword_filters`,
