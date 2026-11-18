@@ -2619,6 +2619,16 @@ class HealthTests(MonitorTestCase):
         self.assertEqual((record["kind"], record["why"]), ("failed", "the page is gone (404)"))
         self.assertLess(jm._hours_since(record["since"]), 1)
 
+    def test_a_job_board_api_with_no_openings_is_not_reported(self):
+        # An empty list from Greenhouse/Ashby/Lever is a real answer (OpenSea: not hiring), unlike an empty page.
+        board = "https://api.ashbyhq.com/posting-api/job-board/opensea"
+        self.pages[board] = json.dumps({"jobs": []})
+        self.run_both(target(name="OpenSea", url=board, mode="api"))
+        self.assertNotIn(board, self.health())
+        self.pages[board] = "{}"  # not a job list: that is a problem
+        self.run_both(target(name="OpenSea", url=board, mode="api"))
+        self.assertEqual(self.health()[board]["kind"], "failed")
+
     def test_reasons_in_plain_words(self):
         cases = {"429 Client Error: Too Many Requests for url": "429", "403 Client Error: Forbidden": "403",
                  "Failed to read x: 404 Client Error: Not Found for u": "404", "Read timed out. (read timeout=30)": "in time",

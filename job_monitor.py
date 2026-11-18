@@ -2801,7 +2801,8 @@ def run(config_override: str | None = None) -> bool:
                 health_updates[url] = _health_record(health.get(url), name, None, problems + [repr(exc)], this_config)
             continue
         if not is_board:
-            health_updates[url] = _health_record(health.get(url), name, outcome.get("found"), problems, this_config)
+            health_updates[url] = _health_record(health.get(url), name, outcome.get("found"), problems, this_config,
+                                                 empty_ok=not is_feed and job_board_api_reader(url) is not None)
         if first_check and url in state:
             first_checks.add(url)
         if is_board:
@@ -2955,11 +2956,12 @@ def _problem_reason(messages: list[str]) -> str:
     return "it couldn't be read"
 
 
-def _health_record(previous, name: str, found, messages: list[str], config_id) -> dict | None:
+def _health_record(previous, name: str, found, messages: list[str], config_id, empty_ok: bool = False) -> dict | None:
     """An entry's health after a check that found `found` postings (None: unreadable): None if
-    it worked, else {"name", "kind" ("failed"/"empty"), "why", "since", "config"}, keeping
-    "since" from the previous record while the problem is the same kind."""
-    if found:
+    it worked (or found nothing and empty_ok: a job-board API's empty list is a real answer),
+    else {"name", "kind" ("failed"/"empty"), "why", "since", "config"}, keeping "since" from the
+    previous record while the problem is the same kind."""
+    if found or (found == 0 and empty_ok):
         return None
     kind = "empty" if found == 0 else "failed"
     previous = previous if isinstance(previous, dict) else {}

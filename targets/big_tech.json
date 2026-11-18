@@ -191,13 +191,13 @@
     },
     {
       "name": "Citadel",
-      "url": "https://www.citadel.com/career-sitemap.xml",
+      "url": "https://www.citadel.com/sitemap/career.xml",
       "mode": "sitemap",
       "link_selector": "/careers/details/"
     },
     {
       "name": "Citadel Securities",
-      "url": "https://www.citadelsecurities.com/career-sitemap.xml",
+      "url": "https://www.citadelsecurities.com/sitemap/career.xml",
       "mode": "sitemap",
       "link_selector": "/careers/details/"
     },
@@ -323,10 +323,11 @@
     },
     {
       "name": "Confluent",
-      "url": "https://api.ashbyhq.com/posting-api/job-board/confluent",
+      "_note": "IBM bought Confluent: careers.confluent.io now forwards to IBM's careers search. This is that search for Confluent roles in the US in engineering, data and infrastructure.",
+      "url": "https://www.ibm.com/careers/search?q=confluent&field_keyword_05[0]=United%20States&field_keyword_08[0]=Software%20Engineering&field_keyword_08[1]=Data%20%26%20Analytics&field_keyword_08[2]=Infrastructure%20%26%20Technology&sort=dcdate_desc",
       "mode": "browser",
-      "wait_for": "",
-      "link_selector": ""
+      "wait_for": "a[href*='JobDetail?jobId=']",
+      "link_selector": "a[href*='JobDetail?jobId=']"
     },
     {
       "name": "IBM",
@@ -362,9 +363,9 @@
       "link_selector": "a[href^='/en/jobs/'][href$='/']:not([href='/en/jobs/']):not([href*='saved-jobs'])"
     },
     {
-      "_note": "All of Uber's US openings (the entry above is only its University team). Same name, so a posting both list is emailed once.",
+      "_note": "All of Uber's US openings (the entry above is only its University team; 500 per page shows all ~400). Same name, so a posting both list is emailed once.",
       "name": "Uber",
-      "url": "https://jobs.uber.com/en/jobs/?countries=United+States&pagesize=100",
+      "url": "https://jobs.uber.com/en/jobs/?countries=United+States&pagesize=500",
       "mode": "browser",
       "wait_for": "a[href^='/en/jobs/'][href$='/']:not([href='/en/jobs/']):not([href*='saved-jobs'])",
       "link_selector": "a[href^='/en/jobs/'][href$='/']:not([href='/en/jobs/']):not([href*='saved-jobs'])"
