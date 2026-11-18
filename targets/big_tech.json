@@ -191,12 +191,16 @@
     },
     {
       "name": "Citadel",
+      "enabled": false,
+      "_paused": "Paused: the career sitemap moved to this address and Citadel's bot protection answers GitHub's machines with 403 Forbidden. Delete \"enabled\": false to try again.",
       "url": "https://www.citadel.com/sitemap/career.xml",
       "mode": "sitemap",
       "link_selector": "/careers/details/"
     },
     {
       "name": "Citadel Securities",
+      "enabled": false,
+      "_paused": "Paused: the career sitemap moved to this address and Citadel's bot protection answers GitHub's machines with 403 Forbidden. Delete \"enabled\": false to try again.",
       "url": "https://www.citadelsecurities.com/sitemap/career.xml",
       "mode": "sitemap",
       "link_selector": "/careers/details/"

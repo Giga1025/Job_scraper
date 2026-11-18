@@ -1455,8 +1455,14 @@ def _board_page(api_url: str) -> str:
 
 
 def _board_platform(api_url: str) -> str:
+    """"greenhouse", "ashby" or "lever" for a board's API URL; "unknown" for anything else (e.g. a
+    registry entry from a newer version), which plan_boards then leaves out."""
     host = urlparse(api_url).netloc
-    return "greenhouse" if host.endswith("greenhouse.io") else "ashby" if host.endswith("ashbyhq.com") else "lever"
+    if host.endswith("greenhouse.io"):
+        return "greenhouse"
+    if host.endswith("ashbyhq.com"):
+        return "ashby"
+    return "lever" if host in ("api.lever.co", "api.eu.lever.co") else "unknown"
 
 
 def grow_board_registry(known: dict, links, via: str, today: str) -> int:

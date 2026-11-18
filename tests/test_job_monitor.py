@@ -586,10 +586,10 @@ class PausedTargetTests(MonitorTestCase):
         _, reported = self.run_monitor([target()])
         self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
 
-    def test_the_shipped_config_pauses_tesla_and_atlassian_only(self):
+    def test_the_shipped_config_pauses_only_the_blocked_entries(self):
         targets = jm.load_config(REPO_DIR / "config_all.json")["targets"]
         paused = [t["name"] for t in targets if t.get("name") and t.get("enabled", True) is False]
-        self.assertEqual(paused, ["Tesla", "Atlassian"])
+        self.assertEqual(paused, ["Tesla", "Citadel", "Citadel Securities", "Atlassian"])
 
 
 class SameCompanyTests(MonitorTestCase):
@@ -2360,6 +2360,19 @@ class BoardTests(MonitorTestCase):
         self.assertGreater(len(entry["companies"]), 40)
         self.assertEqual([c["name"] for c in entry["companies"] if not jm.board_api_url(c["link"])], [])
         self.assertTrue(jm._phrase_pattern(entry["tech_titles"]).search("Member of Technical Staff, Inference"))
+
+    def test_a_registry_entry_of_an_unknown_kind_is_left_out(self):
+        # e.g. a Workday site saved by a newer version: never read as if it were something else.
+        self.start((1, "New Grad Software Engineer"))
+        meta = self.boards_meta()
+        meta["known"]["https://acme.wd5.myworkdayjobs.com/external"] = {
+            "url": "https://acme.wd5.myworkdayjobs.com/External", "name": "Acme Workday", "added": "2026-11-16", "via": "x"}
+        jm.save_state({}, boards=meta)
+        self.age_board_check()
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.run_boards()
+        self.assertIn("1 read, 0 unchanged since the last check, 0 not found, 0 could not be read", "\n".join(logs.output))
+        self.assertNotIn("Acme Workday", jm.boards_page_path().read_text())
 
     def test_lever_eu_boards_are_read_from_the_eu_api(self):
         self.pages["https://api.eu.lever.co/v0/postings/beta"] = json.dumps(
