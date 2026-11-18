@@ -174,6 +174,13 @@ name). An account whose linked jobs have all closed waits until a list links a c
 its roles still reach you through the lists meanwhile. Job links are emailed as Workable
 gives them.
 
+Companies on **SmartRecruiters** join it too, read through SmartRecruiters' public Posting API
+(no key needed; its robots.txt asks bots other than LinkedIn's to stay away, and you chose to
+read it anyway, gently). One request per company per check for its 100 newest US postings
+("not modified", with no data, when nothing changed), two at a time with a pause, sent under
+the monitor's own name; the first "too many requests" or refusal ends SmartRecruiters reading
+until the next check. A company that left SmartRecruiters just answers with an empty list.
+
 A company, once in, stays even when the lists drop it. `boards.md` (on the `monitor-state`
 branch, next to `left_out.md`) lists every board checked, when it was added and where it was
 found. Boards the config already has an entry for aren't checked twice.

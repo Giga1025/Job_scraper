@@ -1057,6 +1057,43 @@ def fetch_lever_api_jobs(url: str, get_json=None) -> list[dict] | None:
     return _dedupe_jobs(jobs)
 
 
+def fetch_smartrecruiters_jobs(url: str, get_json=None) -> list[dict] | None:
+    """https://api.smartrecruiters.com/v1/companies/<company id>/postings: the company's newest US
+    postings (100 per request, newest first). Further pages only while a whole page went up in the
+    last SMARTRECRUITERS_RECENT_DAYS days, at most SMARTRECRUITERS_MAX_PAGES."""
+    get_json = get_json or (lambda u, params=None: _get_json(u, params))
+    match = re.match(r"^/v1/companies/([^/]+)/postings/?$", urlparse(url).path)
+    if not match:
+        log.warning(f"  [smartrecruiters] Unrecognised postings URL: {url}")
+        return None
+    recent = datetime.now(timezone.utc) - timedelta(days=SMARTRECRUITERS_RECENT_DAYS)
+    jobs: list[dict] = []
+    for page in range(SMARTRECRUITERS_MAX_PAGES):
+        data = get_json(f"https://api.smartrecruiters.com/v1/companies/{match.group(1)}/postings",
+                        {"country": "us", "limit": 100, "offset": 100 * page})
+        postings = data.get("content") if isinstance(data, dict) else None
+        if not isinstance(postings, list):
+            return None if page == 0 else _dedupe_jobs(jobs)
+        batch = []
+        for post in postings:
+            if not isinstance(post, dict) or not _to_text(post.get("name")) or not _to_text(post.get("id")):
+                continue
+            company = _to_text((post.get("company") or {}).get("identifier")) or match.group(1)
+            place = post.get("location") or {}
+            job = {"title": _to_text(post["name"])[:200],
+                   "url": f"https://jobs.smartrecruiters.com/{company}/{_to_text(post['id'])}",
+                   "location": _to_text(place.get("fullLocation"))
+                               or ", ".join(_to_text(place.get(k)) for k in ("city", "region") if _to_text(place.get(k))),
+                   "countries": [_to_text(place.get("country")).upper()] if _to_text(place.get("country")) else []}
+            if _posted_at(post.get("releasedDate")):
+                job["posted"] = _posted_at(post.get("releasedDate"))
+            batch.append(job)
+        jobs += batch
+        if len(postings) < 100 or not batch or not all(_posted_since(j, recent) for j in batch):
+            break
+    return _dedupe_jobs(jobs)
+
+
 def fetch_oracle_hcm_jobs(url: str) -> list[dict] | None:
     """https://<host>.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?...finder=findReqs;siteNumber=<site>,..."""
     parsed = urlparse(url)
@@ -1384,6 +1421,11 @@ def job_keys(url: str) -> set[tuple]:
         keys |= {("gh", n) for n in re.findall(r"/jobs/(\d{5,})", parsed.path)}
     if host == "apply.workable.com":
         keys |= {("workable", code) for code in re.findall(r"/j/([0-9a-f]{10})(?=/|$)", parsed.path)}
+    if host in ("jobs.smartrecruiters.com", "careers.smartrecruiters.com"):
+        # /<company id>/<posting id>[-<title>] or /<company id>/<uuid>
+        parts = [p for p in parsed.path.split("/") if p]
+        posting = re.match(r"(\d{6,})(?:-|$)", parts[1]) if len(parts) >= 2 else None
+        return ({("sr", posting.group(1))} if posting else set()) | {("uuid", u) for u in _UUID_RE.findall(parsed.path)}
     if host.endswith(".ashbyhq.com") or host.endswith(".lever.co"):
         # jobs.ashbyhq.com/<board>/<posting id>, jobs.lever.co/<company>/<posting id>: some
         # boards are named by a company-wide id (Shield AI's), which isn't the posting's.
@@ -1421,6 +1463,16 @@ BOARD_MISSING_RETRY_HOURS = 24  # a board that answers 404 is tried again a day 
 # modified" when unchanged). It names companies, not their Workable accounts, so an account is
 # matched to its company there through a job code the new-grad lists linked it to.
 WORKABLE_FEED_URL = "https://www.workable.com/boards/workable.xml"
+# SmartRecruiters: its public Posting API (api.smartrecruiters.com, no key needed) lists a
+# company's postings newest first, 100 per request. Its robots.txt asks bots other than
+# LinkedIn's to stay away; you chose to read it anyway, gently: one request per company per
+# check (most answered "not modified"), two at a time, paced, sent under the monitor's own
+# name, and nothing more this run once it answers "too many requests" or refuses.
+SMARTRECRUITERS_WORKERS = 2
+SMARTRECRUITERS_DELAY_SECONDS = 1.0
+SMARTRECRUITERS_MAX_PAGES = 3          # more than one page only while a full page is all from the last few days
+SMARTRECRUITERS_RECENT_DAYS = 3
+MONITOR_USER_AGENT = "job-monitor/1.0 (personal job alerts; reads public job listings once an hour)"
 WORKABLE_CODES_KEPT = 20        # job codes remembered per Workable account, to match it in the file
 WORKABLE_MIN_ROWS_SHARE = 0.5   # a file with fewer rows than this share of the last one is a cut-off download
 _GREENHOUSE_BOARD_HOST = re.compile(r"^(?:job-)?boards(?:\.[a-z]{2,3})?\.greenhouse\.io$")
@@ -1444,6 +1496,10 @@ def board_api_url(job_url) -> tuple[str, str] | None:
     elif host in ("jobs.lever.co", "jobs.eu.lever.co"):
         api_host = "api.eu.lever.co" if host == "jobs.eu.lever.co" else "api.lever.co"
         platform, api, slug = "lever", f"https://{api_host}/v0/postings/{{}}", (parts[:1] or [""])[0].lower()
+    elif host in ("jobs.smartrecruiters.com", "careers.smartrecruiters.com") \
+            and (parts[:1] or [""])[0].lower() not in ("external-referrals",):
+        # jobs.smartrecruiters.com/<company id>/<posting id>-<title>: the id keeps its case and digits (AECOM2).
+        platform, api, slug = "smartrecruiters", "https://api.smartrecruiters.com/v1/companies/{}/postings", (parts[:1] or [""])[0]
     elif host == "apply.workable.com" and (parts[:1] or [""])[0].lower() not in ("j", "api"):
         # apply.workable.com/<account>/j/<code>: the board is the account (read through WORKABLE_FEED_URL).
         platform, api, slug = "workable", "https://apply.workable.com/{}/", (parts[:1] or [""])[0].lower()
@@ -1468,11 +1524,13 @@ def _board_page(api_url: str) -> str:
         return f"https://jobs.ashbyhq.com/{parts[-1]}"
     if host == "apply.workable.com":
         return api_url
+    if host == "api.smartrecruiters.com":
+        return f"https://careers.smartrecruiters.com/{parts[-2]}"
     return f"https://{'jobs.eu.lever.co' if host == 'api.eu.lever.co' else 'jobs.lever.co'}/{parts[-1]}"
 
 
 def _board_platform(api_url: str) -> str:
-    """"greenhouse", "ashby", "lever" or "workable" for a board's URL; "unknown" for anything else (e.g. a
+    """"greenhouse", "ashby", "lever", "workable" or "smartrecruiters" for a board's URL; "unknown" for anything else (e.g. a
     registry entry from a newer version), which plan_boards then leaves out."""
     host = urlparse(api_url).netloc
     if host.endswith("greenhouse.io"):
@@ -1481,6 +1539,8 @@ def _board_platform(api_url: str) -> str:
         return "ashby"
     if host == "apply.workable.com":
         return "workable"
+    if host == "api.smartrecruiters.com":
+        return "smartrecruiters"
     return "lever" if host in ("api.lever.co", "api.eu.lever.co") else "unknown"
 
 
@@ -1533,19 +1593,24 @@ def read_company_list(item: dict, etags: dict) -> list[tuple] | None:
     return [(row.get("url"), row.get("company_name")) for row in data if isinstance(row, dict)]
 
 
-def _board_get_json(etag: str | None, outcome: dict):
-    """A _get_json for one board: sends its saved ETag and notes the HTTP status and new ETag."""
+def _board_get_json(etag: str | None, outcome: dict, user_agent: str | None = None):
+    """A _get_json for one board: sends its saved ETag and notes the HTTP status, the ETag of the
+    first page read, and "throttled" on 429 or 403."""
+    base = {**HEADERS, "User-Agent": user_agent} if user_agent else HEADERS
+
     def get(url, params=None, timeout=30):
-        headers = {**HEADERS, "If-None-Match": etag} if etag else HEADERS
+        headers = {**base, "If-None-Match": etag} if etag else base
         try:
             resp = requests.get(url, params=params, headers=headers, timeout=timeout)
         except Exception as exc:
             outcome["status"] = f"error ({exc.__class__.__name__})"
             return None
         outcome["status"] = resp.status_code
+        if resp.status_code in (403, 429):
+            outcome["throttled"] = True
         if resp.status_code != 200:
             return None
-        outcome["etag"] = resp.headers.get("ETag") or resp.headers.get("etag")
+        outcome.setdefault("etag", resp.headers.get("ETag") or resp.headers.get("etag"))
         try:
             return resp.json()
         except ValueError:
@@ -1556,13 +1621,22 @@ def _board_get_json(etag: str | None, outcome: dict):
 
 def fetch_boards(boards: list[dict], etags: dict) -> dict[str, tuple]:
     """Fetch these boards. Returns {url: (status, jobs, etag)}, status being "ok" (jobs is
-    the list), "unchanged" (304), "missing" (404) or "failed"."""
+    the list), "unchanged" (304), "missing" (404) or "failed". Lever and SmartRecruiters boards
+    are read by a few paced readers; SmartRecruiters reading stops for this run at its first
+    "429 Too Many Requests" or "403" (the rest are "failed", so they're read next time)."""
+    throttled: set = set()
+
     def one(board):
         outcome: dict = {}
+        platform = _board_platform(board["url"])
         try:
-            jobs = job_board_api_reader(board["url"])[1](board["url"], get_json=_board_get_json(etags.get(board["url"]), outcome))
+            get_json = _board_get_json(etags.get(board["url"]), outcome,
+                                       MONITOR_USER_AGENT if platform == "smartrecruiters" else None)
+            jobs = job_board_api_reader(board["url"])[1](board["url"], get_json=get_json)
         except Exception as exc:
             jobs, outcome["status"] = None, f"error ({exc.__class__.__name__})"
+        if outcome.get("throttled") and platform == "smartrecruiters":
+            throttled.add(platform)
         status = outcome.get("status")
         if status == 304:
             return "unchanged", None, None
@@ -1573,22 +1647,31 @@ def fetch_boards(boards: list[dict], etags: dict) -> dict[str, tuple]:
             return "failed", None, None
         return "ok", jobs, outcome.get("etag")
 
-    lever = [b for b in boards if _board_platform(b["url"]) == "lever"]
-    others = [b for b in boards if _board_platform(b["url"]) != "lever"]
+    paced = {"lever": (LEVER_WORKERS, LEVER_DELAY_SECONDS), "smartrecruiters": (SMARTRECRUITERS_WORKERS, SMARTRECRUITERS_DELAY_SECONDS)}
+    others = [b for b in boards if _board_platform(b["url"]) not in paced]
     results: dict[str, tuple] = {}
 
-    def lever_reader(share):
+    def paced_reader(platform, share, delay):
         for i, board in enumerate(share):
+            if platform in throttled:
+                results[board["url"]] = ("failed", None, None)
+                continue
             if i:
-                time.sleep(LEVER_DELAY_SECONDS)
+                time.sleep(delay)
             results[board["url"]] = one(board)
 
-    with ThreadPoolExecutor(max_workers=BOARD_WORKERS + LEVER_WORKERS) as pool:
-        lever_done = [pool.submit(lever_reader, lever[i::LEVER_WORKERS]) for i in range(LEVER_WORKERS)]
+    with ThreadPoolExecutor(max_workers=BOARD_WORKERS + sum(w for w, _ in paced.values())) as pool:
+        readers = [pool.submit(paced_reader, platform, share[i::workers], delay)
+                   for platform, (workers, delay) in paced.items()
+                   for share in [[b for b in boards if _board_platform(b["url"]) == platform]]
+                   for i in range(workers)]
         for board, result in zip(others, pool.map(one, others)):
             results[board["url"]] = result
-        for done in lever_done:
+        for done in readers:
             done.result()
+    if throttled:
+        log.warning(f"  [boards] SmartRecruiters answered \"too many requests\" or refused; the rest of its "
+                    f"boards wait for the next check.")
     return results
 
 
@@ -1754,11 +1837,11 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
         "# Company job boards the monitor checks",
         "",
         "Checked about every hour for tech roles. A company is added the first time one of the lists "
-        "the monitor reads links to its Greenhouse, Ashby or Lever board, and stays from then on. To add "
+        "the monitor reads links to its Greenhouse, Ashby, Lever, Workable or SmartRecruiters board, and stays from then on. To add "
         "one yourself, add it under `companies` in targets/startups.json.",
         "",
         f"{len(rows)} boards: {counts['greenhouse']} Greenhouse, {counts['ashby']} Ashby, {counts['lever']} Lever, "
-        f"{counts['workable']} Workable."
+        f"{counts['workable']} Workable, {counts['smartrecruiters']} SmartRecruiters."
         + (f" {len(missing & checked_keys)} weren't found at the last try (tried again daily)." if missing & checked_keys else ""),
         "",
         "| Company | Board | Added | Found in |",
@@ -1785,6 +1868,8 @@ def job_board_api_reader(url: str):
         return "ashby", fetch_ashby_api_jobs
     if host in ("api.lever.co", "api.eu.lever.co"):
         return "lever", fetch_lever_api_jobs
+    if host == "api.smartrecruiters.com":
+        return "smartrecruiters", fetch_smartrecruiters_jobs
     if host.endswith(".oraclecloud.com") and "/hcmRestApi/resources/" in parsed.path:
         return "oracle", fetch_oracle_hcm_jobs
     if parsed.path.rstrip("/").lower() == "/search-jobs/results":
@@ -3253,7 +3338,7 @@ def _posting_ids(url: str) -> set[tuple]:
     one number for a role in several cities, and a Workday requisition can be posted twice."""
     host = urlparse(str(url or "").strip().lower()).netloc
     ats = host.endswith(".ashbyhq.com") or host.endswith(".lever.co")
-    return {key for key in job_keys(url) if key[0] in ("gh", "workable") or (key[0] == "uuid" and ats)}
+    return {key for key in job_keys(url) if key[0] in ("gh", "workable", "sr") or (key[0] == "uuid" and ats)}
 
 
 def _mark_reported(state: dict, url: str, jobs: list[dict], shown_as: str):

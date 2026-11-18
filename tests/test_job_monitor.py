@@ -2760,7 +2760,7 @@ class WorkableTests(MonitorTestCase):
         self.assertEqual((info["tenant"], info["codes"], bool(info["caught_up"])),
                          (["Bask Health", "https://baskhealth.example"], ["472CF47F60"], True))
         self.assertIn("https://apply.workable.com/j/A00000000A", [r["url"] for r in self.saved_state()[self.BASK]])
-        self.assertIn("1 Workable.", jm.boards_page_path().read_text())
+        self.assertIn("1 Workable, 0 SmartRecruiters.", jm.boards_page_path().read_text())
         # An hour later the file hasn't changed: asked "anything new since?", answered "no".
         self.next_hour()
         self.assertEqual(self.run_wk(), {})
@@ -2853,6 +2853,164 @@ class WorkableTests(MonitorTestCase):
         [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
         self.assertIn("workable", entry["platforms"])
         self.assertIn("Mindrift", entry["skip_companies"])
+
+
+SR_API = "https://api.smartrecruiters.com/v1/companies/Intuitive/postings"
+
+
+def sr_link(pid, company="Intuitive", title="software-engineer"):
+    """A list's link to a SmartRecruiters posting (speedyapply's form)."""
+    return f"https://jobs.smartrecruiters.com/{company}/{pid}-{title}?oga=true"
+
+
+def sr_page(*posts, company="Intuitive"):
+    """A Posting API answer; each post is (id, title, posted days ago[, country])."""
+    now = datetime.now(timezone.utc)
+    return json.dumps({"offset": 0, "limit": 100, "totalFound": len(posts), "content": [
+        {"id": str(pid), "name": title, "releasedDate": (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+         "company": {"identifier": company, "name": company},
+         "location": {"city": "Sunnyvale", "region": "CA", "country": rest[0] if rest else "us",
+                      "fullLocation": "Sunnyvale, CA, United States"}}
+        for pid, title, days, *rest in posts]})
+
+
+class SmartRecruitersTests(MonitorTestCase):
+    """SmartRecruiters companies, read through its public Posting API, gently."""
+
+    def setUp(self):
+        super().setUp()
+        self.patch(jm, "SMARTRECRUITERS_DELAY_SECONDS", 0)
+        self.patch(jm, "LEVER_DELAY_SECONDS", 0)
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Intuitive", "New Grad Software Engineer", url=sr_link(744000000001))])
+
+    def run_sr(self, **entry_extra):
+        entry = {"name": "Company job boards", "mode": "boards", "every_hours": 1, "catch_up_days": 3,
+                 "platforms": ["greenhouse", "ashby", "lever", "workable", "smartrecruiters"],
+                 "tech_titles": ["software", "ml", "infrastructure", "new grad"], **entry_extra}
+        targets = [target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                          categories=["Software"], max_age_days=7), entry]
+        return self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)[1]
+
+    def next_hour(self):
+        meta = self.saved_state()[jm.BOARDS_KEY]
+        meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+        jm.save_state({}, boards=meta)
+
+    def test_smartrecruiters_links_are_recognised(self):
+        for link in (sr_link(744000161528139), "https://jobs.smartrecruiters.com/Intuitive/744000161528139",
+                     "https://careers.smartrecruiters.com/Intuitive"):
+            self.assertEqual(jm.board_api_url(link), ("smartrecruiters", SR_API), link)
+        self.assertIsNone(jm.board_api_url("https://jobs.smartrecruiters.com/external-referrals/company/Intuitive/publication/x"))
+        self.assertEqual(jm._board_page(SR_API), "https://careers.smartrecruiters.com/Intuitive")
+        # The lists' links and the API's links to one posting match, and nothing else does.
+        self.assertEqual(jm.job_keys(sr_link(744000161528139)), {("sr", "744000161528139")})
+        self.assertEqual(jm.job_keys("https://jobs.smartrecruiters.com/Intuitive/744000161528139"), {("sr", "744000161528139")})
+        # A company id with digits in it (a renamed company) doesn't make all its postings look alike.
+        self.assertEqual(jm.job_keys("https://jobs.smartrecruiters.com/TBD20261012CrownInnovationsInc/744000144158449"),
+                         {("sr", "744000144158449")})
+        self.assertEqual(jm.job_keys("https://jobs.smartrecruiters.com/TBD20261012CrownInnovationsInc"), set())
+
+    def test_the_newest_us_postings_are_read_and_more_pages_only_while_all_recent(self):
+        asked = []
+
+        def get_json(url, params=None):
+            self.assertEqual((params["country"], params["limit"]), ("us", 100))  # only US postings, 100 at a time
+            asked.append(params["offset"])
+            start = params["offset"]
+            return json.loads(sr_page(*[(744000000000 + i, "Software Engineer", 1 if i < 150 else 5) for i in range(start, min(start + 100, 260))]))
+
+        jobs = jm.fetch_smartrecruiters_jobs(SR_API, get_json)
+        self.assertEqual((asked, len(jobs)), ([0, 100], 200))  # the second page reaches 5-day-old postings
+        self.assertEqual(jobs[0], {"title": "Software Engineer", "url": "https://jobs.smartrecruiters.com/Intuitive/744000000000",
+                                   "location": "Sunnyvale, CA, United States", "countries": ["US"], "posted": jobs[0]["posted"]})
+        self.assertTrue(jm._posted_since(jobs[0], datetime.now(timezone.utc) - timedelta(days=2)))
+        asked.clear()
+        all_recent = lambda url, params=None: (asked.append(params["offset"]),
+                                               json.loads(sr_page(*[(params["offset"] + i, "SWE", 0) for i in range(100)])))[1]
+        self.assertEqual((len(jm.fetch_smartrecruiters_jobs(SR_API, all_recent)), asked), (300, [0, 100, 200]))
+        self.assertIsNone(jm.fetch_smartrecruiters_jobs(SR_API, lambda url, params=None: None))
+
+    def test_a_company_is_checked_like_a_board_under_the_monitors_own_name(self):
+        agents, etags = [], []
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            if url == SR_API:
+                headers = kwargs.get("headers") or {}
+                agents.append(headers.get("User-Agent"))
+                etags.append(headers.get("If-None-Match"))
+                if headers.get("If-None-Match") == f'W/"{len(self.pages[SR_API])}"':
+                    return FakeResponse("", status_code=304)
+                response = real_get(url, *args, **kwargs)
+                response.headers["ETag"] = f'W/"{len(self.pages[SR_API])}"'
+                return response
+            return real_get(url, *args, **kwargs)
+
+        self.patch(jm.requests, "get", get)
+        self.pages[SR_API] = sr_page((744000000001, "New Grad Software Engineer", 1),   # the list has it already
+                                     (744000000002, "Software Engineer", 1),
+                                     (744000000003, "ML Engineer", 9))                  # too old to catch up
+        self.assertEqual(self.run_sr(), {})   # the list's first check
+        self.assertEqual(self.run_sr(), {"Intuitive": ["Software Engineer"]})  # the company's first check
+        self.assertEqual(set(agents), {jm.MONITOR_USER_AGENT})
+        self.next_hour()
+        self.assertEqual(self.run_sr(), {})   # "not modified"
+        self.assertEqual(etags[-1], f'W/"{len(self.pages[SR_API])}"')
+        self.pages[SR_API] = sr_page((744000000004, "Software Engineer, Infrastructure", 0), (744000000001, "New Grad Software Engineer", 1),
+                                     (744000000002, "Software Engineer", 1), (744000000003, "ML Engineer", 9))
+        self.next_hour()
+        self.assertEqual(self.run_sr(), {"Intuitive": ["Software Engineer, Infrastructure"]})
+        self.assertIn("1 SmartRecruiters.", jm.boards_page_path().read_text())
+
+    def test_the_first_too_many_requests_stops_smartrecruiters_for_the_run(self):
+        self.patch(jm, "SMARTRECRUITERS_WORKERS", 1)
+        apis = [f"https://api.smartrecruiters.com/v1/companies/Co{i}/postings" for i in range(3)]
+        asked = []
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            if url in apis:
+                asked.append(url)
+                return FakeResponse("", status_code=429)
+            return real_get(url, *args, **kwargs)
+
+        self.patch(jm.requests, "get", get)
+        self.pages[GH_ACME] = gh_board((1, "Software Engineer"))
+        boards = [{"name": f"Co{i}", "url": u} for i, u in enumerate(apis)] + [{"name": "Acme", "url": GH_ACME}]
+        with self.assertLogs(jm.log, "WARNING"):
+            results = jm.fetch_boards(boards, {})
+        self.assertEqual(asked, apis[:1])
+        self.assertEqual([results[u][0] for u in apis], ["failed"] * 3)
+        self.assertEqual(results[GH_ACME][0], "ok")  # other boards aren't affected
+
+    def test_the_first_pages_etag_is_kept_when_more_pages_are_read(self):
+        # (the next check asks "has page 1 changed?")
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            if url != SR_API:
+                return real_get(url, *args, **kwargs)
+            offset = kwargs["params"]["offset"]
+            response = FakeResponse(sr_page(*[(744000000000 + offset + i, "Software Engineer", 0) for i in range(100 if offset == 0 else 3)]))
+            response.headers["ETag"] = f'W/"page-{offset}"'
+            return response
+
+        self.patch(jm.requests, "get", get)
+        status, jobs, etag = jm.fetch_boards([{"name": "Intuitive", "url": SR_API}], {})[SR_API]
+        self.assertEqual((status, len(jobs), etag), ("ok", 103, 'W/"page-0"'))
+
+    def test_other_boards_keep_the_browser_like_name_and_their_etag(self):
+        sent = []
+        real_get = self.fake_get
+        self.patch(jm.requests, "get", lambda url, *a, **k: sent.append(((k.get("headers") or {}).get("User-Agent"))) or real_get(url, *a, **k))
+        self.pages[GH_ACME] = gh_board((1, "Software Engineer"))
+        jm.fetch_boards([{"name": "Acme", "url": GH_ACME}], {})
+        self.assertEqual(sent, [jm.HEADERS["User-Agent"]])
+
+    def test_the_shipped_boards_entry_reads_smartrecruiters(self):
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        self.assertIn("smartrecruiters", entry["platforms"])
 
 
 class UsFilterTests(MonitorTestCase):
