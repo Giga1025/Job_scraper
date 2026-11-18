@@ -30,11 +30,13 @@ import logging
 import tempfile
 import time
 import html as html_lib
+import io
 import xml.etree.ElementTree as ET
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from email.mime.text import MIMEText
+from email.utils import parsedate_to_datetime
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -1380,6 +1382,8 @@ def job_keys(url: str) -> set[tuple]:
     keys: set[tuple] = {("gh", v) for v in query.get("gh_jid", []) if v.isdigit()}
     if host.endswith("greenhouse.io"):
         keys |= {("gh", n) for n in re.findall(r"/jobs/(\d{5,})", parsed.path)}
+    if host == "apply.workable.com":
+        keys |= {("workable", code) for code in re.findall(r"/j/([0-9a-f]{10})(?=/|$)", parsed.path)}
     if host.endswith(".ashbyhq.com") or host.endswith(".lever.co"):
         # jobs.ashbyhq.com/<board>/<posting id>, jobs.lever.co/<company>/<posting id>: some
         # boards are named by a company-wide id (Shield AI's), which isn't the posting's.
@@ -1411,6 +1415,14 @@ BOARD_WORKERS = 8
 LEVER_WORKERS = 3            # Lever boards are read at most this many at a time,
 LEVER_DELAY_SECONDS = 0.5    # each reader pausing this long between boards
 BOARD_MISSING_RETRY_HOURS = 24  # a board that answers 404 is tried again a day later
+# Workable: asking each company's Workable page is answered "429 Too Many Requests" (for a
+# day), but Workable publishes one file of every customer's published jobs, updated hourly,
+# for exactly this kind of use: it is read once per boards check (If-Modified-Since: "not
+# modified" when unchanged). It names companies, not their Workable accounts, so an account is
+# matched to its company there through a job code the new-grad lists linked it to.
+WORKABLE_FEED_URL = "https://www.workable.com/boards/workable.xml"
+WORKABLE_CODES_KEPT = 20        # job codes remembered per Workable account, to match it in the file
+WORKABLE_MIN_ROWS_SHARE = 0.5   # a file with fewer rows than this share of the last one is a cut-off download
 _GREENHOUSE_BOARD_HOST = re.compile(r"^(?:job-)?boards(?:\.[a-z]{2,3})?\.greenhouse\.io$")
 _BOARD_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
@@ -1432,6 +1444,9 @@ def board_api_url(job_url) -> tuple[str, str] | None:
     elif host in ("jobs.lever.co", "jobs.eu.lever.co"):
         api_host = "api.eu.lever.co" if host == "jobs.eu.lever.co" else "api.lever.co"
         platform, api, slug = "lever", f"https://{api_host}/v0/postings/{{}}", (parts[:1] or [""])[0].lower()
+    elif host == "apply.workable.com" and (parts[:1] or [""])[0].lower() not in ("j", "api"):
+        # apply.workable.com/<account>/j/<code>: the board is the account (read through WORKABLE_FEED_URL).
+        platform, api, slug = "workable", "https://apply.workable.com/{}/", (parts[:1] or [""])[0].lower()
     else:
         return None
     return (platform, api.format(slug)) if _BOARD_SLUG.match(slug) else None
@@ -1451,17 +1466,21 @@ def _board_page(api_url: str) -> str:
         return f"https://job-boards.greenhouse.io/{parts[-2]}"
     if host.endswith("ashbyhq.com"):
         return f"https://jobs.ashbyhq.com/{parts[-1]}"
+    if host == "apply.workable.com":
+        return api_url
     return f"https://{'jobs.eu.lever.co' if host == 'api.eu.lever.co' else 'jobs.lever.co'}/{parts[-1]}"
 
 
 def _board_platform(api_url: str) -> str:
-    """"greenhouse", "ashby" or "lever" for a board's API URL; "unknown" for anything else (e.g. a
+    """"greenhouse", "ashby", "lever" or "workable" for a board's URL; "unknown" for anything else (e.g. a
     registry entry from a newer version), which plan_boards then leaves out."""
     host = urlparse(api_url).netloc
     if host.endswith("greenhouse.io"):
         return "greenhouse"
     if host.endswith("ashbyhq.com"):
         return "ashby"
+    if host == "apply.workable.com":
+        return "workable"
     return "lever" if host in ("api.lever.co", "api.eu.lever.co") else "unknown"
 
 
@@ -1471,11 +1490,16 @@ def grow_board_registry(known: dict, links, via: str, today: str) -> int:
     were added."""
     names: dict[str, Counter] = {}
     urls: dict[str, str] = {}
+    codes: dict[str, list] = {}
     for link, company in links:
         board = board_api_url(link)
         if not board:
             continue
         key = _url_key(board[1])
+        if board[0] == "workable":
+            code = _workable_code(link)
+            if code and code not in codes.setdefault(key, []):
+                codes[key].append(code)
         if key in known:
             continue
         urls.setdefault(key, board[1])
@@ -1486,6 +1510,11 @@ def grow_board_registry(known: dict, links, via: str, today: str) -> int:
         slug = urls[key].rstrip("/").split("/")[-2 if "greenhouse" in key else -1]
         name = names[key].most_common(1)[0][0] if names[key] else slug
         known[key] = {"url": urls[key], "name": name, "added": today, "via": via}
+    for key, found in codes.items():  # (the codes linked most recently first)
+        if key in known:
+            kept = list(dict.fromkeys(found + list(known[key].get("codes") or [])))[:WORKABLE_CODES_KEPT]
+            if kept != known[key].get("codes"):
+                known[key]["codes"] = kept
     return len(urls)
 
 
@@ -1563,6 +1592,101 @@ def fetch_boards(boards: list[dict], etags: dict) -> dict[str, tuple]:
     return results
 
 
+def _workable_code(link) -> str | None:
+    """The job code (10 hex digits, upper case) in a Workable posting link, else None."""
+    match = re.search(r"apply\.workable\.com/(?:[^/?#]+/)?j/([0-9A-Fa-f]{10})(?=[/?#]|$)", str(link or ""))
+    return match.group(1).upper() if match else None
+
+
+def fetch_workable_feed(boards: list[dict], meta: dict) -> dict[str, tuple]:
+    """Read WORKABLE_FEED_URL once for these Workable boards. Returns {url: (status, jobs, None)}:
+    "ok" with the postings of the board's company (matched through a job code the lists linked
+    it to: meta["known"][key]["tenant"], learned here), "unchanged" (304) or "failed". Boards
+    not matched yet are left out (they are tried again when the file next changes)."""
+    state = meta.setdefault("workable", {})
+    headers = {**HEADERS, "Accept-Encoding": "gzip"}
+    if state.get("last_modified"):
+        headers["If-Modified-Since"] = state["last_modified"]
+    every = lambda status: {b["url"]: (status, None, None) for b in boards}
+    try:
+        resp = requests.get(WORKABLE_FEED_URL, headers=headers, stream=True, timeout=(30, 300))
+    except Exception as exc:
+        log.warning(f"  [workable] Could not read Workable's job file: {exc.__class__.__name__}")
+        return every("failed")
+    if resp.status_code == 304:
+        return every("unchanged")
+    if resp.status_code != 200:
+        log.warning(f"  [workable] Workable's job file answered {resp.status_code}"
+                    + (f" (retry after {resp.headers.get('Retry-After')} s)" if resp.headers.get("Retry-After") else ""))
+        return every("failed")
+    by_code = {code: b["_board_key"] for b in boards for code in (meta["known"].get(b["_board_key"]) or {}).get("codes") or []}
+    rows: dict[tuple, list] = {}
+    learned: dict[str, tuple] = {}
+    count = 0
+    try:
+        raw = getattr(resp, "raw", None)
+        if raw is not None and hasattr(raw, "read"):
+            raw.decode_content = True
+            source = raw
+        else:
+            source = io.BytesIO(resp.content)
+        for _, el in ET.iterparse(source):
+            if el.tag != "job":
+                continue
+            count += 1
+            field = lambda name: (el.findtext(name) or "").strip()
+            tenant = (field("company"), field("website"))
+            code = field("referencenumber").upper()
+            rows.setdefault(tenant, []).append((field("title"), field("url"), code, field("date"),
+                                                field("city"), field("state"), field("country")))
+            if code in by_code:
+                learned.setdefault(by_code[code], tenant)
+            el.clear()
+    except Exception as exc:
+        log.warning(f"  [workable] Workable's job file was cut off or unreadable ({exc.__class__.__name__}); next check retries.")
+        return every("failed")
+    if count < WORKABLE_MIN_ROWS_SHARE * (state.get("rows") or 0):
+        log.warning(f"  [workable] Workable's job file had {count} jobs (last time {state.get('rows')}): looks cut off, skipped.")
+        return every("failed")
+    state.update(last_modified=resp.headers.get("Last-Modified") or resp.headers.get("last-modified"), rows=count)
+    results = {}
+    for b in boards:
+        info = meta["known"].get(b["_board_key"])
+        if info is None:
+            continue
+        if not info.get("tenant") and b["_board_key"] in learned:
+            info["tenant"] = list(learned[b["_board_key"]])
+        if info.get("tenant"):
+            results[b["url"]] = ("ok", _workable_jobs(rows.get(tuple(info["tenant"]), [])), None)
+    log.info(f"  [workable] Job file: {count} jobs; {len(results)} of {len(boards)} Workable companies matched in it.")
+    return results
+
+
+def _workable_jobs(rows: list[tuple]) -> list[dict]:
+    """One posting per job code from the file's rows (one row per location): the earliest date, all locations."""
+    jobs: dict[str, dict] = {}
+    for title, url, code, date, city, region, country in rows:
+        if not title or not url:
+            continue
+        job = jobs.setdefault(code or url, {"title": title[:200], "url": url, "locations": [], "countries": [], "dates": []})
+        place = ", ".join(p for p in (city, region, country) if p)
+        if place and place not in job["locations"]:
+            job["locations"].append(place)
+        if country and country not in job["countries"]:
+            job["countries"].append(country)
+        try:
+            job["dates"].append(parsedate_to_datetime(date))
+        except (TypeError, ValueError, IndexError):
+            pass
+    out = []
+    for job in jobs.values():
+        dated = [d for d in job["dates"] if d is not None]
+        posted = _posted_at(min(dated).isoformat()) if dated else None
+        out.append({"title": job["title"], "url": job["url"], "location": "; ".join(job["locations"]),
+                    "countries": job["countries"], **({"posted": posted} if posted else {})})
+    return _dedupe_jobs(out)
+
+
 def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: bool) -> list[dict]:
     """Grow the board registry (meta["known"]) and return a target for each board in it,
     except boards the config already has an entry for.
@@ -1633,7 +1757,8 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
         "the monitor reads links to its Greenhouse, Ashby or Lever board, and stays from then on. To add "
         "one yourself, add it under `companies` in targets/startups.json.",
         "",
-        f"{len(rows)} boards: {counts['greenhouse']} Greenhouse, {counts['ashby']} Ashby, {counts['lever']} Lever."
+        f"{len(rows)} boards: {counts['greenhouse']} Greenhouse, {counts['ashby']} Ashby, {counts['lever']} Lever, "
+        f"{counts['workable']} Workable."
         + (f" {len(missing & checked_keys)} weren't found at the last try (tried again daily)." if missing & checked_keys else ""),
         "",
         "| Company | Board | Added | Found in |",
@@ -2754,12 +2879,16 @@ def run(config_override: str | None = None) -> bool:
     # (their first check, which records what they list and emails only what's recent).
     to_fetch = [b for b in board_targets if boards_on and (boards_now or b["url"] not in state or b["_catch_up_since"])
                 and _hours_since(board_meta["missing"].get(b["url"])) >= BOARD_MISSING_RETRY_HOURS]
+    workable = [b for b in to_fetch if _board_platform(b["url"]) == "workable"]
+    to_fetch = [b for b in to_fetch if _board_platform(b["url"]) != "workable"]
+    if workable and boards_now:  # (Workable's file changes hourly: new accounts wait for the next check)
+        fetched.update(fetch_workable_feed([b for b in board_targets if _board_platform(b["url"]) == "workable"], board_meta))
     if to_fetch:
         log.info(f"Checking {len(to_fetch)} of {len(board_targets)} company job boards"
                  f"{'' if boards_now else ' (new ones, or catching up)'}...")
         catching_up = {b["url"] for b in to_fetch if b["_catch_up_since"]}
-        fetched = fetch_boards(to_fetch, {u: e for u, e in board_meta["etags"].items()
-                                          if u in state and u not in catching_up})
+        fetched.update(fetch_boards(to_fetch, {u: e for u, e in board_meta["etags"].items()
+                                               if u in state and u not in catching_up}))
     targets = targets + board_targets
     board_urls = {b["url"] for b in board_targets}
     siblings = _sibling_urls(targets)
@@ -3011,7 +3140,7 @@ def _board_meta(state: dict) -> dict:
     def part(key):
         return copy.deepcopy(meta[key]) if isinstance(meta.get(key), dict) else {}
     return {"checked_at": meta.get("checked_at"), "known": part("known"), "etags": part("etags"),
-            "list_etags": part("list_etags"), "missing": part("missing")}
+            "list_etags": part("list_etags"), "missing": part("missing"), "workable": part("workable")}
 
 
 def _finish_board_check(meta: dict, fetched: dict, board_urls: set, full: bool):
@@ -3124,7 +3253,7 @@ def _posting_ids(url: str) -> set[tuple]:
     one number for a role in several cities, and a Workday requisition can be posted twice."""
     host = urlparse(str(url or "").strip().lower()).netloc
     ats = host.endswith(".ashbyhq.com") or host.endswith(".lever.co")
-    return {key for key in job_keys(url) if key[0] == "gh" or (key[0] == "uuid" and ats)}
+    return {key for key in job_keys(url) if key[0] in ("gh", "workable") or (key[0] == "uuid" and ats)}
 
 
 def _mark_reported(state: dict, url: str, jobs: list[dict], shown_as: str):

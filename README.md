@@ -164,6 +164,16 @@ in a registry that only grows:
   companies that hire interns usually hire new grads too). These lists are only used to find
   companies; their postings aren't emailed.
 
+Companies on **Workable** join the same registry (as their Workable account). Workable
+refuses quick reading of each company's page ("429 Too Many Requests", for a day), but it
+publishes one file of every customer's published jobs, updated hourly, for exactly this use:
+the monitor reads it once per check (about a minute; "not modified", in under a second, when
+it hasn't changed). The file names companies, not their accounts, so an account is matched
+to its company there through a job a list linked it to (an exact job code, never a guessed
+name). An account whose linked jobs have all closed waits until a list links a current one;
+its roles still reach you through the lists meanwhile. Job links are emailed as Workable
+gives them.
+
 A company, once in, stays even when the lists drop it. `boards.md` (on the `monitor-state`
 branch, next to `left_out.md`) lists every board checked, when it was added and where it was
 found. Boards the config already has an entry for aren't checked twice.

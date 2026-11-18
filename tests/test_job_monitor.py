@@ -2669,6 +2669,192 @@ class HealthTests(MonitorTestCase):
         self.assertEqual(jm.broken_checks(self.health(), {URL, self.OTHER}), [])  # not this config's, and Beta is new
 
 
+def wk_link(code, account="bask-health-1"):
+    """A list's link to a Workable posting."""
+    return f"https://apply.workable.com/{account}/j/{code}/apply"
+
+
+def wk_file(*rows):
+    """Workable's job file; each row is (code, title, company, country, posted days ago[, city])."""
+    now = datetime.now(timezone.utc)
+    jobs = "".join(
+        f"<job><title><![CDATA[{title}]]></title>"
+        f"<date><![CDATA[{(now - timedelta(days=days)).strftime('%a, %d %b %Y %H:%M:%S UTC')}]]></date>"
+        f"<referencenumber><![CDATA[{code}]]></referencenumber><url><![CDATA[https://apply.workable.com/j/{code}]]></url>"
+        f"<company><![CDATA[{company}]]></company><city><![CDATA[{rest[0] if rest else ''}]]></city><state><![CDATA[]]></state>"
+        f"<country><![CDATA[{country}]]></country><website><![CDATA[https://{company.lower().replace(' ', '')}.example]]></website>"
+        f"<description><![CDATA[<p>About the role</p>]]></description></job>"
+        for code, title, company, country, days, *rest in rows)
+    return f'<?xml version="1.0" encoding="UTF-8"?><source><publisher>Workable</publisher>{jobs}</source>'
+
+
+class WorkableTests(MonitorTestCase):
+    """Workable companies, read from Workable's hourly file of all its customers' jobs."""
+
+    BASK = "https://apply.workable.com/bask-health-1/"
+    BASK_KEY = "https://apply.workable.com/bask-health-1"
+
+    def setUp(self):
+        super().setUp()
+        self.file = wk_file()
+        self.file_status = 200
+        self.file_requests = []
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60"))])
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            if url != jm.WORKABLE_FEED_URL:
+                return real_get(url, *args, **kwargs)
+            headers = kwargs.get("headers") or {}
+            self.file_requests.append(headers.get("If-Modified-Since"))
+            if self.file_status != 200:
+                return FakeResponse(self.file, status_code=self.file_status)  # (an error page could even look like the file)
+            if headers.get("If-Modified-Since") == f"version {len(self.file)}":
+                return FakeResponse("", status_code=304)
+            response = FakeResponse(self.file, status_code=self.file_status)
+            response.headers["Last-Modified"] = f"version {len(self.file)}"
+            return response
+
+        self.patch(jm.requests, "get", get)
+
+    def run_wk(self, **entry_extra):
+        entry = {"name": "Company job boards", "mode": "boards", "every_hours": 1, "catch_up_days": 3,
+                 "platforms": ["greenhouse", "ashby", "lever", "workable"],
+                 "tech_titles": ["software", "ml", "infrastructure", "new grad"], **entry_extra}
+        targets = [target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                          categories=["Software"], max_age_days=7), entry]
+        return self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)[1]
+
+    def meta(self):
+        return self.saved_state().get(jm.BOARDS_KEY, {})
+
+    def next_hour(self):
+        meta = self.meta()
+        meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+        jm.save_state({}, boards=meta)
+
+    def test_workable_links_are_recognised(self):
+        for link in (wk_link("472CF47F60"), "https://apply.workable.com/bask-health-1/j/472CF47F60/",
+                     "https://apply.workable.com/Bask-Health-1/j/472CF47F60/apply#jobs"):
+            self.assertEqual(jm.board_api_url(link), ("workable", self.BASK), link)
+            self.assertEqual(jm._workable_code(link), "472CF47F60", link)
+        for link in ("https://apply.workable.com/j/472CF47F60", "https://apply.workable.com/api/v1/widget/accounts/x"):
+            self.assertIsNone(jm.board_api_url(link), link)
+        # The list's link and the file's link to one posting are recognised as the same posting.
+        self.assertTrue(jm.job_keys(wk_link("472CF47F60")) & jm.job_keys("https://apply.workable.com/j/472CF47F60"))
+        self.assertFalse(jm.job_keys(wk_link("472CF47F60")) & jm.job_keys("https://apply.workable.com/j/472CF47F61"))
+
+    def test_a_workable_company_is_matched_through_a_job_code_and_checked_like_a_board(self):
+        self.file = wk_file(
+            ("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1),  # the list has it already
+            ("A00000000A", "Software Engineer", "Bask Health", "US", 1, "New York"),
+            ("A00000000A", "Software Engineer", "Bask Health", "US", 1, "San Francisco"),
+            ("B00000000B", "ML Engineer", "Bask Health", "US", 10),             # too old to catch up
+            ("C00000000C", "Software Engineer", "Bask Health", "GB", 1),        # outside the US
+            ("D00000000D", "Account Executive", "Bask Health", "US", 1),        # not a tech role
+            ("E00000000E", "Software Engineer", "Other Co", "US", 1))           # another company
+        self.assertEqual(self.run_wk(), {})   # the list's first check
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer"]})  # the account's first check
+        info = self.meta()["known"][self.BASK_KEY]
+        self.assertEqual((info["tenant"], info["codes"], bool(info["caught_up"])),
+                         (["Bask Health", "https://baskhealth.example"], ["472CF47F60"], True))
+        self.assertIn("https://apply.workable.com/j/A00000000A", [r["url"] for r in self.saved_state()[self.BASK]])
+        self.assertIn("1 Workable.", jm.boards_page_path().read_text())
+        # An hour later the file hasn't changed: asked "anything new since?", answered "no".
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {})
+        self.assertEqual(self.file_requests[-1], f"version {len(self.file)}")
+        # Then a new posting appears in it.
+        self.file = self.file.replace("</source>", wk_file(("F00000000F", "Software Engineer, Infrastructure", "Bask Health", "US", 0))
+                                      .split("<publisher>Workable</publisher>")[1])
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer, Infrastructure"]})
+
+    def test_the_file_is_read_only_when_the_boards_are_due(self):
+        self.file = wk_file(("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1))
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()
+        before = len(self.file_requests)
+        # Within the hour, even a newly found account waits for the next check (the file changes hourly).
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60")),
+                                               simplify_row("Raydar", "Software Engineer", url=wk_link("ED5C9139BB", "raydar"))])
+        self.run_wk()
+        self.run_wk()
+        self.assertEqual(len(self.file_requests), before)
+
+    def test_workable_and_other_boards_are_checked_in_the_same_run(self):
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60")),
+                                               simplify_row("Acme", "New Grad Software Engineer", url=gh_link(1))])
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"))
+        self.file = wk_file(("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1))
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()  # both first checks
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Software Engineer"))
+        self.file = wk_file(("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1),
+                            ("A00000000A", "ML Engineer", "Bask Health", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Acme": ["Software Engineer"], "Bask Health": ["ML Engineer"]})
+
+    def test_an_account_not_matched_yet_waits_and_is_caught_up_once_matched(self):
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1))  # the list's posting has closed
+        self.run_wk()
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {})
+        self.assertNotIn(self.BASK, self.saved_state())       # not checked (an empty first check would flood later)
+        self.assertNotIn("tenant", self.meta()["known"][self.BASK_KEY])
+        # The list links a current posting of the account: matched, first check with the 3-day catch-up.
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60")),
+                                               simplify_row("Bask Health", "ML Engineer", url=wk_link("B00000000B"))])
+        self.run_wk()  # (the list's new row; boards not due)
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1),
+                            ("B00000000B", "ML Engineer", "Bask Health", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer"]})  # ML Engineer came through the list
+
+    def test_a_refused_or_cut_off_file_changes_nothing(self):
+        good = wk_file(*[(f"A0000000{i:02d}", "Software Engineer", "Bask Health", "US", 5) for i in range(10)],
+                       ("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1))
+        self.file = good
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()
+        saved = self.saved_state()[self.BASK]
+        for broken, status in ((good, 429), (good[: len(good) // 2] + "  ", 200),
+                               (wk_file(("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1)), 200)):
+            self.file, self.file_status = broken, status
+            self.next_hour()
+            with self.assertLogs(jm.log, "WARNING"):
+                self.assertEqual(self.run_wk(), {})
+            self.assertEqual(self.saved_state()[self.BASK], saved)
+            self.assertEqual(self.meta()["workable"]["rows"], 11)
+
+    def test_the_registry_keeps_the_latest_job_codes_of_an_account(self):
+        known = {}
+        jm.grow_board_registry(known, [(wk_link("AAAAAAAAAA"), "Bask Health")], "list", "2026-11-18")
+        jm.grow_board_registry(known, [(wk_link(f"{i:010X}"), "Bask Health") for i in range(30)], "list", "2026-11-19")
+        codes = known[self.BASK_KEY]["codes"]
+        self.assertEqual((len(codes), codes[0]), (jm.WORKABLE_CODES_KEPT, "0000000000"))
+
+    def test_one_posting_per_job_code_with_every_location_and_its_earliest_date(self):
+        rows = [("Software Engineer", "https://apply.workable.com/j/A00000000A", "A00000000A", "Wed, 11 Nov 2026 18:59:04 UTC", "New York", "NY", "US"),
+                ("Software Engineer", "https://apply.workable.com/j/A00000000A", "A00000000A", "Tue, 10 Nov 2026 08:00:00 UTC", "Toronto", "ON", "CA"),
+                ("ML Engineer", "https://apply.workable.com/j/B00000000B", "B00000000B", "not a date", "", "", "US")]
+        jobs = jm._workable_jobs(rows)
+        self.assertEqual(jobs, [
+            {"title": "Software Engineer", "url": "https://apply.workable.com/j/A00000000A", "location": "New York, NY, US; Toronto, ON, CA",
+             "countries": ["US", "CA"], "posted": "2026-11-10T08:00:00+00:00"},
+            {"title": "ML Engineer", "url": "https://apply.workable.com/j/B00000000B", "location": "US", "countries": ["US"]}])
+
+    def test_the_shipped_boards_entry_reads_workable(self):
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        self.assertIn("workable", entry["platforms"])
+        self.assertIn("Mindrift", entry["skip_companies"])
+
+
 class UsFilterTests(MonitorTestCase):
     def test_location_classification(self):
         outside = ["London, UK", "Singapore", "Bengaluru, India; Mumbai, India", "Dublin OR London",
