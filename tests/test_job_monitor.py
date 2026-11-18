@@ -181,12 +181,13 @@ class MonitorTestCase(unittest.TestCase):
         self.emails_attempted = 0
         real_send_email = jm.send_email
 
-        def spy(cfg, all_new, left_out=None, left_out_summary=None):
+        def spy(cfg, all_new, left_out=None, left_out_summary=None, problems=None):
             self.emails_attempted += 1
+            self.problems = problems
             reported.update({name: [j["title"] for j in jobs] for name, jobs in all_new.items()})
             self.left_out = {name: [j["title"] for j in jobs] for name, jobs in (left_out or {}).items()}
             self.left_out_summary = left_out_summary
-            return real_send_email(cfg, all_new, left_out=left_out, left_out_summary=left_out_summary)
+            return real_send_email(cfg, all_new, left_out=left_out, left_out_summary=left_out_summary, problems=problems)
 
         with mock.patch.object(jm, "send_email", spy):
             result = jm.run(str(config_path))
@@ -469,7 +470,7 @@ class BaselineTests(MonitorTestCase):
     def test_failed_first_fetch_records_no_baseline(self):
         with self.assertLogs(jm.log, "ERROR"):
             self.run_monitor([target()])  # no page: the fetch fails
-        self.assertFalse(jm.STATE_PATH.exists())
+        self.assertNotIn(URL, self.saved_state())  # (only the failure is noted, under _health)
         self.pages[URL] = page(*jobs_named("Data Analyst"))
         _, reported = self.run_monitor([target()])
         self.assertEqual(reported, {})
@@ -585,10 +586,10 @@ class PausedTargetTests(MonitorTestCase):
         _, reported = self.run_monitor([target()])
         self.assertEqual(reported, {"Acme": ["Backend Engineer"]})
 
-    def test_the_shipped_config_pauses_tesla_and_atlassian_only(self):
+    def test_the_shipped_config_pauses_only_the_blocked_entries(self):
         targets = jm.load_config(REPO_DIR / "config_all.json")["targets"]
         paused = [t["name"] for t in targets if t.get("name") and t.get("enabled", True) is False]
-        self.assertEqual(paused, ["Tesla", "Atlassian"])
+        self.assertEqual(paused, ["Tesla", "Citadel", "Citadel Securities", "Atlassian"])
 
 
 class SameCompanyTests(MonitorTestCase):
@@ -981,8 +982,11 @@ class DetectionTests(MonitorTestCase):
         self.assertTrue(ok)
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
         # (marked as reported, for any other entry for the same company: see SameCompanyTests)
-        self.assertEqual(self.saved_state(), {URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst",
-                                                     jm.REPORTED_MARK: jm.SHOWN_AS_MATCH}]})
+        saved = self.saved_state()
+        self.assertEqual({k: v for k, v in saved.items() if k != jm.HEALTH_KEY},
+                         {URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst",
+                                 jm.REPORTED_MARK: jm.SHOWN_AS_MATCH}]})
+        self.assertEqual(list(saved[jm.HEALTH_KEY]), [other])  # the broken one is noted (see HealthTests)
         self.assertTrue(any("Broken" in line for line in logs.output))
 
     def test_failed_fetch_leaves_saved_jobs_alone(self):
@@ -1426,7 +1430,7 @@ class SitemapReaderTests(MonitorTestCase):
         with self.assertLogs(jm.log, "WARNING"):
             self.run_monitor([target(name="Citadel", url=CITADEL_SITEMAP, mode="sitemap",
                                      link_selector="/careers/details/")])
-        self.assertFalse(jm.STATE_PATH.exists())
+        self.assertNotIn(CITADEL_SITEMAP, self.saved_state())
 
     def test_run_alerts_new_us_job_pages_and_skips_other_regions(self):
         self.mark_known(CITADEL_SITEMAP)
@@ -2219,6 +2223,22 @@ class BoardTests(MonitorTestCase):
         _, reported = self.run_boards()
         self.assertEqual(reported, {"Acme": ["AI Software Engineer"]})
 
+    def test_new_grad_words_count_only_with_an_engineering_word(self):
+        self.patch(self, "boards_entry", lambda **extra: {
+            "name": "Company job boards", "mode": "boards", "tech_titles": ["software"], "level_titles": ["new grad", "entry level"], **extra})
+        self.start((1, "New Grad Software Engineer"))
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Entry-Level Geologist"), (3, "Supply Chain (New Grad)"),
+                                       (4, "Build & Release Engineer - New Grad"), (5, "Software Developer"))
+        _, reported = self.run_boards()
+        self.assertEqual(sorted(reported["Acme"]), ["Build & Release Engineer - New Grad", "Software Developer"])
+
+    def test_the_shipped_level_words_need_an_engineering_word(self):
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        self.assertEqual(entry["level_titles"], ["new grad", "early career", "entry level"])
+        self.assertFalse(set(entry["level_titles"]) & set(entry["tech_titles"]))
+
     def test_an_unchanged_board_answers_304_and_is_not_read(self):
         self.start((1, "New Grad Software Engineer"))
         sent = []
@@ -2324,6 +2344,14 @@ class BoardTests(MonitorTestCase):
         self.assertEqual(reported, {"Acme": ["Software Engineer"]})
         self.assertEqual(len(self.board_requests()), 1)
 
+    def test_company_boards_are_not_part_of_the_warnings(self):
+        # Plenty of startups list nothing for a while; a board that can't be read is only counted in the log.
+        self.start((1, "New Grad Software Engineer"))
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board()  # no openings now
+        self.run_boards()
+        self.assertNotIn(GH_ACME, self.saved_state().get(jm.HEALTH_KEY, {}))
+
     def test_a_board_whose_check_fails_is_read_again_next_time(self):
         self.start((1, "New Grad Software Engineer"))
         real_get = self.fake_get
@@ -2348,6 +2376,19 @@ class BoardTests(MonitorTestCase):
         self.assertGreater(len(entry["companies"]), 40)
         self.assertEqual([c["name"] for c in entry["companies"] if not jm.board_api_url(c["link"])], [])
         self.assertTrue(jm._phrase_pattern(entry["tech_titles"]).search("Member of Technical Staff, Inference"))
+
+    def test_a_registry_entry_of_an_unknown_kind_is_left_out(self):
+        # e.g. a Workday site saved by a newer version: never read as if it were something else.
+        self.start((1, "New Grad Software Engineer"))
+        meta = self.boards_meta()
+        meta["known"]["https://acme.wd5.myworkdayjobs.com/external"] = {
+            "url": "https://acme.wd5.myworkdayjobs.com/External", "name": "Acme Workday", "added": "2026-11-16", "via": "x"}
+        jm.save_state({}, boards=meta)
+        self.age_board_check()
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.run_boards()
+        self.assertIn("1 read, 0 unchanged since the last check, 0 not found, 0 could not be read", "\n".join(logs.output))
+        self.assertNotIn("Acme Workday", jm.boards_page_path().read_text())
 
     def test_lever_eu_boards_are_read_from_the_eu_api(self):
         self.pages["https://api.eu.lever.co/v0/postings/beta"] = json.dumps(
@@ -2529,6 +2570,463 @@ class BoardTests(MonitorTestCase):
         self.assertIn("Zeta", [i["name"] for i in self.boards_meta()["known"].values()])  # the registry still grows
         self.assertEqual([u for u, _ in self.requests_made[before:] if u in (GH_ACME, ASHBY_ZETA)], [])
         self.assertNotIn(ASHBY_ZETA, self.saved_state())
+
+
+class HealthTests(MonitorTestCase):
+    """Telling you when one of your entries stops working (state["_health"], the emails' warning)."""
+
+    OTHER = "https://other.example/careers"
+
+    def setUp(self):
+        super().setUp()
+        self.pages[URL] = page(*jobs_named("Data Analyst"))
+        self.acme_jobs = ["Data Analyst"]
+
+    def run_both(self, *extra_targets, other=True):
+        return self.run_monitor([target(), *([target(name="Beta", url=self.OTHER)] if other else []), *extra_targets],
+                                email=WORKING_EMAIL)
+
+    def new_acme_posting(self, title):
+        self.acme_jobs.append(title)
+        self.pages[URL] = page(*jobs_named(*self.acme_jobs))
+
+    def health(self):
+        return self.saved_state().get(jm.HEALTH_KEY, {})
+
+    def age(self, url, hours):
+        state = self.saved_state()
+        state[jm.HEALTH_KEY][url]["since"] = (datetime.now() - timedelta(hours=hours)).isoformat(timespec="seconds")
+        jm.save_json(jm.STATE_PATH, state)
+
+    def refuse_other(self, status):
+        real_get = self.fake_get
+        self.patch(jm.requests, "get", lambda url, *a, **k: FakeResponse("", status_code=status) if url == self.OTHER
+                   else real_get(url, *a, **k))
+
+    def test_an_entry_that_keeps_failing_is_reported_after_six_hours_until_it_works(self):
+        self.refuse_other(429)
+        self.run_both()
+        record = self.health()[self.OTHER]
+        self.assertEqual((record["name"], record["kind"]), ("Beta", "failed"))
+        self.assertIn("429", record["why"])
+        self.new_acme_posting("ML Engineer")
+        _, reported = self.run_both()
+        self.assertEqual((reported, self.problems), ({"Acme": ["ML Engineer"]}, []))  # not yet: could be a blip
+        self.assertEqual(self.health()[self.OTHER]["since"], record["since"])  # still failing since the first time
+        self.age(self.OTHER, 7)
+        self.new_acme_posting("Software Engineer")
+        _, reported = self.run_both()
+        self.assertEqual([p["name"] for p in self.problems], ["Beta"])
+        text = jm.format_plain_report({"Acme": []}, problems=self.problems)
+        since = (datetime.now() - timedelta(hours=7)).strftime("%b %d")
+        self.assertIn(f"Beta: the site is refusing us (429: too many requests), since {since}", text)
+        self.assertIn("aren't working", jm.format_html_report({}, problems=self.problems))
+        # It works again: no more warning, and the record is gone.
+        self.patch(jm.requests, "get", self.fake_get)
+        self.pages[self.OTHER] = page(*jobs_named("Quant Researcher"))
+        self.new_acme_posting("Backend Engineer")
+        self.run_both()
+        self.assertEqual((self.problems, self.health()), ([], {}))
+
+    def test_an_entry_that_finds_nothing_is_reported_after_two_days(self):
+        self.pages[self.OTHER] = page()
+        self.run_both()
+        self.assertEqual(self.health()[self.OTHER]["kind"], "empty")
+        self.age(self.OTHER, 47)
+        self.new_acme_posting("ML Engineer")
+        self.run_both()
+        self.assertEqual(self.problems, [])
+        self.age(self.OTHER, 49)
+        self.new_acme_posting("Software Engineer")
+        self.run_both()
+        self.assertEqual([(p["name"], p["why"]) for p in self.problems],
+                         [("Beta", "it found no postings (the page may have changed)")])
+        # A different problem starts the clock again.
+        self.refuse_other(404)
+        self.run_both()
+        record = self.health()[self.OTHER]
+        self.assertEqual((record["kind"], record["why"]), ("failed", "the page is gone (404)"))
+        self.assertLess(jm._hours_since(record["since"]), 1)
+
+    def test_a_job_board_api_with_no_openings_is_not_reported(self):
+        # An empty list from Greenhouse/Ashby/Lever is a real answer (OpenSea: not hiring), unlike an empty page.
+        board = "https://api.ashbyhq.com/posting-api/job-board/opensea"
+        self.pages[board] = json.dumps({"jobs": []})
+        self.run_both(target(name="OpenSea", url=board, mode="api"))
+        self.assertNotIn(board, self.health())
+        self.pages[board] = "{}"  # not a job list: that is a problem
+        self.run_both(target(name="OpenSea", url=board, mode="api"))
+        self.assertEqual(self.health()[board]["kind"], "failed")
+
+    def test_reasons_in_plain_words(self):
+        cases = {"429 Client Error: Too Many Requests for url": "429", "403 Client Error: Forbidden": "403",
+                 "Failed to read x: 404 Client Error: Not Found for u": "404", "Read timed out. (read timeout=30)": "in time",
+                 "502 Server Error: Bad Gateway": "5xx", "something odd": "couldn't be read"}
+        for message, expected in cases.items():
+            self.assertIn(expected, jm._problem_reason([message]), message)
+        # A fast path that fails while a fallback works is fine.
+        self.assertIsNone(jm._health_record(None, "Salesforce", 20, ["[wd-api] 429 Too Many Requests"], "cfg"))
+
+    def test_removed_and_paused_entries_are_not_reported(self):
+        self.refuse_other(429)
+        self.run_both()
+        self.assertIn(self.OTHER, self.health())
+        self.run_both(other=False)  # Beta removed from the config
+        self.assertEqual(self.health(), {})
+        self.run_both(target(name="Gamma", url="https://gamma.example/careers", enabled=False))
+        self.assertNotIn("https://gamma.example/careers", self.health())
+
+    def test_another_configs_records_are_kept(self):
+        jm.save_state({}, health={"https://elsewhere.example": {"name": "X", "kind": "failed", "why": "it couldn't be read",
+                                                                 "since": "2026-01-01T00:00:00", "config": "another"}})
+        self.refuse_other(429)
+        self.run_both()
+        self.assertEqual(sorted(self.health()), ["https://elsewhere.example", self.OTHER])
+        self.assertEqual(jm.broken_checks(self.health(), {URL, self.OTHER}), [])  # not this config's, and Beta is new
+
+
+def wk_link(code, account="bask-health-1"):
+    """A list's link to a Workable posting."""
+    return f"https://apply.workable.com/{account}/j/{code}/apply"
+
+
+def wk_file(*rows):
+    """Workable's job file; each row is (code, title, company, country, posted days ago[, city])."""
+    now = datetime.now(timezone.utc)
+    jobs = "".join(
+        f"<job><title><![CDATA[{title}]]></title>"
+        f"<date><![CDATA[{(now - timedelta(days=days)).strftime('%a, %d %b %Y %H:%M:%S UTC')}]]></date>"
+        f"<referencenumber><![CDATA[{code}]]></referencenumber><url><![CDATA[https://apply.workable.com/j/{code}]]></url>"
+        f"<company><![CDATA[{company}]]></company><city><![CDATA[{rest[0] if rest else ''}]]></city><state><![CDATA[]]></state>"
+        f"<country><![CDATA[{country}]]></country><website><![CDATA[https://{company.lower().replace(' ', '')}.example]]></website>"
+        f"<description><![CDATA[<p>About the role</p>]]></description></job>"
+        for code, title, company, country, days, *rest in rows)
+    return f'<?xml version="1.0" encoding="UTF-8"?><source><publisher>Workable</publisher>{jobs}</source>'
+
+
+class WorkableTests(MonitorTestCase):
+    """Workable companies, read from Workable's hourly file of all its customers' jobs."""
+
+    BASK = "https://apply.workable.com/bask-health-1/"
+    BASK_KEY = "https://apply.workable.com/bask-health-1"
+
+    def setUp(self):
+        super().setUp()
+        self.file = wk_file()
+        self.file_status = 200
+        self.file_requests = []
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60"))])
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            if url != jm.WORKABLE_FEED_URL:
+                return real_get(url, *args, **kwargs)
+            headers = kwargs.get("headers") or {}
+            self.file_requests.append(headers.get("If-Modified-Since"))
+            if self.file_status != 200:
+                return FakeResponse(self.file, status_code=self.file_status)  # (an error page could even look like the file)
+            if headers.get("If-Modified-Since") == f"version {len(self.file)}":
+                return FakeResponse("", status_code=304)
+            response = FakeResponse(self.file, status_code=self.file_status)
+            response.headers["Last-Modified"] = f"version {len(self.file)}"
+            return response
+
+        self.patch(jm.requests, "get", get)
+
+    def run_wk(self, **entry_extra):
+        entry = {"name": "Company job boards", "mode": "boards", "every_hours": 1, "catch_up_days": 3,
+                 "platforms": ["greenhouse", "ashby", "lever", "workable"],
+                 "tech_titles": ["software", "ml", "infrastructure", "new grad"], **entry_extra}
+        targets = [target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                          categories=["Software"], max_age_days=7), entry]
+        return self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)[1]
+
+    def meta(self):
+        return self.saved_state().get(jm.BOARDS_KEY, {})
+
+    def next_hour(self):
+        meta = self.meta()
+        meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+        jm.save_state({}, boards=meta)
+
+    def test_workable_links_are_recognised(self):
+        for link in (wk_link("472CF47F60"), "https://apply.workable.com/bask-health-1/j/472CF47F60/",
+                     "https://apply.workable.com/Bask-Health-1/j/472CF47F60/apply#jobs"):
+            self.assertEqual(jm.board_api_url(link), ("workable", self.BASK), link)
+            self.assertEqual(jm._workable_code(link), "472CF47F60", link)
+        for link in ("https://apply.workable.com/j/472CF47F60", "https://apply.workable.com/api/v1/widget/accounts/x"):
+            self.assertIsNone(jm.board_api_url(link), link)
+        # The list's link and the file's link to one posting are recognised as the same posting.
+        self.assertTrue(jm.job_keys(wk_link("472CF47F60")) & jm.job_keys("https://apply.workable.com/j/472CF47F60"))
+        self.assertFalse(jm.job_keys(wk_link("472CF47F60")) & jm.job_keys("https://apply.workable.com/j/472CF47F61"))
+
+    def test_a_workable_company_is_matched_through_a_job_code_and_checked_like_a_board(self):
+        self.file = wk_file(
+            ("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1),  # the list has it already
+            ("A00000000A", "Software Engineer", "Bask Health", "US", 1, "New York"),
+            ("A00000000A", "Software Engineer", "Bask Health", "US", 1, "San Francisco"),
+            ("B00000000B", "ML Engineer", "Bask Health", "US", 10),             # too old to catch up
+            ("C00000000C", "Software Engineer", "Bask Health", "GB", 1),        # outside the US
+            ("D00000000D", "Account Executive", "Bask Health", "US", 1),        # not a tech role
+            ("E00000000E", "Software Engineer", "Other Co", "US", 1))           # another company
+        self.assertEqual(self.run_wk(), {})   # the list's first check
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer"]})  # the account's first check
+        info = self.meta()["known"][self.BASK_KEY]
+        self.assertEqual((info["tenant"], info["codes"], bool(info["caught_up"])),
+                         (["Bask Health", "https://baskhealth.example"], ["472CF47F60"], True))
+        self.assertIn("https://apply.workable.com/j/A00000000A", [r["url"] for r in self.saved_state()[self.BASK]])
+        self.assertIn("1 Workable, 0 SmartRecruiters.", jm.boards_page_path().read_text())
+        # An hour later the file hasn't changed: asked "anything new since?", answered "no".
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {})
+        self.assertEqual(self.file_requests[-1], f"version {len(self.file)}")
+        # Then a new posting appears in it.
+        self.file = self.file.replace("</source>", wk_file(("F00000000F", "Software Engineer, Infrastructure", "Bask Health", "US", 0))
+                                      .split("<publisher>Workable</publisher>")[1])
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer, Infrastructure"]})
+
+    def test_the_file_is_read_only_when_the_boards_are_due(self):
+        self.file = wk_file(("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1))
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()
+        before = len(self.file_requests)
+        # Within the hour, even a newly found account waits for the next check (the file changes hourly).
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60")),
+                                               simplify_row("Raydar", "Software Engineer", url=wk_link("ED5C9139BB", "raydar"))])
+        self.run_wk()
+        self.run_wk()
+        self.assertEqual(len(self.file_requests), before)
+
+    def test_workable_and_other_boards_are_checked_in_the_same_run(self):
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60")),
+                                               simplify_row("Acme", "New Grad Software Engineer", url=gh_link(1))])
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"))
+        self.file = wk_file(("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1))
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()  # both first checks
+        self.pages[GH_ACME] = gh_board((1, "New Grad Software Engineer"), (2, "Software Engineer"))
+        self.file = wk_file(("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1),
+                            ("A00000000A", "ML Engineer", "Bask Health", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Acme": ["Software Engineer"], "Bask Health": ["ML Engineer"]})
+
+    def test_an_account_not_matched_yet_waits_and_is_caught_up_once_matched(self):
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1))  # the list's posting has closed
+        self.run_wk()
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {})
+        self.assertNotIn(self.BASK, self.saved_state())       # not checked (an empty first check would flood later)
+        self.assertNotIn("tenant", self.meta()["known"][self.BASK_KEY])
+        # The list links a current posting of the account: matched, first check with the 3-day catch-up.
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60")),
+                                               simplify_row("Bask Health", "ML Engineer", url=wk_link("B00000000B"))])
+        self.run_wk()  # (the list's new row; boards not due)
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1),
+                            ("B00000000B", "ML Engineer", "Bask Health", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer"]})  # ML Engineer came through the list
+
+    def test_a_refused_or_cut_off_file_changes_nothing(self):
+        good = wk_file(*[(f"A0000000{i:02d}", "Software Engineer", "Bask Health", "US", 5) for i in range(10)],
+                       ("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1))
+        self.file = good
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()
+        saved = self.saved_state()[self.BASK]
+        for broken, status in ((good, 429), (good[: len(good) // 2] + "  ", 200),
+                               (wk_file(("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 1)), 200)):
+            self.file, self.file_status = broken, status
+            self.next_hour()
+            with self.assertLogs(jm.log, "WARNING"):
+                self.assertEqual(self.run_wk(), {})
+            self.assertEqual(self.saved_state()[self.BASK], saved)
+            self.assertEqual(self.meta()["workable"]["rows"], 11)
+
+    def test_the_registry_keeps_the_latest_job_codes_of_an_account(self):
+        known = {}
+        jm.grow_board_registry(known, [(wk_link("AAAAAAAAAA"), "Bask Health")], "list", "2026-11-18")
+        jm.grow_board_registry(known, [(wk_link(f"{i:010X}"), "Bask Health") for i in range(30)], "list", "2026-11-19")
+        codes = known[self.BASK_KEY]["codes"]
+        self.assertEqual((len(codes), codes[0]), (jm.WORKABLE_CODES_KEPT, "0000000000"))
+
+    def test_one_posting_per_job_code_with_every_location_and_its_earliest_date(self):
+        rows = [("Software Engineer", "https://apply.workable.com/j/A00000000A", "A00000000A", "Wed, 11 Nov 2026 18:59:04 UTC", "New York", "NY", "US"),
+                ("Software Engineer", "https://apply.workable.com/j/A00000000A", "A00000000A", "Tue, 10 Nov 2026 08:00:00 UTC", "Toronto", "ON", "CA"),
+                ("ML Engineer", "https://apply.workable.com/j/B00000000B", "B00000000B", "not a date", "", "", "US")]
+        jobs = jm._workable_jobs(rows)
+        self.assertEqual(jobs, [
+            {"title": "Software Engineer", "url": "https://apply.workable.com/j/A00000000A", "location": "New York, NY, US; Toronto, ON, CA",
+             "countries": ["US", "CA"], "posted": "2026-11-10T08:00:00+00:00"},
+            {"title": "ML Engineer", "url": "https://apply.workable.com/j/B00000000B", "location": "US", "countries": ["US"]}])
+
+    def test_the_shipped_boards_entry_reads_workable(self):
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        self.assertIn("workable", entry["platforms"])
+        self.assertIn("Mindrift", entry["skip_companies"])
+
+
+SR_API = "https://api.smartrecruiters.com/v1/companies/Intuitive/postings"
+
+
+def sr_link(pid, company="Intuitive", title="software-engineer"):
+    """A list's link to a SmartRecruiters posting (speedyapply's form)."""
+    return f"https://jobs.smartrecruiters.com/{company}/{pid}-{title}?oga=true"
+
+
+def sr_page(*posts, company="Intuitive"):
+    """A Posting API answer; each post is (id, title, posted days ago[, country])."""
+    now = datetime.now(timezone.utc)
+    return json.dumps({"offset": 0, "limit": 100, "totalFound": len(posts), "content": [
+        {"id": str(pid), "name": title, "releasedDate": (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+         "company": {"identifier": company, "name": company},
+         "location": {"city": "Sunnyvale", "region": "CA", "country": rest[0] if rest else "us",
+                      "fullLocation": "Sunnyvale, CA, United States"}}
+        for pid, title, days, *rest in posts]})
+
+
+class SmartRecruitersTests(MonitorTestCase):
+    """SmartRecruiters companies, read through its public Posting API, gently."""
+
+    def setUp(self):
+        super().setUp()
+        self.patch(jm, "SMARTRECRUITERS_DELAY_SECONDS", 0)
+        self.patch(jm, "LEVER_DELAY_SECONDS", 0)
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Intuitive", "New Grad Software Engineer", url=sr_link(744000000001))])
+
+    def run_sr(self, **entry_extra):
+        entry = {"name": "Company job boards", "mode": "boards", "every_hours": 1, "catch_up_days": 3,
+                 "platforms": ["greenhouse", "ashby", "lever", "workable", "smartrecruiters"],
+                 "tech_titles": ["software", "ml", "infrastructure", "new grad"], **entry_extra}
+        targets = [target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                          categories=["Software"], max_age_days=7), entry]
+        return self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)[1]
+
+    def next_hour(self):
+        meta = self.saved_state()[jm.BOARDS_KEY]
+        meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+        jm.save_state({}, boards=meta)
+
+    def test_smartrecruiters_links_are_recognised(self):
+        for link in (sr_link(744000161528139), "https://jobs.smartrecruiters.com/Intuitive/744000161528139",
+                     "https://careers.smartrecruiters.com/Intuitive"):
+            self.assertEqual(jm.board_api_url(link), ("smartrecruiters", SR_API), link)
+        self.assertIsNone(jm.board_api_url("https://jobs.smartrecruiters.com/external-referrals/company/Intuitive/publication/x"))
+        self.assertEqual(jm._board_page(SR_API), "https://careers.smartrecruiters.com/Intuitive")
+        # The lists' links and the API's links to one posting match, and nothing else does.
+        self.assertEqual(jm.job_keys(sr_link(744000161528139)), {("sr", "744000161528139")})
+        self.assertEqual(jm.job_keys("https://jobs.smartrecruiters.com/Intuitive/744000161528139"), {("sr", "744000161528139")})
+        # A company id with digits in it (a renamed company) doesn't make all its postings look alike.
+        self.assertEqual(jm.job_keys("https://jobs.smartrecruiters.com/TBD20261012CrownInnovationsInc/744000144158449"),
+                         {("sr", "744000144158449")})
+        self.assertEqual(jm.job_keys("https://jobs.smartrecruiters.com/TBD20261012CrownInnovationsInc"), set())
+
+    def test_the_newest_us_postings_are_read_and_more_pages_only_while_all_recent(self):
+        asked = []
+
+        def get_json(url, params=None):
+            self.assertEqual((params["country"], params["limit"]), ("us", 100))  # only US postings, 100 at a time
+            asked.append(params["offset"])
+            start = params["offset"]
+            return json.loads(sr_page(*[(744000000000 + i, "Software Engineer", 1 if i < 150 else 5) for i in range(start, min(start + 100, 260))]))
+
+        jobs = jm.fetch_smartrecruiters_jobs(SR_API, get_json)
+        self.assertEqual((asked, len(jobs)), ([0, 100], 200))  # the second page reaches 5-day-old postings
+        self.assertEqual(jobs[0], {"title": "Software Engineer", "url": "https://jobs.smartrecruiters.com/Intuitive/744000000000",
+                                   "location": "Sunnyvale, CA, United States", "countries": ["US"], "posted": jobs[0]["posted"]})
+        self.assertTrue(jm._posted_since(jobs[0], datetime.now(timezone.utc) - timedelta(days=2)))
+        asked.clear()
+        all_recent = lambda url, params=None: (asked.append(params["offset"]),
+                                               json.loads(sr_page(*[(params["offset"] + i, "SWE", 0) for i in range(100)])))[1]
+        self.assertEqual((len(jm.fetch_smartrecruiters_jobs(SR_API, all_recent)), asked), (300, [0, 100, 200]))
+        self.assertIsNone(jm.fetch_smartrecruiters_jobs(SR_API, lambda url, params=None: None))
+
+    def test_a_company_is_checked_like_a_board_under_the_monitors_own_name(self):
+        agents, etags = [], []
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            if url == SR_API:
+                headers = kwargs.get("headers") or {}
+                agents.append(headers.get("User-Agent"))
+                etags.append(headers.get("If-None-Match"))
+                if headers.get("If-None-Match") == f'W/"{len(self.pages[SR_API])}"':
+                    return FakeResponse("", status_code=304)
+                response = real_get(url, *args, **kwargs)
+                response.headers["ETag"] = f'W/"{len(self.pages[SR_API])}"'
+                return response
+            return real_get(url, *args, **kwargs)
+
+        self.patch(jm.requests, "get", get)
+        self.pages[SR_API] = sr_page((744000000001, "New Grad Software Engineer", 1),   # the list has it already
+                                     (744000000002, "Software Engineer", 1),
+                                     (744000000003, "ML Engineer", 9))                  # too old to catch up
+        self.assertEqual(self.run_sr(), {})   # the list's first check
+        self.assertEqual(self.run_sr(), {"Intuitive": ["Software Engineer"]})  # the company's first check
+        self.assertEqual(set(agents), {jm.MONITOR_USER_AGENT})
+        self.next_hour()
+        self.assertEqual(self.run_sr(), {})   # "not modified"
+        self.assertEqual(etags[-1], f'W/"{len(self.pages[SR_API])}"')
+        self.pages[SR_API] = sr_page((744000000004, "Software Engineer, Infrastructure", 0), (744000000001, "New Grad Software Engineer", 1),
+                                     (744000000002, "Software Engineer", 1), (744000000003, "ML Engineer", 9))
+        self.next_hour()
+        self.assertEqual(self.run_sr(), {"Intuitive": ["Software Engineer, Infrastructure"]})
+        self.assertIn("1 SmartRecruiters.", jm.boards_page_path().read_text())
+
+    def test_the_first_too_many_requests_stops_smartrecruiters_for_the_run(self):
+        self.patch(jm, "SMARTRECRUITERS_WORKERS", 1)
+        apis = [f"https://api.smartrecruiters.com/v1/companies/Co{i}/postings" for i in range(3)]
+        asked = []
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            if url in apis:
+                asked.append(url)
+                return FakeResponse("", status_code=429)
+            return real_get(url, *args, **kwargs)
+
+        self.patch(jm.requests, "get", get)
+        self.pages[GH_ACME] = gh_board((1, "Software Engineer"))
+        boards = [{"name": f"Co{i}", "url": u} for i, u in enumerate(apis)] + [{"name": "Acme", "url": GH_ACME}]
+        with self.assertLogs(jm.log, "WARNING"):
+            results = jm.fetch_boards(boards, {})
+        self.assertEqual(asked, apis[:1])
+        self.assertEqual([results[u][0] for u in apis], ["failed"] * 3)
+        self.assertEqual(results[GH_ACME][0], "ok")  # other boards aren't affected
+
+    def test_the_first_pages_etag_is_kept_when_more_pages_are_read(self):
+        # (the next check asks "has page 1 changed?")
+        real_get = self.fake_get
+
+        def get(url, *args, **kwargs):
+            if url != SR_API:
+                return real_get(url, *args, **kwargs)
+            offset = kwargs["params"]["offset"]
+            response = FakeResponse(sr_page(*[(744000000000 + offset + i, "Software Engineer", 0) for i in range(100 if offset == 0 else 3)]))
+            response.headers["ETag"] = f'W/"page-{offset}"'
+            return response
+
+        self.patch(jm.requests, "get", get)
+        status, jobs, etag = jm.fetch_boards([{"name": "Intuitive", "url": SR_API}], {})[SR_API]
+        self.assertEqual((status, len(jobs), etag), ("ok", 103, 'W/"page-0"'))
+
+    def test_other_boards_keep_the_browser_like_name_and_their_etag(self):
+        sent = []
+        real_get = self.fake_get
+        self.patch(jm.requests, "get", lambda url, *a, **k: sent.append(((k.get("headers") or {}).get("User-Agent"))) or real_get(url, *a, **k))
+        self.pages[GH_ACME] = gh_board((1, "Software Engineer"))
+        jm.fetch_boards([{"name": "Acme", "url": GH_ACME}], {})
+        self.assertEqual(sent, [jm.HEADERS["User-Agent"]])
+
+    def test_the_shipped_boards_entry_reads_smartrecruiters(self):
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        self.assertIn("smartrecruiters", entry["platforms"])
 
 
 class UsFilterTests(MonitorTestCase):

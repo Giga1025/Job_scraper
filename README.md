@@ -164,6 +164,23 @@ in a registry that only grows:
   companies that hire interns usually hire new grads too). These lists are only used to find
   companies; their postings aren't emailed.
 
+Companies on **Workable** join the same registry (as their Workable account). Workable
+refuses quick reading of each company's page ("429 Too Many Requests", for a day), but it
+publishes one file of every customer's published jobs, updated hourly, for exactly this use:
+the monitor reads it once per check (about a minute; "not modified", in under a second, when
+it hasn't changed). The file names companies, not their accounts, so an account is matched
+to its company there through a job a list linked it to (an exact job code, never a guessed
+name). An account whose linked jobs have all closed waits until a list links a current one;
+its roles still reach you through the lists meanwhile. Job links are emailed as Workable
+gives them.
+
+Companies on **SmartRecruiters** join it too, read through SmartRecruiters' public Posting API
+(no key needed; its robots.txt asks bots other than LinkedIn's to stay away, and you chose to
+read it anyway, gently). One request per company per check for its 100 newest US postings
+("not modified", with no data, when nothing changed), two at a time with a pause, sent under
+the monitor's own name; the first "too many requests" or refusal ends SmartRecruiters reading
+until the next check. A company that left SmartRecruiters just answers with an empty list.
+
 A company, once in, stays even when the lists drop it. `boards.md` (on the `monitor-state`
 branch, next to `left_out.md`) lists every board checked, when it was added and where it was
 found. Boards the config already has an entry for aren't checked twice.
@@ -481,6 +498,26 @@ the `schedule:` lines from `.github/workflows/job-monitor.yml`.
   is lost: postings that weren't emailed are sent by the next run. GitHub emails you when a
   scheduled run fails.
 - A company that can't be read is logged and skipped; the run still succeeds.
+
+### Fixing an entry that stopped working
+
+Sites change: a careers page moves, a company switches job sites, or a site starts refusing
+GitHub's machines. When one of your entries (in `targets/big_tech.json` or
+`targets/new_grad_lists.json`) can't be read for 6 hours, or finds no postings at all for 2
+days, every email starts with a short warning: the entry, why (in plain words: refused with
+429/403, page gone with 404, didn't load in time, or found nothing), and since when. It
+disappears by itself once the entry works again. Company job boards found through the lists
+aren't part of it (many have no openings for a while); `boards.md` lists them.
+
+What to do:
+
+- **Page gone (404) or found nothing:** open the company's careers site, find where it lists
+  jobs now (often a Greenhouse, Ashby or Lever board: see "Job-board APIs and US-only"), and
+  update the entry's `url` (keep its `name`, so nothing is lost or emailed twice).
+- **Refused (429/403):** the site blocks automated visitors from GitHub's machines. That can't
+  be fixed by the monitor without getting around the site's protection, which it doesn't do.
+  Pause the entry with `"enabled": false`; its roles usually still reach you through the
+  new-grad lists, a day or two later.
 
 ### Changing things
 
