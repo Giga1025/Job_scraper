@@ -181,12 +181,13 @@ class MonitorTestCase(unittest.TestCase):
         self.emails_attempted = 0
         real_send_email = jm.send_email
 
-        def spy(cfg, all_new, left_out=None, left_out_summary=None):
+        def spy(cfg, all_new, left_out=None, left_out_summary=None, problems=None):
             self.emails_attempted += 1
+            self.problems = problems
             reported.update({name: [j["title"] for j in jobs] for name, jobs in all_new.items()})
             self.left_out = {name: [j["title"] for j in jobs] for name, jobs in (left_out or {}).items()}
             self.left_out_summary = left_out_summary
-            return real_send_email(cfg, all_new, left_out=left_out, left_out_summary=left_out_summary)
+            return real_send_email(cfg, all_new, left_out=left_out, left_out_summary=left_out_summary, problems=problems)
 
         with mock.patch.object(jm, "send_email", spy):
             result = jm.run(str(config_path))
@@ -469,7 +470,7 @@ class BaselineTests(MonitorTestCase):
     def test_failed_first_fetch_records_no_baseline(self):
         with self.assertLogs(jm.log, "ERROR"):
             self.run_monitor([target()])  # no page: the fetch fails
-        self.assertFalse(jm.STATE_PATH.exists())
+        self.assertNotIn(URL, self.saved_state())  # (only the failure is noted, under _health)
         self.pages[URL] = page(*jobs_named("Data Analyst"))
         _, reported = self.run_monitor([target()])
         self.assertEqual(reported, {})
@@ -981,8 +982,11 @@ class DetectionTests(MonitorTestCase):
         self.assertTrue(ok)
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
         # (marked as reported, for any other entry for the same company: see SameCompanyTests)
-        self.assertEqual(self.saved_state(), {URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst",
-                                                     jm.REPORTED_MARK: jm.SHOWN_AS_MATCH}]})
+        saved = self.saved_state()
+        self.assertEqual({k: v for k, v in saved.items() if k != jm.HEALTH_KEY},
+                         {URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst",
+                                 jm.REPORTED_MARK: jm.SHOWN_AS_MATCH}]})
+        self.assertEqual(list(saved[jm.HEALTH_KEY]), [other])  # the broken one is noted (see HealthTests)
         self.assertTrue(any("Broken" in line for line in logs.output))
 
     def test_failed_fetch_leaves_saved_jobs_alone(self):
@@ -1426,7 +1430,7 @@ class SitemapReaderTests(MonitorTestCase):
         with self.assertLogs(jm.log, "WARNING"):
             self.run_monitor([target(name="Citadel", url=CITADEL_SITEMAP, mode="sitemap",
                                      link_selector="/careers/details/")])
-        self.assertFalse(jm.STATE_PATH.exists())
+        self.assertNotIn(CITADEL_SITEMAP, self.saved_state())
 
     def test_run_alerts_new_us_job_pages_and_skips_other_regions(self):
         self.mark_known(CITADEL_SITEMAP)
@@ -2324,6 +2328,14 @@ class BoardTests(MonitorTestCase):
         self.assertEqual(reported, {"Acme": ["Software Engineer"]})
         self.assertEqual(len(self.board_requests()), 1)
 
+    def test_company_boards_are_not_part_of_the_warnings(self):
+        # Plenty of startups list nothing for a while; a board that can't be read is only counted in the log.
+        self.start((1, "New Grad Software Engineer"))
+        self.age_board_check()
+        self.pages[GH_ACME] = gh_board()  # no openings now
+        self.run_boards()
+        self.assertNotIn(GH_ACME, self.saved_state().get(jm.HEALTH_KEY, {}))
+
     def test_a_board_whose_check_fails_is_read_again_next_time(self):
         self.start((1, "New Grad Software Engineer"))
         real_get = self.fake_get
@@ -2529,6 +2541,109 @@ class BoardTests(MonitorTestCase):
         self.assertIn("Zeta", [i["name"] for i in self.boards_meta()["known"].values()])  # the registry still grows
         self.assertEqual([u for u, _ in self.requests_made[before:] if u in (GH_ACME, ASHBY_ZETA)], [])
         self.assertNotIn(ASHBY_ZETA, self.saved_state())
+
+
+class HealthTests(MonitorTestCase):
+    """Telling you when one of your entries stops working (state["_health"], the emails' warning)."""
+
+    OTHER = "https://other.example/careers"
+
+    def setUp(self):
+        super().setUp()
+        self.pages[URL] = page(*jobs_named("Data Analyst"))
+        self.acme_jobs = ["Data Analyst"]
+
+    def run_both(self, *extra_targets, other=True):
+        return self.run_monitor([target(), *([target(name="Beta", url=self.OTHER)] if other else []), *extra_targets],
+                                email=WORKING_EMAIL)
+
+    def new_acme_posting(self, title):
+        self.acme_jobs.append(title)
+        self.pages[URL] = page(*jobs_named(*self.acme_jobs))
+
+    def health(self):
+        return self.saved_state().get(jm.HEALTH_KEY, {})
+
+    def age(self, url, hours):
+        state = self.saved_state()
+        state[jm.HEALTH_KEY][url]["since"] = (datetime.now() - timedelta(hours=hours)).isoformat(timespec="seconds")
+        jm.save_json(jm.STATE_PATH, state)
+
+    def refuse_other(self, status):
+        real_get = self.fake_get
+        self.patch(jm.requests, "get", lambda url, *a, **k: FakeResponse("", status_code=status) if url == self.OTHER
+                   else real_get(url, *a, **k))
+
+    def test_an_entry_that_keeps_failing_is_reported_after_six_hours_until_it_works(self):
+        self.refuse_other(429)
+        self.run_both()
+        record = self.health()[self.OTHER]
+        self.assertEqual((record["name"], record["kind"]), ("Beta", "failed"))
+        self.assertIn("429", record["why"])
+        self.new_acme_posting("ML Engineer")
+        _, reported = self.run_both()
+        self.assertEqual((reported, self.problems), ({"Acme": ["ML Engineer"]}, []))  # not yet: could be a blip
+        self.assertEqual(self.health()[self.OTHER]["since"], record["since"])  # still failing since the first time
+        self.age(self.OTHER, 7)
+        self.new_acme_posting("Software Engineer")
+        _, reported = self.run_both()
+        self.assertEqual([p["name"] for p in self.problems], ["Beta"])
+        text = jm.format_plain_report({"Acme": []}, problems=self.problems)
+        since = (datetime.now() - timedelta(hours=7)).strftime("%b %d")
+        self.assertIn(f"Beta: the site is refusing us (429: too many requests), since {since}", text)
+        self.assertIn("aren't working", jm.format_html_report({}, problems=self.problems))
+        # It works again: no more warning, and the record is gone.
+        self.patch(jm.requests, "get", self.fake_get)
+        self.pages[self.OTHER] = page(*jobs_named("Quant Researcher"))
+        self.new_acme_posting("Backend Engineer")
+        self.run_both()
+        self.assertEqual((self.problems, self.health()), ([], {}))
+
+    def test_an_entry_that_finds_nothing_is_reported_after_two_days(self):
+        self.pages[self.OTHER] = page()
+        self.run_both()
+        self.assertEqual(self.health()[self.OTHER]["kind"], "empty")
+        self.age(self.OTHER, 47)
+        self.new_acme_posting("ML Engineer")
+        self.run_both()
+        self.assertEqual(self.problems, [])
+        self.age(self.OTHER, 49)
+        self.new_acme_posting("Software Engineer")
+        self.run_both()
+        self.assertEqual([(p["name"], p["why"]) for p in self.problems],
+                         [("Beta", "it found no postings (the page may have changed)")])
+        # A different problem starts the clock again.
+        self.refuse_other(404)
+        self.run_both()
+        record = self.health()[self.OTHER]
+        self.assertEqual((record["kind"], record["why"]), ("failed", "the page is gone (404)"))
+        self.assertLess(jm._hours_since(record["since"]), 1)
+
+    def test_reasons_in_plain_words(self):
+        cases = {"429 Client Error: Too Many Requests for url": "429", "403 Client Error: Forbidden": "403",
+                 "Failed to read x: 404 Client Error: Not Found for u": "404", "Read timed out. (read timeout=30)": "in time",
+                 "502 Server Error: Bad Gateway": "5xx", "something odd": "couldn't be read"}
+        for message, expected in cases.items():
+            self.assertIn(expected, jm._problem_reason([message]), message)
+        # A fast path that fails while a fallback works is fine.
+        self.assertIsNone(jm._health_record(None, "Salesforce", 20, ["[wd-api] 429 Too Many Requests"], "cfg"))
+
+    def test_removed_and_paused_entries_are_not_reported(self):
+        self.refuse_other(429)
+        self.run_both()
+        self.assertIn(self.OTHER, self.health())
+        self.run_both(other=False)  # Beta removed from the config
+        self.assertEqual(self.health(), {})
+        self.run_both(target(name="Gamma", url="https://gamma.example/careers", enabled=False))
+        self.assertNotIn("https://gamma.example/careers", self.health())
+
+    def test_another_configs_records_are_kept(self):
+        jm.save_state({}, health={"https://elsewhere.example": {"name": "X", "kind": "failed", "why": "it couldn't be read",
+                                                                 "since": "2026-01-01T00:00:00", "config": "another"}})
+        self.refuse_other(429)
+        self.run_both()
+        self.assertEqual(sorted(self.health()), ["https://elsewhere.example", self.OTHER])
+        self.assertEqual(jm.broken_checks(self.health(), {URL, self.OTHER}), [])  # not this config's, and Beta is new
 
 
 class UsFilterTests(MonitorTestCase):

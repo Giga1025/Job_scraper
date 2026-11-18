@@ -77,12 +77,15 @@ LAST_EMAIL_KEY = "_last_email_at"           # when an email last went out (ISO t
 ALERT_POOL_KEY = "_alerts_pending"          # matching postings not yet emailed
 LEFT_OUT_LOG_KEY = "_left_out_log"          # left-out postings of the last few days (for left_out.md)
 BOARDS_KEY = "_boards"                      # company job boards found through the feeds: when checked, ETags, boards not found
+HEALTH_KEY = "_health"                      # your entries that couldn't be read or found nothing, and since when
 
 LEFT_OUT_LOG_DAYS = 7         # how far back left_out.md goes
 LEFT_OUT_EMAIL_LIMIT = 25     # left-out postings listed in an email (the rest are counted)
 EMAIL_DUE_TOLERANCE_MINUTES = 10  # a batch due at 2h may go out at 1h50 (runs come every 30 min)
 REPORTED_MARK = "reported"  # on postings a company entry found new for you: how they were shown
 SHOWN_AS_MATCH, SHOWN_AS_LEFT_OUT = "match", "left out"  # (queued for the email / for its left-out list)
+HEALTH_FAILED_HOURS = 6   # an entry that can't be read for this long is reported in the emails
+HEALTH_EMPTY_HOURS = 48   # ...and one that finds no postings at all for this long
 GREENHOUSE_JOB_KEY = "gh_job"  # on Greenhouse postings: the job's id, shared by its postings on every board
 
 # A state.json temp file older than this was left by a monitor killed mid-save.
@@ -423,6 +426,7 @@ def save_state(
     alerts_shown: set[str] | None = None,
     left_out_log_add: list[dict] | None = None,
     boards: dict | None = None,
+    health: dict | None = None,
 ):
     """Write these targets' entries to state.json, keeping all other targets as they are on disk.
 
@@ -455,6 +459,15 @@ def save_state(
             state[LAST_EMAIL_KEY] = last_email
         if boards is not None:
             state[BOARDS_KEY] = boards
+        if health:
+            # {url: problem, or None once it works again}, entry by entry (other monitors' entries stay).
+            records = state.get(HEALTH_KEY) if isinstance(state.get(HEALTH_KEY), dict) else {}
+            for url, record in health.items():
+                if record is None:
+                    records.pop(url, None)
+                else:
+                    records[url] = record
+            state[HEALTH_KEY] = records
         save_json(STATE_PATH, state)
         page = left_out_page_path()
         if log_changed or (state.get(LEFT_OUT_LOG_KEY) and not page.exists()):
@@ -2286,6 +2299,7 @@ def format_plain_report(
     all_new: dict[str, list[dict]],
     left_out: dict[str, list[dict]] | None = None,
     left_out_summary: dict | None = None,
+    problems: list[dict] | None = None,
 ) -> str:
     lines = [
         "=" * 60,
@@ -2293,6 +2307,10 @@ def format_plain_report(
         "=" * 60,
         "",
     ]
+    if problems:
+        lines.append(f"⚠ {len(problems)} of your entries aren't working:")
+        lines += [f"    ! {line}" for line in _problem_lines(problems)]
+        lines += [f"  {PROBLEMS_HELP}", ""]
     for company, jobs in all_new.items():
         lines.append(f"- {company}  ({len(jobs)} new)")
         for j in jobs:
@@ -2318,9 +2336,15 @@ def format_html_report(
     all_new: dict[str, list[dict]],
     left_out: dict[str, list[dict]] | None = None,
     left_out_summary: dict | None = None,
+    problems: list[dict] | None = None,
 ) -> str:
     esc = html_lib.escape
     rows = ""
+    if problems:
+        items = "".join(f'<li style="margin-bottom:4px">{esc(line)}</li>' for line in _problem_lines(problems))
+        rows += (f'<div style="background:#fff4e5;border-left:4px solid #f29900;padding:8px 12px;margin:16px 0">'
+                 f'<b>⚠ {len(problems)} of your entries aren\'t working</b><ul style="margin:6px 0">{items}</ul>'
+                 f'<span style="color:#777;font-size:12px">{esc(PROBLEMS_HELP)}</span></div>')
     for company, jobs in all_new.items():
         rows += f'<h3 style="color:#1a73e8;margin-top:24px">{esc(company)} ({len(jobs)} new)</h3><ul>'
         for j in jobs:
@@ -2363,6 +2387,7 @@ def send_email(
     all_new: dict[str, list[dict]],
     left_out: dict[str, list[dict]] | None = None,
     left_out_summary: dict | None = None,
+    problems: list[dict] | None = None,
 ) -> bool:
     """Email the report. Returns False if email is enabled but sending failed."""
     try:
@@ -2403,8 +2428,8 @@ def send_email(
         msg["To"] = recipients
 
         # utf-8 makes MIMEText encode the parts, so long lines are wrapped safely in transit.
-        msg.attach(MIMEText(format_plain_report(all_new, left_out, left_out_summary), "plain", "utf-8"))
-        msg.attach(MIMEText(format_html_report(all_new, left_out, left_out_summary), "html", "utf-8"))
+        msg.attach(MIMEText(format_plain_report(all_new, left_out, left_out_summary, problems), "plain", "utf-8"))
+        msg.attach(MIMEText(format_html_report(all_new, left_out, left_out_summary, problems), "html", "utf-8"))
 
         # Verify the server's certificate so the password can't be sent to an impostor.
         context = ssl.create_default_context()
@@ -2573,9 +2598,11 @@ def check_target(
     default_keywords: list[str],
     role_patterns: dict | None = None,
     us_only: bool = False,
+    outcome: dict | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """Scrape one target, record what it lists in state (as seen), and return its new
     jobs split into (matches, left out by the filters; copies carrying a "reason").
+    outcome, if given, gets "found": how many postings the target listed (None: unreadable).
 
     Company job boards (see plan_boards) come with their postings already fetched
     ("_prefetched"), only tech titles wanted ("_tech_titles") minus gig-work titles
@@ -2606,7 +2633,9 @@ def check_target(
         return [{"url": job["url"], **({GREENHOUSE_JOB_KEY: job[GREENHOUSE_JOB_KEY]} if job.get(GREENHOUSE_JOB_KEY) else {})}
                 for job in jobs]
 
+    outcome = outcome if outcome is not None else {}
     current_jobs = fetch()
+    outcome["found"] = None if current_jobs is None else len(current_jobs)
     if current_jobs is None:
         return [], []
 
@@ -2621,6 +2650,7 @@ def check_target(
             # make the next good check alert everything the target lists, so look again.
             say("  [baseline] First check found no jobs; checking once more.")
             current_jobs = fetch()
+            outcome["found"] = None if current_jobs is None else len(current_jobs)
             if current_jobs is None:
                 return [], []
         # First check of this target: record what's already listed without
@@ -2737,6 +2767,9 @@ def run(config_override: str | None = None) -> bool:
     new_matches: list[dict] = []
     new_left_out: list[dict] = []
     first_checks: set[str] = set()
+    # Your entries that couldn't be read or found nothing (state[HEALTH_KEY]), and this run's news.
+    health = state.get(HEALTH_KEY) if isinstance(state.get(HEALTH_KEY), dict) else {}
+    health_updates: dict = {}
 
     for target in targets:
         name = target.get("name")
@@ -2758,11 +2791,17 @@ def run(config_override: str | None = None) -> bool:
         # stop the remaining targets from being checked, saved and emailed.
         first_check = url not in state
         is_feed = target.get("mode") == "feed"
+        outcome: dict = {}
         try:
-            new_jobs, left_out = check_target(target, state, keywords, role_patterns, us_only)
-        except Exception:
+            with _problems_logged() as problems:
+                new_jobs, left_out = check_target(target, state, keywords, role_patterns, us_only, outcome)
+        except Exception as exc:
             log.exception(f"  Failed to check {name}, skipping it this run")
+            if not is_board:
+                health_updates[url] = _health_record(health.get(url), name, None, problems + [repr(exc)], this_config)
             continue
+        if not is_board:
+            health_updates[url] = _health_record(health.get(url), name, outcome.get("found"), problems, this_config)
         if first_check and url in state:
             first_checks.add(url)
         if is_board:
@@ -2815,8 +2854,16 @@ def run(config_override: str | None = None) -> bool:
         if not boards_page_path().exists() or boards_page_path().read_text(encoding="utf-8") != page:
             save_text(boards_page_path(), page)
     boards_changed = board_meta != loaded_board_meta
+    # Entries of this config that are gone from it aren't reported any more.
+    health_updates.update({url: None for url, rec in health.items() if isinstance(rec, dict)
+                           and rec.get("config") == this_config and url not in own_urls})
+    health_updates = {url: rec for url, rec in health_updates.items() if rec != health.get(url)}
+    problems = broken_checks({**health, **health_updates}, own_urls)
+    if problems:
+        log.warning(f"[health] {len(problems)} of your entries aren't working: "
+                    + "; ".join(f"{p['name']} ({p['why']})" for p in problems))
     record = dict(alerts_add=new_matches, pending_add=new_left_out, left_out_log_add=new_left_out,
-                  boards=board_meta if boards_changed else None)
+                  boards=board_meta if boards_changed else None, health=health_updates)
 
     pooled = [p for p in state.get(ALERT_POOL_KEY) or []
               if "source" not in p or p["source"] in own_urls
@@ -2827,7 +2874,7 @@ def run(config_override: str | None = None) -> bool:
     alerts_due = bool(alerts) and hours_since_email >= email_every_hours - EMAIL_DUE_TOLERANCE_MINUTES / 60
     digest_due = bool(pending) and hours_since_email >= digest_hours
     if not alerts_due and not digest_due:
-        if changed or new_matches or new_left_out or boards_changed:
+        if changed or new_matches or new_left_out or boards_changed or health_updates:
             save_state(updates, baselines, **record)
         if alerts:
             log.info(f"{len(alerts)} matching posting(s) waiting for the next email "
@@ -2841,9 +2888,10 @@ def run(config_override: str | None = None) -> bool:
     all_new = _group_by_company(alerts)
     summary = summarize_left_out(pending, role_patterns)
     left_out_report = _group_by_company(summary["listed"]) if pending else None
-    report = format_plain_report(all_new, left_out_report, left_out_summary=summary if pending else None)
+    report = format_plain_report(all_new, left_out_report, left_out_summary=summary if pending else None, problems=problems)
     print_console_safe("\n" + report)
-    if not send_email(config, all_new, left_out=left_out_report, left_out_summary=summary if pending else None):
+    if not send_email(config, all_new, left_out=left_out_report, left_out_summary=summary if pending else None,
+                      problems=problems):
         # Everything stays in the pools, so the next run tries again (even if a
         # posting has left its careers page by then).
         save_state(updates, baselines, **record)
@@ -2857,10 +2905,96 @@ def run(config_override: str | None = None) -> bool:
         alerts_shown={compute_job_id(p) for p in alerts},
         left_out_log_add=pending,  # everything the email summarised is on left_out.md
         boards=board_meta if boards_changed else None,
+        health=health_updates,
         # Needed to space out emails and digests; configs using neither don't record it.
         last_email=datetime.now().isoformat(timespec="seconds") if show_left_out or email_every_hours else None,
     )
     return True
+
+
+# ===================================================================
+# Health: telling you when one of your entries stops working
+# ===================================================================
+class _ProblemCollector(logging.Handler):
+    def __init__(self, messages: list):
+        super().__init__(logging.WARNING)
+        self.messages = messages
+
+    def emit(self, record):
+        try:
+            self.messages.append(record.getMessage())
+        except Exception:
+            pass
+
+
+@contextmanager
+def _problems_logged():
+    """The warnings and errors logged meanwhile, as a list of messages."""
+    messages: list[str] = []
+    handler = _ProblemCollector(messages)
+    log.addHandler(handler)
+    try:
+        yield messages
+    finally:
+        log.removeHandler(handler)
+
+
+def _problem_reason(messages: list[str]) -> str:
+    """Why an entry couldn't be read, in plain words, from what was logged while checking it."""
+    text = " ".join(messages)
+    if re.search(r"\b429\b|Too Many Requests", text):
+        return "the site is refusing us (429: too many requests)"
+    if re.search(r"\b403\b|Forbidden|bot protection", text):
+        return "the site is refusing access (403)"
+    if re.search(r"\b404\b|Not Found", text):
+        return "the page is gone (404)"
+    if re.search(r"\b5\d\d\b(?: Server Error)", text):
+        return "the site had an error (5xx)"
+    if re.search(r"[Tt]imeout|timed out", text):
+        return "the page didn't load in time"
+    return "it couldn't be read"
+
+
+def _health_record(previous, name: str, found, messages: list[str], config_id) -> dict | None:
+    """An entry's health after a check that found `found` postings (None: unreadable): None if
+    it worked, else {"name", "kind" ("failed"/"empty"), "why", "since", "config"}, keeping
+    "since" from the previous record while the problem is the same kind."""
+    if found:
+        return None
+    kind = "empty" if found == 0 else "failed"
+    previous = previous if isinstance(previous, dict) else {}
+    since = previous.get("since") if previous.get("kind") == kind else None
+    return {"name": name, "kind": kind,
+            "why": "it found no postings (the page may have changed)" if kind == "empty" else _problem_reason(messages),
+            "since": since or datetime.now().isoformat(timespec="seconds"), "config": config_id}
+
+
+def broken_checks(health: dict, urls) -> list[dict]:
+    """Your entries (among urls) that have failed for HEALTH_FAILED_HOURS or found nothing for
+    HEALTH_EMPTY_HOURS: [{"name", "url", "why", "since"}], longest-broken first."""
+    out = []
+    for url, rec in (health or {}).items():
+        if url not in urls or not isinstance(rec, dict):
+            continue
+        hours = HEALTH_EMPTY_HOURS if rec.get("kind") == "empty" else HEALTH_FAILED_HOURS
+        if _hours_since(rec.get("since")) != float("inf") and _hours_since(rec.get("since")) >= hours:
+            out.append({"name": rec.get("name") or url, "url": url, "why": rec.get("why") or "", "since": rec.get("since")})
+    return sorted(out, key=lambda p: (str(p["since"]), str(p["name"])))
+
+
+def _problem_lines(problems: list[dict]) -> list[str]:
+    lines = []
+    for p in problems:
+        try:
+            since = datetime.fromisoformat(str(p["since"])).strftime("%b %d")
+        except ValueError:
+            since = "a while"
+        lines.append(f"{p['name']}: {p['why']}, since {since}")
+    return lines
+
+
+PROBLEMS_HELP = ("Their postings may still reach you through the new-grad lists. To fix one, see "
+                 "\"Fixing an entry that stopped working\" in the README; to stop the warning, pause it with \"enabled\": false.")
 
 
 def _board_meta(state: dict) -> dict:
