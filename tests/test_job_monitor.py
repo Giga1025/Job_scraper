@@ -2676,6 +2676,15 @@ class HealthTests(MonitorTestCase):
         self.assertEqual(self.health(), {})
         self.run_both(target(name="Gamma", url="https://gamma.example/careers", enabled=False))
         self.assertNotIn("https://gamma.example/careers", self.health())
+        # Failing long enough to be reported, then paused (what the README says to do): the warning goes.
+        self.run_both()
+        self.age(self.OTHER, 7)
+        self.new_acme_posting("ML Engineer")
+        self.run_both()
+        self.assertEqual([p["name"] for p in self.problems], ["Beta"])
+        self.new_acme_posting("Software Engineer")
+        self.run_monitor([target(), target(name="Beta", url=self.OTHER, enabled=False)], email=WORKING_EMAIL)
+        self.assertEqual((self.problems, self.health()), ([], {}))
 
     def test_another_configs_records_are_kept(self):
         jm.save_state({}, health={"https://elsewhere.example": {"name": "X", "kind": "failed", "why": "it couldn't be read",
