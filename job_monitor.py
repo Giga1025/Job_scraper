@@ -87,6 +87,10 @@ LEFT_OUT_LOG_DAYS = 7         # how far back left_out.md goes
 LEFT_OUT_EMAIL_LIMIT = 25     # left-out postings listed in an email (the rest are counted)
 EMAIL_DUE_TOLERANCE_MINUTES = 10  # a batch due at 2h may go out at 1h50 (runs come every 30 min)
 REPORTED_MARK = "reported"  # on postings a company entry found new for you: how they were shown
+# On a board's records of postings it emailed for the company it was matched to before (a Workable
+# account matched to another company since): kept so they aren't emailed again through another
+# entry, and not used to follow the company (boards/workable.py).
+EARLIER_COMPANY_MARK = "earlier_company"
 SHOWN_AS_MATCH, SHOWN_AS_LEFT_OUT = "match", "left out"  # (queued for the email / for its left-out list)
 HEALTH_FAILED_HOURS = 6   # an entry that can't be read for this long is reported in the emails
 HEALTH_EMPTY_HOURS = 48   # ...and one that finds no postings at all for this long
@@ -1653,8 +1657,9 @@ def read_workable(accounts: list[dict], meta: dict, state: dict) -> dict[str, tu
         workable.look_up_accounts(accounts, meta["known"])
     except Exception:
         log.exception("  [workable] Could not ask Workable about the companies not matched yet")
-    recorded = {b["url"]: [c for c in (workable.job_code(r.get("url")) for r in (state.get(b["url"]) or [])[:workable.CODES_KEPT]
-                                     if isinstance(r, dict)) if c] for b in accounts}
+    recorded = {b["url"]: [c for c in (workable.job_code(r.get("url")) for r in [r for r in state.get(b["url"]) or []
+                                                                              if isinstance(r, dict) and not r.get(EARLIER_COMPANY_MARK)]
+                                     [:workable.CODES_KEPT]) if c] for b in accounts}
     moved: set = set()
     results = {url: (status, _dedupe_jobs(jobs) if jobs else jobs, etag)
                for url, (status, jobs, etag) in workable.read_feed(accounts, meta, recorded, moved).items()}
@@ -1663,9 +1668,13 @@ def read_workable(accounts: list[dict], meta: dict, state: dict) -> dict[str, tu
         if b["url"] in moved and status == "ok" and state.get(b["url"]) is not None:
             # Now another company than at its last check (what it recorded is the other company's):
             # its postings from before the last few days are recorded as seen, so, as at a first
-            # check, only the recent ones are new.
+            # check, only the recent ones are new. The ones emailed for the other company are kept
+            # (marked), so they aren't emailed again through another entry.
             since = b.get("_recent_since")
-            state[b["url"]] = [{"url": j["url"]} for j in jobs if not (since and _posted_since(j, since))]
+            seen = [{"url": j["url"]} for j in jobs if not (since and _posted_since(j, since))]
+            ids = {compute_job_id(j) for j in seen}
+            state[b["url"]] = seen + [{**r, EARLIER_COMPANY_MARK: True} for r in state[b["url"]]
+                                      if isinstance(r, dict) and r.get(REPORTED_MARK) and compute_job_id(r) not in ids]
     return results
 
 

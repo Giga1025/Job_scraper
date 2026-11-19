@@ -23,6 +23,9 @@ class NameTests(unittest.TestCase):
         # Letters of other scripts are kept (not dropped, which would make different names equal).
         self.assertEqual(workable.name_key("株式会社テスト"), "株式会社テスト")
         self.assertNotEqual(workable.name_key("Ωmega Labs"), workable.name_key("mega Labs"))
+        # A vowel sign or voicing mark is part of its letter there, not an accent to drop.
+        for one, other in (("राम", "रीम"), ("กี", "ก"), ("ガ", "カ"), ("தமிழ்", "தமிழ")):
+            self.assertNotEqual(workable.name_key(one), workable.name_key(other), (one, other))
 
     def test_only_a_name_one_company_has_matches(self):
         one, other = ("Bask Health", "https://bask.example"), ("Bask Health LLC", "https://bask.example.org")

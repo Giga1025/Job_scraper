@@ -181,8 +181,9 @@ account is matched to its company there:
    name Workable gives it if Workable answered, else the lists'; "Inc", "LLC" and the like at the
    end don't count). Not when two companies or two accounts share the name, when another account
    holds that company by a job code, or when Workable listed jobs for the account that the file
-   doesn't have. A job code found later wins over a name match; if it points to another company,
-   that company's roles from the last few days are emailed, not its older ones.
+   doesn't have. A name match is undone when Workable's later answer contradicts it, and a job
+   code found later wins over it; when the account moves to another company that way, that
+   company's roles from the last few days are emailed, not its older ones.
 
 An account matched neither way isn't checked yet (its roles the lists carry still reach you);
 once it's matched, its first check catches up on everything it posted since it was added.

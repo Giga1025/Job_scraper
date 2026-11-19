@@ -129,10 +129,18 @@ def look_up_accounts(accounts: list[dict], known: dict) -> None:
 
 
 def name_key(name) -> str:
-    """A company name for comparing: lower case, accents dropped, letters and digits only (in any
-    script), without a closing Inc, LLC, Co. and the like."""
-    text = "".join(c for c in unicodedata.normalize("NFKD", str(name or "")) if not unicodedata.combining(c)).lower()
-    words = "".join(c if c.isalnum() else " " for c in text).split()
+    """A company name for comparing: lower case, accents on Latin, Greek and Cyrillic letters
+    dropped, letters and digits only (in any script, with their marks: a Hindi or Thai vowel sign
+    is part of the word), without a closing Inc, LLC, Co. and the like."""
+    out, base = [], ""
+    for c in unicodedata.normalize("NFKD", str(name or "")):
+        if unicodedata.category(c).startswith("M"):  # a mark on the letter before it
+            if not base.startswith(("LATIN", "GREEK", "CYRILLIC")):
+                out.append(c)
+            continue
+        base = unicodedata.name(c, "") if c.isalnum() else ""
+        out.append(c if c.isalnum() else " ")
+    words = "".join(out).lower().split()
     while words and words[-1] in _LEGAL_WORDS:
         words.pop()
     return " ".join(words)
@@ -180,6 +188,7 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None, move
     rows: dict[tuple, list] = {}
     learned_linked: dict[str, tuple] = {}
     learned_own: dict[str, tuple] = {}
+    own_tenants: dict[str, set] = {}
     count = 0
     try:
         raw = getattr(resp, "raw", None)
@@ -201,6 +210,7 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None, move
                 learned_linked.setdefault(linked[code], tenant)
             if code in own:
                 learned_own.setdefault(own[code], tenant)
+                own_tenants.setdefault(own[code], set()).add(tenant)
             el.clear()
     except Exception as exc:
         log.warning(f"  [workable] Workable's job file was cut off or unreadable ({exc.__class__.__name__}); next check retries.")
@@ -228,19 +238,24 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None, move
         elif info.get("tenant") and tuple(info["tenant"]) not in rows:
             # Its company is gone from the file: renamed? Followed through the account's own postings.
             tenant = learned_own.get(b["_board_key"])
-            if tenant is not None:
-                renamed.add(b["_board_key"])
         if tenant is None or list(tenant) == info.get("tenant"):
             continue
+        if tenant in own_tenants.get(b["_board_key"], ()):
+            renamed.add(b["_board_key"])  # (its recorded postings are there: the same company, under a new name or website)
         if info.get("tenant"):
             log.info(f"  [workable] {info.get('name')} is now {tenant[0]!r} in Workable's file.")
         info["tenant"] = list(tenant)
     held = {tuple(i["tenant"]) for i in known.values() if isinstance(i, dict) and i.get("tenant") and i.get("matched_by") != "name"}
-    for b in boards:  # A company an account holds by a job code is no other account's by name.
-        info = known.get(b["_board_key"])
-        if info is not None and info.get("matched_by") == "name" and tuple(info.get("tenant") or ()) in held:
-            log.info(f"  [workable] {info.get('name')}: {info['tenant'][0]!r} is another account's (by a job code), "
-                     f"so not this one's by name any more.")
+    for b in boards:  # A name match is undone when another account holds the company by a job code, or Workable's
+        info = known.get(b["_board_key"])  # answer contradicts it (another name, or jobs the file lacks).
+        if info is None or info.get("matched_by") != "name" or not info.get("tenant"):
+            continue
+        why = ("it's another account's (by a job code)" if tuple(info["tenant"]) in held
+               else "Workable lists jobs for the account that aren't there" if info.get("workable_jobs")
+               else "Workable names the account differently"
+               if info.get("workable_name") and name_key(info["workable_name"]) != name_key(info["tenant"][0]) else None)
+        if why:
+            log.info(f"  [workable] {info.get('name')}: not matched by name to {info['tenant'][0]!r} any more: {why}.")
             info.pop("tenant", None)
             info.pop("matched_by", None)
 
