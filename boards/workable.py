@@ -6,12 +6,15 @@ unchanged), rather than asking each company's page (quick reading of those is an
 Many Requests"). The file names companies (name and website), not their Workable accounts, so an
 account is matched to its company there:
 
-1. through a job code: one the new-grad lists linked it to, one Workable lists for the account
-   when asked (look_up_accounts: once a day at most, a few accounts a run, paced), or one of the
-   account's own postings recorded at earlier checks (so a company that renames itself in
-   Workable stays matched);
-2. failing that, by name: when exactly one company in the file has the account's name (the one
-   Workable gives it, else the lists'). A job code linked later wins over a name match.
+1. through a job code: one the new-grad lists linked it to, or one Workable lists for the
+   account when asked (look_up_accounts: once a day at most, a few accounts a run, paced). Once
+   matched, a company that renames itself in Workable (its company no longer in the file) is
+   followed through the account's own postings recorded at earlier checks;
+2. failing that, by name: when exactly one company in the file has the account's name (the name
+   Workable gives it if Workable answered, else the lists'), Workable didn't list jobs for the
+   account that the file lacks, no other account has that name, and no account holds that company
+   by a job code. A job code found later wins over a name match (and takes the company from an
+   account holding it by name); read_feed then reports the account as moved to another company.
 
 An account that isn't matched isn't checked: an empty first check would flood later emails.
 """
@@ -37,9 +40,11 @@ MIN_ROWS_SHARE = 0.5        # a file with fewer rows than this share of the last
 SMALL_ACCEPT_HOURS = 6      # ...unless it has stayed that small this long: then it's the new normal
 LOOKUPS_PER_RUN = 30        # accounts asked about per boards check...
 LOOKUP_DELAY_SECONDS = 2.0  # ...this far apart...
-LOOKUP_AGAIN_HOURS = 24     # ...each at most once a day
+LOOKUP_AGAIN_HOURS = 24     # ...each at most once a day, whatever the answer
+LOOKUP_TIMEOUT_SECONDS = 15
 
-_LEGAL_WORDS = re.compile(r"\b(?:inc|incorporated|llc|ltd|limited|corp|corporation|co|company|gmbh|plc|pbc|lp|llp)\b")
+_LEGAL_WORDS = {"inc", "incorporated", "llc", "ltd", "limited", "corp", "corporation", "co", "company",
+                "gmbh", "plc", "pbc", "lp", "llp"}
 
 
 def job_code(link) -> str | None:
@@ -73,57 +78,64 @@ def remember_codes(known: dict, codes: dict):
 
 def look_up_accounts(accounts: list[dict], known: dict) -> None:
     """Ask Workable (ACCOUNT_API) for the name and current job codes of the accounts not matched
-    by code yet: each at most once every LOOKUP_AGAIN_HOURS, LOOKUPS_PER_RUN a run, longest
-    waiting first, LOOKUP_DELAY_SECONDS apart, under the monitor's own name; none more this run
-    once Workable answers "too many requests" or refuses. The codes join the account's ("codes",
-    see remember_codes), and the name Workable gives it is kept ("workable_name")."""
+    by code yet: each at most once every LOOKUP_AGAIN_HOURS whatever the answer, LOOKUPS_PER_RUN
+    a run, longest waiting first, LOOKUP_DELAY_SECONDS apart, under the monitor's own name; none
+    more this run once Workable refuses (403, 429), fails (5xx, no answer) or answers with something
+    that isn't the list (a check that we're a browser). The codes join the account's ("codes", see
+    remember_codes); the name Workable gives it ("workable_name") and how many jobs it listed
+    ("workable_jobs") are kept for matching by name."""
     due = [b for b in accounts if b.get("_board_key") in known and not _matched_by_code(known[b["_board_key"]])
            and hours_since(known[b["_board_key"]].get("looked_up")) >= LOOKUP_AGAIN_HOURS]
     due.sort(key=lambda b: (str(known[b["_board_key"]].get("looked_up") or ""), b["_board_key"]))
-    answered, with_jobs, failed, refused = 0, 0, 0, None
+    asked, with_jobs, stopped = 0, 0, None
     for i, board in enumerate(due[:LOOKUPS_PER_RUN]):
         if i:
             time.sleep(LOOKUP_DELAY_SECONDS)
         info = known[board["_board_key"]]
+        info["looked_up"] = datetime.now().isoformat(timespec="seconds")  # (whatever the answer: no account is asked hourly)
+        asked += 1
         try:
-            resp = requests.get(ACCOUNT_API.format(account_of(board["url"])), timeout=30,
+            resp = requests.get(ACCOUNT_API.format(account_of(board["url"])), timeout=LOOKUP_TIMEOUT_SECONDS,
                                 headers={**HEADERS, "User-Agent": MONITOR_USER_AGENT, "Accept": "application/json"})
-        except Exception:
-            failed += 1
-            continue
-        if resp.status_code == 404:  # no such account any more: the name may still match
-            info["looked_up"] = datetime.now().isoformat(timespec="seconds")
-            answered += 1
+        except Exception as exc:
+            stopped = f"no answer ({exc.__class__.__name__})"
+            break
+        if resp.status_code in (403, 429) or resp.status_code >= 500:
+            stopped = resp.status_code
+            break
+        if resp.status_code != 200:  # about this one account (404: no such account any more; the name may still match)
             continue
         try:
-            data = resp.json() if resp.status_code == 200 else None
+            data = resp.json()
         except ValueError:
             data = None
-        if not isinstance(data, dict):  # refused (429, 403), an error, or a page that isn't the answer (a browser check)
-            refused = resp.status_code if resp.status_code != 200 else "a page that isn't the job list"
+        if not isinstance(data, dict):
+            stopped = "a page that isn't the job list"
             break
-        info["looked_up"] = datetime.now().isoformat(timespec="seconds")
-        answered += 1
         name = str(data.get("name") or "").strip()
         if name:
             info["workable_name"] = name[:200]
-        codes = [str(job.get("shortcode") or "").strip().upper() for job in data.get("jobs") or [] if isinstance(job, dict)]
-        codes = [c for c in codes if c]
+        jobs = data.get("jobs") if isinstance(data.get("jobs"), list) else []
+        codes = [c for c in (str(job.get("shortcode") or "").strip().upper() for job in jobs if isinstance(job, dict)) if c]
+        info["workable_jobs"] = len(codes)
         if codes:
             with_jobs += 1
             remember_codes(known, {board["_board_key"]: codes})
     if due:
-        log.info(f"  [workable] Asked Workable about {answered + failed + (1 if refused else 0)} of {len(due)} companies "
-                 f"not matched yet: {with_jobs} list current jobs" + (f", {failed} couldn't be asked" if failed else "") + ".")
-    if refused:
-        log.warning(f"  [workable] Workable answered {refused} when asked for a company's jobs; "
+        log.info(f"  [workable] Asked Workable about {asked} of {len(due)} companies not matched yet: {with_jobs} list current jobs.")
+    if stopped:
+        log.warning(f"  [workable] Workable answered {stopped} when asked for a company's jobs; "
                     f"the other companies wait for the next check.")
 
 
 def name_key(name) -> str:
-    """A company name for comparing: lower case, letters and digits only, without Inc, LLC and the like."""
-    text = unicodedata.normalize("NFKD", str(name or "")).encode("ascii", "ignore").decode().lower()
-    return " ".join(_LEGAL_WORDS.sub(" ", re.sub(r"[^a-z0-9]+", " ", text)).split())
+    """A company name for comparing: lower case, accents dropped, letters and digits only (in any
+    script), without a closing Inc, LLC, Co. and the like."""
+    text = "".join(c for c in unicodedata.normalize("NFKD", str(name or "")) if not unicodedata.combining(c)).lower()
+    words = "".join(c if c.isalnum() else " " for c in text).split()
+    while words and words[-1] in _LEGAL_WORDS:
+        words.pop()
+    return " ".join(words)
 
 
 def _only_company_named(by_name: dict, names) -> tuple | None:
@@ -136,12 +148,14 @@ def _only_company_named(by_name: dict, names) -> tuple | None:
     return None
 
 
-def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None) -> dict[str, tuple]:
+def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None, moved: set | None = None) -> dict[str, tuple]:
     """Read FEED_URL once for these Workable boards. Returns {url: (status, jobs, None)}: "ok"
     with the postings of the board's company, "unchanged" (304) or "failed"; boards not matched
     yet are left out (tried again next time). A board's company in the file is
     meta["known"][key]["tenant"] (see the module's docstring for how it's found); recorded is
-    {url: [job code of a posting recorded at earlier checks, ...]}."""
+    {url: [job code of a posting recorded at earlier checks, ...]}. The URLs of boards now matched
+    to another company than before (not a rename: a correction, or a first match after losing one)
+    are added to moved: what they recorded is another company's."""
     state = meta.setdefault("workable", {})
     headers = {**HEADERS, "Accept-Encoding": "gzip"}
     if state.get("last_modified"):
@@ -202,16 +216,32 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None) -> d
     state.pop("small_since", None)
     state.update(last_modified=resp.headers.get("Last-Modified") or resp.headers.get("last-modified"), rows=count)
 
+    before = {b["_board_key"]: (known.get(b["_board_key"]) or {}).get("tenant") for b in boards}
+    renamed = set()
     for b in boards:  # 1. through a job code
         info = known.get(b["_board_key"])
-        tenant = learned_linked.get(b["_board_key"]) or learned_own.get(b["_board_key"])
-        if info is None or tenant is None:
+        if info is None:
             continue
-        if list(tenant) != info.get("tenant"):
-            if info.get("tenant"):
-                log.info(f"  [workable] {info.get('name')} is now {tenant[0]!r} in Workable's file.")
-            info["tenant"] = list(tenant)
-        if b["_board_key"] in learned_linked:
+        tenant = learned_linked.get(b["_board_key"])
+        if tenant is not None:
+            info.pop("matched_by", None)  # (a name match confirmed or corrected)
+        elif info.get("tenant") and tuple(info["tenant"]) not in rows:
+            # Its company is gone from the file: renamed? Followed through the account's own postings.
+            tenant = learned_own.get(b["_board_key"])
+            if tenant is not None:
+                renamed.add(b["_board_key"])
+        if tenant is None or list(tenant) == info.get("tenant"):
+            continue
+        if info.get("tenant"):
+            log.info(f"  [workable] {info.get('name')} is now {tenant[0]!r} in Workable's file.")
+        info["tenant"] = list(tenant)
+    held = {tuple(i["tenant"]) for i in known.values() if isinstance(i, dict) and i.get("tenant") and i.get("matched_by") != "name"}
+    for b in boards:  # A company an account holds by a job code is no other account's by name.
+        info = known.get(b["_board_key"])
+        if info is not None and info.get("matched_by") == "name" and tuple(info.get("tenant") or ()) in held:
+            log.info(f"  [workable] {info.get('name')}: {info['tenant'][0]!r} is another account's (by a job code), "
+                     f"so not this one's by name any more.")
+            info.pop("tenant", None)
             info.pop("matched_by", None)
 
     by_name: dict[str, list] = {}  # 2. by name
@@ -221,14 +251,19 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None) -> d
     wanted: dict[tuple, list] = {}
     for b in boards:
         info = known.get(b["_board_key"])
-        if info is not None and not info.get("tenant"):
-            tenant = _only_company_named(by_name, (info.get("workable_name"), info.get("name")))
-            if tenant is not None and tenant not in taken:
-                wanted.setdefault(tenant, []).append(b["_board_key"])
+        if info is None or info.get("tenant") or info.get("workable_jobs"):
+            continue  # (Workable listed jobs for it that the file lacks: a company in the file with its name isn't it)
+        names = (info["workable_name"],) if info.get("workable_name") else (info.get("name"),)
+        tenant = _only_company_named(by_name, names)
+        if tenant is not None and tenant not in taken:
+            wanted.setdefault(tenant, []).append(b["_board_key"])
     for tenant, keys in wanted.items():
         if len(keys) == 1:  # (two accounts with the name: neither)
             known[keys[0]].update(tenant=list(tenant), matched_by="name")
             log.info(f"  [workable] {known[keys[0]].get('name')}: matched by name to {tenant[0]!r} ({tenant[1]}) in Workable's file.")
+    if moved is not None:
+        moved.update(b["url"] for b in boards if b["_board_key"] not in renamed and (known.get(b["_board_key"]) or {}).get("tenant")
+                     and before[b["_board_key"]] != known[b["_board_key"]]["tenant"])
 
     results = {}
     for b in boards:

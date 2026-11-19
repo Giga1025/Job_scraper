@@ -1655,8 +1655,18 @@ def read_workable(accounts: list[dict], meta: dict, state: dict) -> dict[str, tu
         log.exception("  [workable] Could not ask Workable about the companies not matched yet")
     recorded = {b["url"]: [c for c in (workable.job_code(r.get("url")) for r in (state.get(b["url"]) or [])[:workable.CODES_KEPT]
                                      if isinstance(r, dict)) if c] for b in accounts}
-    return {url: (status, _dedupe_jobs(jobs) if jobs else jobs, etag)
-            for url, (status, jobs, etag) in workable.read_feed(accounts, meta, recorded).items()}
+    moved: set = set()
+    results = {url: (status, _dedupe_jobs(jobs) if jobs else jobs, etag)
+               for url, (status, jobs, etag) in workable.read_feed(accounts, meta, recorded, moved).items()}
+    for b in accounts:
+        status, jobs, _ = results.get(b["url"], (None, None, None))
+        if b["url"] in moved and status == "ok" and state.get(b["url"]) is not None:
+            # Now another company than at its last check (what it recorded is the other company's):
+            # its postings from before the last few days are recorded as seen, so, as at a first
+            # check, only the recent ones are new.
+            since = b.get("_recent_since")
+            state[b["url"]] = [{"url": j["url"]} for j in jobs if not (since and _posted_since(j, since))]
+    return results
 
 
 def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: bool) -> list[dict]:
@@ -1714,7 +1724,7 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
 
     return [{"name": info["name"], "url": info["url"], "mode": "api", "_board": True, "_board_key": key,
              "_tech_titles": tech, "_skip_titles": skip_titles, "_level_titles": level, "_compact": True, "_quiet": True,
-             "_catch_up_since": catch_up(info)}
+             "_catch_up_since": catch_up(info), "_recent_since": since}
             for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
             if key not in skip and _board_platform(info["url"]) in platforms
             and _entry_key(info.get("name")) not in skip_companies]

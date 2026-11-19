@@ -2876,8 +2876,9 @@ class WorkableTests(MonitorTestCase):
 
     def test_a_company_that_renames_itself_in_workable_stays_checked(self):
         # (ColdQuanta became Infleqtion: same account and job codes, new name and website in the file)
-        self.matched(("A00000000A", "Software Engineer", "Bask Health", "US", 5))
-        self.file = (wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 5),
+        # (A is recent: emailed at the first check, and not again after the rename.)
+        self.matched(("A00000000A", "Software Engineer", "Bask Health", "US", 1))
+        self.file = (wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1),
                              ("F00000000F", "Software Engineer, Infrastructure", "Bask Health", "US", 0))
                      .replace("Bask Health", "Bask").replace("https://baskhealth.example", "https://bask.example"))
         self.next_hour()
@@ -2977,25 +2978,52 @@ class WorkableTests(MonitorTestCase):
         self.assertEqual(sleeps, [2.5])
         self.assertIn("Workable answered 429", "\n".join(logs.output))
         known = self.meta()["known"]
-        self.assertIn("looked_up", known["https://apply.workable.com/acct-a"])
-        self.assertNotIn("looked_up", known["https://apply.workable.com/acct-b"])
-        self.accounts["acct-b"] = (200, {"name": "B", "jobs": []})
+        self.assertEqual(known["https://apply.workable.com/acct-a"]["workable_jobs"], 0)
+        self.assertIn("looked_up", known["https://apply.workable.com/acct-b"])  # asked: not again today, whatever the answer
         self.next_hour()
         self.run_wk()
-        # The refused one first, then the ones never asked; at most 3; acct-a not again the same day.
-        self.assertEqual([a for a, _ in self.lookups][2:], ["acct-b", "acct-c", "acct-d"])
+        # The ones never asked; at most 3; acct-a and acct-b not again the same day.
+        self.assertEqual([a for a, _ in self.lookups][2:], ["acct-c", "acct-d", "acct-e"])
         self.assertEqual(sleeps, [2.5, 2.5, 2.5])
         self.next_hour()
         self.run_wk()
-        self.assertEqual([a for a, _ in self.lookups][5:], ["acct-e"])
-        # A day later, the ones still not matched are asked again.
+        self.assertEqual(len(self.lookups), 5)
+        # A day later, the ones still not matched are asked again (longest waiting first), 3 at most.
+        self.accounts["acct-b"] = (200, {"name": "B", "jobs": []})
         meta = self.meta()
         for info in meta["known"].values():
             info["looked_up"] = (datetime.now() - timedelta(hours=25)).isoformat(timespec="seconds")
         meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
         jm.save_state({}, boards=meta)
         self.run_wk()
-        self.assertEqual(len(self.lookups), 9)
+        self.assertEqual(len(self.lookups), 8)
+
+    def test_no_answer_stops_the_lookups(self):
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row(f"Company {a}", "Software Engineer", url=wk_link(f"{i:010X}", a))
+                                               for i, a in enumerate(["acct-a", "acct-b"])])
+        for status in (503, None):  # Workable failing, or not answering in time
+            with self.subTest(status=status):
+                self.setUp()
+                self.pages[SIMPLIFY_URL] = json.dumps([simplify_row(f"Company {a}", "Software Engineer", url=wk_link(f"{i:010X}", a))
+                                                       for i, a in enumerate(["acct-a", "acct-b"])])
+                if status:
+                    self.accounts["acct-a"] = (status, "Service Unavailable")
+                else:
+                    real_get = jm.requests.get
+                    def get(url, *args, _real=real_get, **kwargs):
+                        if url == jm.workable.ACCOUNT_API.format("acct-a"):
+                            self.lookups.append(("acct-a", None))
+                            raise jm.requests.Timeout("read timed out")
+                        return _real(url, *args, **kwargs)
+                    self.patch(jm.requests, "get", get)
+                self.run_wk()
+                self.next_hour()
+                with self.assertLogs(jm.log, "WARNING"):
+                    self.run_wk()
+                self.assertEqual([a for a, _ in self.lookups], ["acct-a"])
+                self.next_hour()
+                self.run_wk()
+                self.assertEqual([a for a, _ in self.lookups], ["acct-a", "acct-b"])  # the next one: none blocks the others
 
     def test_a_page_that_is_not_the_job_list_stops_the_lookups(self):
         self.pages[SIMPLIFY_URL] = json.dumps([simplify_row(f"Company {a}", "Software Engineer", url=wk_link(f"{i:010X}", a))
@@ -3006,7 +3034,7 @@ class WorkableTests(MonitorTestCase):
         with self.assertLogs(jm.log, "WARNING"):
             self.run_wk()
         self.assertEqual([a for a, _ in self.lookups], ["acct-a"])
-        self.assertNotIn("looked_up", self.meta()["known"]["https://apply.workable.com/acct-a"])
+        self.assertNotIn("workable_name", self.meta()["known"]["https://apply.workable.com/acct-a"])
 
     def test_an_account_is_matched_by_name_when_one_company_in_the_file_has_it(self):
         # The list's job has closed and Workable refuses to be asked; one company in the file has the name.
@@ -3024,8 +3052,8 @@ class WorkableTests(MonitorTestCase):
         self.assertIn("(matched by name in Workable's file)", jm.boards_page_path().read_text())
         self.file = wk_file(*rows, ("F00000000F", "Software Engineer, Infrastructure", "Bask Health, Inc.", "US", 0))
         self.next_hour()
-        with self.assertLogs(jm.log, "WARNING"):
-            self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer, Infrastructure"]})
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer, Infrastructure"]})
+        self.assertEqual(len(self.lookups), 1)  # (refused: not asked again the same day)
 
     def test_the_name_workable_gives_the_account_is_used_first(self):
         self.accounts["bask-health-1"] = (200, {"name": "Bask Telehealth", "jobs": []})
@@ -3085,6 +3113,85 @@ class WorkableTests(MonitorTestCase):
         self.assertEqual(self.run_wk(), {"Bask Health": ["ML Engineer"]})
         info = self.meta()["known"][self.BASK_KEY]
         self.assertEqual((info["tenant"][0], "matched_by" in info), ("Bask Clinics", False))
+
+    def test_a_corrected_name_match_emails_only_recent_roles_and_stays_corrected(self):
+        wrong = [("A00000000A", "Data Analyst", "Bask Health", "US", 5)]                  # same name, another company
+        right = [("P00000000P", "Software Engineer, Platform", "Bask Clinics", "US", 60),  # the account's company
+                 ("B00000000B", "Data Analyst", "Bask Clinics", "US", 1)]
+        self.file = wk_file(*wrong, *right)
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()
+        self.assertEqual(self.meta()["known"][self.BASK_KEY]["tenant"][0], "Bask Health")  # by name: the wrong one
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60")),
+                                               simplify_row("Bask Health", "Data Analyst", url=wk_link("B00000000B"))])
+        self.run_wk()
+        right.append(("C00000000C", "ML Engineer", "Bask Clinics", "US", 0))
+        self.file = wk_file(*wrong, *right)
+        self.next_hour()
+        # Corrected by the code: only its recent roles are new (not the 60-day-old one).
+        self.assertEqual(self.run_wk(), {"Bask Health": ["ML Engineer"]})
+        self.assertEqual(self.meta()["known"][self.BASK_KEY]["tenant"][0], "Bask Clinics")
+        # The linked job closes; the wrong company posts a role (listed first in the file): it stays corrected.
+        self.file = wk_file(*wrong, ("W00000000W", "Software Engineer II", "Bask Health", "US", 0), *right[:1], *right[2:])
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {})
+        self.file = wk_file(*wrong, *right[:1], *right[2:], ("D00000000D", "Software Engineer", "Bask Clinics", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer"]})
+        info = self.meta()["known"][self.BASK_KEY]
+        self.assertEqual((info["tenant"][0], "matched_by" in info), ("Bask Clinics", False))
+
+    def test_recorded_postings_only_follow_a_company_that_left_the_file(self):
+        self.matched(("A00000000A", "Software Engineer", "Bask Health", "US", 5))
+        # A stray record of another company's posting (as an older version could leave), listed first in the file.
+        state = self.saved_state()
+        state[self.BASK].insert(0, {"url": "https://apply.workable.com/j/EEEEEEEEE1"})
+        jm.save_json(jm.STATE_PATH, state)
+        self.file = wk_file(("EEEEEEEEE1", "Data Analyst", "Other Co", "US", 5),  # (the list's job has closed)
+                            ("A00000000A", "Software Engineer", "Bask Health", "US", 5),
+                            ("F00000000F", "ML Engineer", "Bask Health", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["ML Engineer"]})
+        self.assertEqual(self.meta()["known"][self.BASK_KEY]["tenant"][0], "Bask Health")
+
+    def test_a_company_matched_by_a_code_is_taken_from_an_account_holding_it_by_name(self):
+        # bask-health-2 holds "Bask Health" by name; then a list links a job of it under bask-health-1.
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Software Engineer", url=wk_link("9999999999", "bask-health-2"))])
+        rows = [("A00000000A", "Software Engineer", "Bask Health", "US", 1)]
+        self.file = wk_file(*rows)
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()
+        known = self.meta()["known"]
+        self.assertEqual(known["https://apply.workable.com/bask-health-2"]["matched_by"], "name")
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "Software Engineer", url=wk_link("9999999999", "bask-health-2")),
+                                               simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60"))])
+        self.run_wk()
+        self.file = wk_file(*rows, ("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 0),
+                            ("E00000000E", "ML Engineer", "Bask Health", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["ML Engineer"]})  # once (through bask-health-1)
+        known = self.meta()["known"]
+        self.assertEqual((known[self.BASK_KEY]["tenant"][0], "matched_by" in known[self.BASK_KEY]), ("Bask Health", False))
+        self.assertNotIn("tenant", known["https://apply.workable.com/bask-health-2"])
+
+    def test_workables_own_answer_decides_the_name_match(self):
+        # Workable names the account differently: the lists' name isn't tried.
+        self.accounts["bask-health-1"] = (200, {"name": "Bask Telehealth", "jobs": []})
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1))
+        self.run_wk()
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {})
+        self.assertNotIn("tenant", self.meta()["known"][self.BASK_KEY])
+        # Workable lists jobs for it that the file lacks: a company in the file with its name isn't it.
+        self.setUp()
+        self.accounts["bask-health-1"] = (200, {"name": "Bask Health", "jobs": [{"shortcode": "Z00000000Z"}]})
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1))
+        self.run_wk()
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {})
+        self.assertNotIn("tenant", self.meta()["known"][self.BASK_KEY])
 
     def test_job_codes_change_only_while_unmatched_and_only_as_a_set(self):
         known = {}

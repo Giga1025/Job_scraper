@@ -173,13 +173,16 @@ a second, when it hasn't changed). The file names companies, not their accounts,
 account is matched to its company there:
 
 1. **By a job code**: one a list linked it to, or one Workable lists for the account when the
-   monitor asks it (once a day at most per account, 30 accounts a check, 2 seconds apart,
-   under the monitor's own name; it stops asking for that check as soon as Workable refuses).
-   It's matched again every hour through the jobs it lists, so a company that renames itself
-   in Workable stays checked.
-2. **Failing that, by name**: when exactly one company in the file has the account's name
-   (the name Workable gives it, else the lists'; "Inc", "LLC" and the like don't count). Two
-   companies, or two accounts, with one name: no match. A job code found later wins over it.
+   monitor asks it (each account at most once a day whatever the answer, 30 accounts a check,
+   2 seconds apart, under the monitor's own name; it stops asking for that check as soon as
+   Workable refuses, fails or doesn't answer). If the company renames itself in Workable, the
+   account follows it through the jobs it listed before.
+2. **Failing that, by name**: when exactly one company in the file has the account's name (the
+   name Workable gives it if Workable answered, else the lists'; "Inc", "LLC" and the like at the
+   end don't count). Not when two companies or two accounts share the name, when another account
+   holds that company by a job code, or when Workable listed jobs for the account that the file
+   doesn't have. A job code found later wins over a name match; if it points to another company,
+   that company's roles from the last few days are emailed, not its older ones.
 
 An account matched neither way isn't checked yet (its roles the lists carry still reach you);
 once it's matched, its first check catches up on everything it posted since it was added.

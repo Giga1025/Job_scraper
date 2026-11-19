@@ -15,8 +15,14 @@ class NameTests(unittest.TestCase):
                  "Scientific Systems Company": "scientific systems", "Co": "", "": "", None: ""}
         for name, key in cases.items():
             self.assertEqual(workable.name_key(name), key, name)
-        # Words that merely contain a legal word stay.
+        # Words that merely contain a legal word stay, and legal words count only at the end.
         self.assertEqual(workable.name_key("Incode Collective"), "incode collective")
+        self.assertEqual(workable.name_key("The Company Store"), "the company store")
+        self.assertNotEqual(workable.name_key("Co Labs"), workable.name_key("Labs"))
+        self.assertEqual(workable.name_key("Acme Co., Ltd."), "acme")
+        # Letters of other scripts are kept (not dropped, which would make different names equal).
+        self.assertEqual(workable.name_key("株式会社テスト"), "株式会社テスト")
+        self.assertNotEqual(workable.name_key("Ωmega Labs"), workable.name_key("mega Labs"))
 
     def test_only_a_name_one_company_has_matches(self):
         one, other = ("Bask Health", "https://bask.example"), ("Bask Health LLC", "https://bask.example.org")
