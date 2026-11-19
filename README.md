@@ -165,19 +165,31 @@ in a registry that only grows:
   companies that hire interns usually hire new grads too). These lists are only used to find
   companies; their postings aren't emailed.
 
-Companies on **Workable** join the same registry (as their Workable account). Workable
-refuses quick reading of each company's page ("429 Too Many Requests", for a day), but it
-publishes one file of every customer's published jobs, updated hourly, for exactly this use:
-the monitor reads it once per check (about a minute; "not modified", in under a second, when
-it hasn't changed). The file names companies, not their accounts, so an account is matched
-to its company there through a job a list linked it to (an exact job code, never a guessed
-name), and matched again every hour through the jobs it lists, so a company that renames
-itself in Workable stays checked. An account whose linked jobs have all closed waits until a
-list links a current one (any Workable link in the lists counts, whatever its date); roles
-the lists carry still reach you meanwhile, and once it's matched, its first check catches up
-on everything it posted since it was added. To add a Workable company yourself, link one of
-its current postings (`apply.workable.com/<account>/j/<code>`), not its board page.
-`boards.md` marks accounts not matched yet. Job links are emailed as Workable gives them.
+Companies on **Workable** join the same registry (as their Workable account); the code is in
+`boards/workable.py`. Workable refuses quick reading of each company's page ("429 Too Many
+Requests"), but it publishes one file of every customer's published jobs, updated hourly, for
+exactly this use: the monitor reads it once per check (about a minute; "not modified", in under
+a second, when it hasn't changed). The file names companies, not their accounts, so each
+account is matched to its company there:
+
+1. **By a job code**: one a list linked it to, or one Workable lists for the account when the
+   monitor asks it (each account at most once a day whatever the answer, 30 accounts a check,
+   2 seconds apart, under the monitor's own name; it stops asking for that check as soon as
+   Workable refuses, fails or doesn't answer). If the company renames itself in Workable, the
+   account follows it through the jobs it listed before.
+2. **Failing that, by name**: when exactly one company in the file has the account's name (the
+   name Workable gives it if Workable answered, else the lists'; "Inc", "LLC" and the like at the
+   end don't count). Not when two companies or two accounts share the name, when another account
+   holds that company by a job code, or when Workable listed jobs for the account that the file
+   doesn't have. A name match is undone when Workable's later answer contradicts it, and a job
+   code found later wins over it; when the account moves to another company that way, that
+   company's roles from the last few days are emailed, not its older ones.
+
+An account matched neither way isn't checked yet (its roles the lists carry still reach you);
+once it's matched, its first check catches up on everything it posted since it was added.
+To add a Workable company yourself, link one of its postings
+(`apply.workable.com/<account>/j/<code>`). `boards.md` marks accounts not matched yet, and
+those matched by name. Job links are emailed as Workable gives them.
 
 Companies on **SmartRecruiters** join it too, read through SmartRecruiters' public Posting API
 (no key needed; its robots.txt asks bots other than LinkedIn's to stay away, and you chose to
@@ -560,6 +572,8 @@ run that uses the `monitor-state` branch; after that it isn't used or updated.
 
 | File | Purpose |
 |---|---|
+| `job_monitor.py` | The monitor: reads the config, checks every entry, emails what's new |
+| `boards/` | Readers for company job sites, one file each (e.g. `boards/workable.py`); `job_monitor.py` needs this folder next to it |
 | `config_all.json` | Shipped settings; used by default (see step 2) |
 | `targets/*.json` | The companies and lists `config_all.json` checks (big tech, new-grad lists, startups) |
 | `config.json` | Your own settings; use it with `--config config.json` if `config_all.json` exists |
