@@ -30,13 +30,11 @@ import logging
 import tempfile
 import time
 import html as html_lib
-import io
 import xml.etree.ElementTree as ET
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from email.mime.text import MIMEText
-from email.utils import parsedate_to_datetime
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -56,6 +54,10 @@ except ImportError:
     print("  pip install requests beautifulsoup4 lxml playwright")
     print("  playwright install chromium")
     sys.exit(1)
+
+# Job-board readers live in the boards/ package, one module per job site.
+from boards import workable
+from boards.common import HEADERS, MONITOR_USER_AGENT, hours_since as _hours_since, posted_at as _posted_at
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -110,7 +112,7 @@ logging.basicConfig(
         logging.StreamHandler(),
     ],
 )
-log = logging.getLogger(__name__)
+log = logging.getLogger("job_monitor")
 
 # ---------------------------------------------------------------------------
 # Default config (written on first run)
@@ -479,15 +481,6 @@ def save_state(
 # ===================================================================
 # Fetching — static HTML
 # ===================================================================
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    )
-}
-
-
 def fetch_html(url: str, timeout: int = 30) -> str | None:
     try:
         resp = requests.get(url, headers=HEADERS, timeout=timeout)
@@ -909,22 +902,6 @@ def _get_json(url: str, params=None, timeout: int = 60):
 
 def _query_values(query: dict, *names: str) -> list[str]:
     return [v for name in names for v in query.get(name, []) if v]
-
-
-def _posted_at(value) -> str | None:
-    """When a posting went up, as a UTC time ("2026-11-12T18:57:29+00:00"), from an ISO time
-    (Greenhouse, Ashby) or milliseconds since 1970 (Lever); None if unknown."""
-    try:
-        if isinstance(value, (int, float)) and not isinstance(value, bool):
-            when = datetime.fromtimestamp(value / 1000, timezone.utc)
-        elif isinstance(value, str) and value.strip():
-            when = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
-        else:
-            return None
-    except (ValueError, OverflowError, OSError):
-        return None
-    when = when.replace(tzinfo=timezone.utc) if when.tzinfo is None else when.astimezone(timezone.utc)
-    return when.isoformat(timespec="seconds")
 
 
 def _posted_since(job: dict, since: datetime) -> bool:
@@ -1463,12 +1440,6 @@ BOARD_WORKERS = 8
 LEVER_WORKERS = 3            # Lever boards are read at most this many at a time,
 LEVER_DELAY_SECONDS = 0.5    # each reader pausing this long between boards
 BOARD_MISSING_RETRY_HOURS = 24  # a board that answers 404 is tried again a day later
-# Workable: asking each company's Workable page is answered "429 Too Many Requests" (for a
-# day), but Workable publishes one file of every customer's published jobs, updated hourly,
-# for exactly this kind of use: it is read once per boards check (If-Modified-Since: "not
-# modified" when unchanged). It names companies, not their Workable accounts, so an account is
-# matched to its company there through a job code the new-grad lists linked it to.
-WORKABLE_FEED_URL = "https://www.workable.com/boards/workable.xml"
 # SmartRecruiters: its public Posting API (api.smartrecruiters.com, no key needed) lists a
 # company's postings newest first, 100 per request. Its robots.txt asks bots other than
 # LinkedIn's to stay away; you chose to read it anyway, gently: one request per company per
@@ -1478,10 +1449,6 @@ SMARTRECRUITERS_WORKERS = 2
 SMARTRECRUITERS_DELAY_SECONDS = 1.0
 SMARTRECRUITERS_MAX_PAGES = 3          # more than one page only while a full page is all from the last few days
 SMARTRECRUITERS_RECENT_DAYS = 3
-MONITOR_USER_AGENT = "job-monitor/1.0 (personal job alerts; reads public job listings once an hour)"
-WORKABLE_CODES_KEPT = 20        # job codes remembered per Workable account, to match it in the file
-WORKABLE_MIN_ROWS_SHARE = 0.5   # a file with fewer rows than this share of the last one is skipped...
-WORKABLE_SMALL_ACCEPT_HOURS = 6 # ...unless it has stayed that small this long: then it's the new normal
 _GREENHOUSE_BOARD_HOST = re.compile(r"^(?:job-)?boards(?:\.[a-z]{2,3})?\.greenhouse\.io$")
 _BOARD_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
@@ -1508,7 +1475,7 @@ def board_api_url(job_url) -> tuple[str, str] | None:
         # jobs.smartrecruiters.com/<company id>/<posting id>-<title>: the id keeps its case and digits (AECOM2).
         platform, api, slug = "smartrecruiters", "https://api.smartrecruiters.com/v1/companies/{}/postings", (parts[:1] or [""])[0]
     elif host == "apply.workable.com" and (parts[:1] or [""])[0].lower() not in ("j", "api"):
-        # apply.workable.com/<account>/j/<code>: the board is the account (read through WORKABLE_FEED_URL).
+        # apply.workable.com/<account>/j/<code>: the board is the account (read through Workable's job file: boards/workable.py).
         platform, api, slug = "workable", "https://apply.workable.com/{}/", (parts[:1] or [""])[0].lower()
     else:
         return None
@@ -1564,7 +1531,7 @@ def grow_board_registry(known: dict, links, via: str, today: str) -> int:
             continue
         key = _url_key(board[1])
         if board[0] == "workable":
-            code = _workable_code(link)
+            code = workable.job_code(link)
             if code and code not in codes.setdefault(key, []):
                 codes[key].append(code)
         if key in known:
@@ -1577,21 +1544,8 @@ def grow_board_registry(known: dict, links, via: str, today: str) -> int:
         slug = urls[key].rstrip("/").split("/")[-2 if "greenhouse" in key else -1]
         name = names[key].most_common(1)[0][0] if names[key] else slug
         known[key] = {"url": urls[key], "name": name, "added": today, "via": via}
-    _add_workable_codes(known, codes)
+    workable.remember_codes(known, codes)
     return len(urls)
-
-
-def _add_workable_codes(known: dict, codes: dict):
-    """Remember these job codes ({key: [code, ...], most recently linked first}) for Workable
-    accounts already in the registry and not matched in Workable's file yet (a matched account
-    is matched again through the postings it lists). Only a different set of codes is a change."""
-    for key, found in codes.items():
-        info = known.get(key)
-        if info is None or info.get("tenant") or not found:
-            continue
-        kept = list(dict.fromkeys(found + list(info.get("codes") or [])))[:WORKABLE_CODES_KEPT]
-        if set(kept) != set(info.get("codes") or []):
-            info["codes"] = kept
 
 
 def read_company_list(item: dict, etags: dict) -> list[tuple] | None:
@@ -1692,110 +1646,17 @@ def fetch_boards(boards: list[dict], etags: dict) -> dict[str, tuple]:
     return results
 
 
-def _workable_code(link) -> str | None:
-    """The job code (10 hex digits, upper case) in a Workable posting link, else None."""
-    match = re.search(r"apply\.workable\.com/(?:[^/?#]+/)?j/([0-9A-Fa-f]{10})(?=[/?#]|$)", str(link or ""))
-    return match.group(1).upper() if match else None
-
-
-def fetch_workable_feed(boards: list[dict], meta: dict, recorded: dict | None = None) -> dict[str, tuple]:
-    """Read WORKABLE_FEED_URL once for these Workable boards. Returns {url: (status, jobs, None)}:
-    "ok" with the postings of the board's company, "unchanged" (304) or "failed". A board is
-    matched to its company in the file (meta["known"][key]["tenant"]) through a job code: one
-    the lists linked it to, or one of its own postings recorded at earlier checks (recorded:
-    {url: [code, ...]}), every time, so a company that renames itself or changes its website
-    in Workable stays matched. Boards not matched yet are left out (tried again next time)."""
-    state = meta.setdefault("workable", {})
-    headers = {**HEADERS, "Accept-Encoding": "gzip"}
-    if state.get("last_modified"):
-        headers["If-Modified-Since"] = state["last_modified"]
-    every = lambda status: {b["url"]: (status, None, None) for b in boards}
+def read_workable(accounts: list[dict], meta: dict, state: dict) -> dict[str, tuple]:
+    """The Workable accounts' postings ({url: (status, jobs, None)}, see boards/workable.py),
+    after asking Workable about the accounts not matched in its job file yet."""
     try:
-        resp = requests.get(WORKABLE_FEED_URL, headers=headers, stream=True, timeout=(30, 300))
-    except Exception as exc:
-        log.warning(f"  [workable] Could not read Workable's job file: {exc.__class__.__name__}")
-        return every("failed")
-    if resp.status_code == 304:
-        return every("unchanged")
-    if resp.status_code != 200:
-        log.warning(f"  [workable] Workable's job file answered {resp.status_code}"
-                    + (f" (retry after {resp.headers.get('Retry-After')} s)" if resp.headers.get("Retry-After") else ""))
-        return every("failed")
-    by_code = {code: b["_board_key"] for b in boards
-               for code in list((meta["known"].get(b["_board_key"]) or {}).get("codes") or []) + list((recorded or {}).get(b["url"]) or [])}
-    rows: dict[tuple, list] = {}
-    learned: dict[str, tuple] = {}
-    count = 0
-    try:
-        raw = getattr(resp, "raw", None)
-        if raw is not None and hasattr(raw, "read"):
-            raw.decode_content = True
-            source = raw
-        else:
-            source = io.BytesIO(resp.content)
-        for _, el in ET.iterparse(source):
-            if el.tag != "job":
-                continue
-            count += 1
-            field = lambda name: (el.findtext(name) or "").strip()
-            tenant = (field("company"), field("website"))
-            code = field("referencenumber").upper()
-            rows.setdefault(tenant, []).append((field("title"), field("url"), code, field("date"),
-                                                field("city"), field("state"), field("country")))
-            if code in by_code:
-                learned.setdefault(by_code[code], tenant)
-            el.clear()
-    except Exception as exc:
-        log.warning(f"  [workable] Workable's job file was cut off or unreadable ({exc.__class__.__name__}); next check retries.")
-        return every("failed")
-    if count < WORKABLE_MIN_ROWS_SHARE * (state.get("rows") or 0):
-        since = state.setdefault("small_since", datetime.now().isoformat(timespec="seconds"))
-        if _hours_since(since) < WORKABLE_SMALL_ACCEPT_HOURS:
-            log.warning(f"  [workable] Workable's job file has {count} jobs (last time {state.get('rows')}): skipped "
-                        f"for now; if it stays this small for {WORKABLE_SMALL_ACCEPT_HOURS} hours, it's the new normal.")
-            return every("failed")
-        log.warning(f"  [workable] Workable's job file has had about {count} jobs for {WORKABLE_SMALL_ACCEPT_HOURS} hours: "
-                    f"taking that as the new normal.")
-    state.pop("small_since", None)
-    state.update(last_modified=resp.headers.get("Last-Modified") or resp.headers.get("last-modified"), rows=count)
-    results = {}
-    for b in boards:
-        info = meta["known"].get(b["_board_key"])
-        if info is None:
-            continue
-        if b["_board_key"] in learned and list(learned[b["_board_key"]]) != info.get("tenant"):
-            if info.get("tenant"):
-                log.info(f"  [workable] {info.get('name')} is now {learned[b['_board_key']][0]!r} in Workable's file.")
-            info["tenant"] = list(learned[b["_board_key"]])
-        if info.get("tenant"):
-            results[b["url"]] = ("ok", _workable_jobs(rows.get(tuple(info["tenant"]), [])), None)
-    log.info(f"  [workable] Job file: {count} jobs; {len(results)} of {len(boards)} Workable companies matched in it.")
-    return results
-
-
-def _workable_jobs(rows: list[tuple]) -> list[dict]:
-    """One posting per job code from the file's rows (one row per location): the earliest date, all locations."""
-    jobs: dict[str, dict] = {}
-    for title, url, code, date, city, region, country in rows:
-        if not title or not url:
-            continue
-        job = jobs.setdefault(code or url, {"title": title[:200], "url": url, "locations": [], "countries": [], "dates": []})
-        place = ", ".join(p for p in (city, region, country) if p)
-        if place and place not in job["locations"]:
-            job["locations"].append(place)
-        if country and country not in job["countries"]:
-            job["countries"].append(country)
-        try:
-            job["dates"].append(parsedate_to_datetime(date))
-        except (TypeError, ValueError, IndexError):
-            pass
-    out = []
-    for job in jobs.values():
-        dated = [d for d in job["dates"] if d is not None]
-        posted = _posted_at(min(dated).isoformat()) if dated else None
-        out.append({"title": job["title"], "url": job["url"], "location": "; ".join(job["locations"]),
-                    "countries": job["countries"], **({"posted": posted} if posted else {})})
-    return _dedupe_jobs(out)
+        workable.look_up_accounts(accounts, meta["known"])
+    except Exception:
+        log.exception("  [workable] Could not ask Workable about the companies not matched yet")
+    recorded = {b["url"]: [c for c in (workable.job_code(r.get("url")) for r in (state.get(b["url"]) or [])[:workable.CODES_KEPT]
+                                     if isinstance(r, dict)) if c] for b in accounts}
+    return {url: (status, _dedupe_jobs(jobs) if jobs else jobs, etag)
+            for url, (status, jobs, etag) in workable.read_feed(accounts, meta, recorded).items()}
 
 
 def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: bool) -> list[dict]:
@@ -1882,7 +1743,7 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
         "Checked about every hour for tech roles. A company is added the first time one of the lists "
         "the monitor reads links to its Greenhouse, Ashby, Lever, Workable or SmartRecruiters board, and stays from then on. To add "
         "one yourself, add it under `companies` in targets/startups.json (for a Workable company, with a link to "
-        "one of its current postings: it is matched in Workable's job file through that posting).",
+        "one of its postings: it is matched in Workable's job file through its job codes or, failing that, its name).",
         "",
         f"{len(rows)} boards: {counts['greenhouse']} Greenhouse, {counts['ashby']} Ashby, {counts['lever']} Lever, "
         f"{counts['workable']} Workable" + (f" ({waiting} not matched in Workable's file yet, so not checked yet)" if waiting else "")
@@ -1895,7 +1756,9 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
     for info in rows:
         flag = " (not found lately)" if _url_key(info["url"]) in missing else ""
         if _board_platform(info["url"]) == "workable" and not info.get("tenant"):
-            flag = " (not matched yet: waiting for a list to link one of its current jobs)"
+            flag = " (not matched in Workable's file yet: no current job of it found there)"
+        elif _board_platform(info["url"]) == "workable" and info.get("matched_by") == "name":
+            flag = " (matched by name in Workable's file)"
         lines.append(f"| {_md_escape(info.get('name'))} | [{_board_platform(info['url']).title()}]({_board_page(info['url'])}){flag} "
                      f"| {_md_escape(info.get('added'))} | {_md_escape(info.get('via'))} |")
     return "\n".join(lines) + "\n"
@@ -3015,13 +2878,10 @@ def run(config_override: str | None = None) -> bool:
     # (their first check, which records what they list and emails only what's recent).
     to_fetch = [b for b in board_targets if boards_on and (boards_now or b["url"] not in state or b["_catch_up_since"])
                 and _hours_since(board_meta["missing"].get(b["url"])) >= BOARD_MISSING_RETRY_HOURS]
-    workable = [b for b in to_fetch if _board_platform(b["url"]) == "workable"]
+    workable_due = any(_board_platform(b["url"]) == "workable" for b in to_fetch)
     to_fetch = [b for b in to_fetch if _board_platform(b["url"]) != "workable"]
-    if workable and boards_now:  # (Workable's file changes hourly: new accounts wait for the next check)
-        accounts = [b for b in board_targets if _board_platform(b["url"]) == "workable"]
-        recorded = {b["url"]: [c for c in (_workable_code(r.get("url")) for r in (state.get(b["url"]) or [])[:WORKABLE_CODES_KEPT]
-                                         if isinstance(r, dict)) if c] for b in accounts}
-        fetched.update(fetch_workable_feed(accounts, board_meta, recorded))
+    if workable_due and boards_now:  # (Workable's file changes hourly: new accounts wait for the next check)
+        fetched.update(read_workable([b for b in board_targets if _board_platform(b["url"]) == "workable"], board_meta, state))
     if to_fetch:
         log.info(f"Checking {len(to_fetch)} of {len(board_targets)} company job boards"
                  f"{'' if boards_now else ' (new ones, or catching up)'}...")
@@ -3125,10 +2985,10 @@ def run(config_override: str | None = None) -> bool:
     # Job codes of Workable accounts not matched yet, from every Workable link the lists hold now.
     found: dict[str, list] = {}
     for link in _LIST_WORKABLE_LINKS:
-        board, code = board_api_url(link), _workable_code(link)
+        board, code = board_api_url(link), workable.job_code(link)
         if board and code and code not in found.setdefault(_url_key(board[1]), []):
             found[_url_key(board[1])].append(code)
-    _add_workable_codes(board_meta["known"], found)
+    workable.remember_codes(board_meta["known"], found)
     if fetched or boards_now:
         _finish_board_check(board_meta, fetched, board_urls, full=boards_now)
     if board_entries:
@@ -3468,14 +3328,6 @@ def _email_every_hours(config: dict) -> float:
         pass
     log.warning(f"email_every_hours is {value!r}, not a number of hours; emailing every run.")
     return 0.0
-
-
-def _hours_since(stamp) -> float:
-    try:
-        hours = (datetime.now() - datetime.fromisoformat(str(stamp))).total_seconds() / 3600
-    except (TypeError, ValueError):
-        return float("inf")  # never emailed
-    return hours if hours >= 0 else float("inf")  # a stamp in the future (clock change): don't wait on it
 
 
 def _digest_hours(config: dict) -> float:
