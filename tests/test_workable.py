@@ -26,6 +26,9 @@ class NameTests(unittest.TestCase):
         # A vowel sign or voicing mark is part of its letter there, not an accent to drop.
         for one, other in (("राम", "रीम"), ("กี", "ก"), ("ガ", "カ"), ("தமிழ்", "தமிழ")):
             self.assertNotEqual(workable.name_key(one), workable.name_key(other), (one, other))
+        # A spacing accent or an emoji style mark after punctuation isn't part of a word.
+        self.assertEqual(workable.name_key("Kohl´s"), workable.name_key("Kohl's"))
+        self.assertEqual(workable.name_key("Acme®️"), workable.name_key("Acme"))
 
     def test_only_a_name_one_company_has_matches(self):
         one, other = ("Bask Health", "https://bask.example"), ("Bask Health LLC", "https://bask.example.org")

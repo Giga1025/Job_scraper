@@ -59,7 +59,9 @@ def account_of(board_url) -> str:
 
 
 def _matched_by_code(info: dict) -> bool:
-    return bool(info.get("tenant")) and info.get("matched_by") != "name"
+    """Matched through a job code, and its company still in the file (one that has left it, with no
+    open job there, takes codes again: if it comes back renamed, a code places it)."""
+    return bool(info.get("tenant")) and info.get("matched_by") != "name" and not info.get("tenant_gone")
 
 
 def remember_codes(known: dict, codes: dict):
@@ -135,7 +137,7 @@ def name_key(name) -> str:
     out, base = [], ""
     for c in unicodedata.normalize("NFKD", str(name or "")):
         if unicodedata.category(c).startswith("M"):  # a mark on the letter before it
-            if not base.startswith(("LATIN", "GREEK", "CYRILLIC")):
+            if base and not base.startswith(("LATIN", "GREEK", "CYRILLIC")):
                 out.append(c)
             continue
         base = unicodedata.name(c, "") if c.isalnum() else ""
@@ -184,7 +186,10 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None, move
     # Codes the lists linked or Workable listed win over codes of recorded postings (which, after
     # a wrong name match, are the wrong company's).
     linked = {code: b["_board_key"] for b in boards for code in (known.get(b["_board_key"]) or {}).get("codes") or []}
-    own = {code: b["_board_key"] for b in boards for code in (recorded or {}).get(b["url"]) or []}
+    own: dict[str, list] = {}  # (a code two accounts recorded is both's)
+    for b in boards:
+        for code in (recorded or {}).get(b["url"]) or []:
+            own.setdefault(code, []).append(b["_board_key"])
     rows: dict[tuple, list] = {}
     learned_linked: dict[str, tuple] = {}
     learned_own: dict[str, tuple] = {}
@@ -208,9 +213,9 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None, move
                                                 field("city"), field("state"), field("country")))
             if code in linked:
                 learned_linked.setdefault(linked[code], tenant)
-            if code in own:
-                learned_own.setdefault(own[code], tenant)
-                own_tenants.setdefault(own[code], set()).add(tenant)
+            for key in own.get(code, ()):
+                learned_own.setdefault(key, tenant)
+                own_tenants.setdefault(key, set()).add(tenant)
             el.clear()
     except Exception as exc:
         log.warning(f"  [workable] Workable's job file was cut off or unreadable ({exc.__class__.__name__}); next check retries.")
@@ -226,7 +231,9 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None, move
     state.pop("small_since", None)
     state.update(last_modified=resp.headers.get("Last-Modified") or resp.headers.get("last-modified"), rows=count)
 
-    before = {b["_board_key"]: (known.get(b["_board_key"]) or {}).get("tenant") for b in boards}
+    # (A name match undone, then made again with the same company, isn't a move.)
+    before = {b["_board_key"]: (known.get(b["_board_key"]) or {}).get("tenant") or (known.get(b["_board_key"]) or {}).get("unmatched_from")
+              for b in boards}
     renamed = set()
     for b in boards:  # 1. through a job code
         info = known.get(b["_board_key"])
@@ -238,13 +245,19 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None, move
         elif info.get("tenant") and tuple(info["tenant"]) not in rows:
             # Its company is gone from the file: renamed? Followed through the account's own postings.
             tenant = learned_own.get(b["_board_key"])
-        if tenant is None or list(tenant) == info.get("tenant"):
-            continue
-        if tenant in own_tenants.get(b["_board_key"], ()):
-            renamed.add(b["_board_key"])  # (its recorded postings are there: the same company, under a new name or website)
-        if info.get("tenant"):
-            log.info(f"  [workable] {info.get('name')} is now {tenant[0]!r} in Workable's file.")
-        info["tenant"] = list(tenant)
+        if tenant is not None and list(tenant) != info.get("tenant"):
+            if tenant in own_tenants.get(b["_board_key"], ()):
+                renamed.add(b["_board_key"])  # (its recorded postings are there: the same company, under a new name or website)
+                info.pop("workable_name", None)  # (Workable's answer, if any, was about the old name: asked again)
+                info.pop("workable_jobs", None)
+            if info.get("tenant"):
+                log.info(f"  [workable] {info.get('name')} is now {tenant[0]!r} in Workable's file.")
+            info["tenant"] = list(tenant)
+            info.pop("unmatched_from", None)
+        if info.get("tenant") and tuple(info["tenant"]) not in rows:
+            info["tenant_gone"] = True  # (no open job in the file now: see _matched_by_code)
+        else:
+            info.pop("tenant_gone", None)
     held = {tuple(i["tenant"]) for i in known.values() if isinstance(i, dict) and i.get("tenant") and i.get("matched_by") != "name"}
     for b in boards:  # A name match is undone when another account holds the company by a job code, or Workable's
         info = known.get(b["_board_key"])  # answer contradicts it (another name, or jobs the file lacks).
@@ -256,8 +269,9 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None, move
                if info.get("workable_name") and name_key(info["workable_name"]) != name_key(info["tenant"][0]) else None)
         if why:
             log.info(f"  [workable] {info.get('name')}: not matched by name to {info['tenant'][0]!r} any more: {why}.")
-            info.pop("tenant", None)
+            info["unmatched_from"] = info.pop("tenant")
             info.pop("matched_by", None)
+            info.pop("tenant_gone", None)
 
     by_name: dict[str, list] = {}  # 2. by name
     for tenant in rows:
@@ -275,6 +289,7 @@ def read_feed(boards: list[dict], meta: dict, recorded: dict | None = None, move
     for tenant, keys in wanted.items():
         if len(keys) == 1:  # (two accounts with the name: neither)
             known[keys[0]].update(tenant=list(tenant), matched_by="name")
+            known[keys[0]].pop("unmatched_from", None)
             log.info(f"  [workable] {known[keys[0]].get('name')}: matched by name to {tenant[0]!r} ({tenant[1]}) in Workable's file.")
     if moved is not None:
         moved.update(b["url"] for b in boards if b["_board_key"] not in renamed and (known.get(b["_board_key"]) or {}).get("tenant")

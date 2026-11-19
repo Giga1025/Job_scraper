@@ -3234,6 +3234,85 @@ class WorkableTests(MonitorTestCase):
         self.run_wk()
         self.assertNotIn("tenant", self.meta()["known"][self.BASK_KEY])
 
+    def test_an_account_that_lost_its_name_match_doesnt_stop_the_holder_following_a_rename(self):
+        # bask-health-2 holds "Bask Health" by name and records its roles; then bask-health-1 gets it by a code.
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "QA Analyst", url=wk_link("9999999999", "bask-health-2"))])
+        rows = [("A00000000A", "Data Analyst", "Bask Health", "US", 5), ("B00000000B", "Data Analyst", "Bask Health", "US", 5)]
+        self.file = wk_file(*rows)
+        self.run_wk()
+        self.next_hour()
+        self.run_wk()
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Bask Health", "QA Analyst", url=wk_link("9999999999", "bask-health-2")),
+                                               simplify_row("Bask Health", "Backend Engineer, New Grad", url=wk_link("472CF47F60"))])
+        self.run_wk()
+        self.file = wk_file(*rows, ("472CF47F60", "Backend Engineer, New Grad", "Bask Health", "US", 0))
+        self.next_hour()
+        self.run_wk()
+        known = self.meta()["known"]
+        self.assertEqual((known[self.BASK_KEY]["tenant"][0], "tenant" in known["https://apply.workable.com/bask-health-2"]),
+                         ("Bask Health", False))
+        # The linked job closes, and the company renames itself: bask-health-1 follows it.
+        self.file = wk_file(*[(c, t, "Bask", n, d) for c, t, _, n, d in rows], ("F00000000F", "ML Engineer", "Bask", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["ML Engineer"]})
+        self.assertEqual(self.meta()["known"][self.BASK_KEY]["tenant"], ["Bask", "https://bask.example"])
+
+    def test_a_name_match_undone_and_made_again_with_the_same_company_isnt_a_move(self):
+        # (catch_up_days 0: a move would record the new role as seen, and it would never be emailed)
+        self.accounts["bask-health-1"] = (429, "Too Many Requests")
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1))
+        self.run_wk(catch_up_days=0)
+        self.next_hour()
+        with self.assertLogs(jm.log, "WARNING"):
+            self.run_wk(catch_up_days=0)
+        # Workable lists a new job the hourly file doesn't have yet: the name match is undone...
+        self.accounts["bask-health-1"] = (200, {"name": "Bask Health", "jobs": [{"shortcode": "F00000000F"}]})
+        meta = self.meta()
+        meta["known"][self.BASK_KEY]["looked_up"] = (datetime.now() - timedelta(hours=25)).isoformat(timespec="seconds")
+        meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+        meta["workable"].pop("last_modified", None)
+        jm.save_state({}, boards=meta)
+        self.assertEqual(self.run_wk(catch_up_days=0), {})
+        self.assertNotIn("tenant", self.meta()["known"][self.BASK_KEY])
+        # ...and an hour later the file has it: the same company again, through the code. The new role comes.
+        self.file = wk_file(("F00000000F", "ML Engineer", "Bask Health", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(catch_up_days=0), {"Bask Health": ["ML Engineer"]})
+
+    def test_a_company_with_no_open_job_that_comes_back_renamed_is_found_again(self):
+        self.matched(("A00000000A", "Data Analyst", "Bask Health", "US", 5))
+        others = [("E0000000E1", "Nurse", "Other Co", "US", 5), ("E0000000E2", "Nurse", "Other Co", "US", 5)]
+        self.file = wk_file(*others)  # all its jobs closed
+        self.next_hour()
+        self.run_wk()
+        self.assertTrue(self.meta()["known"][self.BASK_KEY].get("tenant_gone"))
+        # It comes back under a new name: Workable, asked (once a day), lists its new job; matched through it.
+        self.accounts["bask-health-1"] = (200, {"name": "Bask", "jobs": [{"shortcode": "F00000000F"}]})
+        self.file = wk_file(*others, ("P0000000AA", "Software Engineer, Platform", "Bask", "US", 40),
+                            ("F00000000F", "Software Engineer II", "Bask", "US", 0))
+        meta = self.meta()
+        meta["known"][self.BASK_KEY]["looked_up"] = (datetime.now() - timedelta(hours=25)).isoformat(timespec="seconds")
+        meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+        jm.save_state({}, boards=meta)
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer II"]})  # (its recent roles only)
+        info = self.meta()["known"][self.BASK_KEY]
+        self.assertEqual((info["tenant"][0], "tenant_gone" in info), ("Bask", False))
+
+    def test_a_rename_isnt_undone_by_workables_answer_from_before_it(self):
+        self.accounts["bask-health-1"] = (200, {"name": "Bask Health", "jobs": []})
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask Health", "US", 1))
+        self.run_wk()
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer"]})  # matched by Workable's name for it
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask", "US", 1), ("F00000000F", "ML Engineer", "Bask", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["ML Engineer"]})
+        self.file = wk_file(("A00000000A", "Software Engineer", "Bask", "US", 1), ("F00000000F", "ML Engineer", "Bask", "US", 0),
+                            ("G00000000G", "Software Engineer II", "Bask", "US", 0))
+        self.next_hour()
+        self.assertEqual(self.run_wk(), {"Bask Health": ["Software Engineer II"]})
+        self.assertEqual(self.meta()["known"][self.BASK_KEY]["tenant"][0], "Bask")
+
     def test_recorded_postings_only_follow_a_company_that_left_the_file(self):
         self.matched(("A00000000A", "Software Engineer", "Bask Health", "US", 5))
         # A stray record of another company's posting (as an older version could leave), listed first in the file.
