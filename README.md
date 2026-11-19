@@ -573,6 +573,7 @@ run that uses the `monitor-state` branch; after that it isn't used or updated.
 | File | Purpose |
 |---|---|
 | `job_monitor.py` | The monitor: reads the config, checks every entry, emails what's new |
+| `TODO.md` | What's planned next, and the goal: as many companies as possible, from their own job boards |
 | `boards/` | Readers for company job sites, one file each (e.g. `boards/workable.py`); `job_monitor.py` needs this folder next to it |
 | `config_all.json` | Shipped settings; used by default (see step 2) |
 | `targets/*.json` | The companies and lists `config_all.json` checks (big tech, new-grad lists, startups) |
