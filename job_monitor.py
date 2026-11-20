@@ -56,7 +56,7 @@ except ImportError:
     sys.exit(1)
 
 # Job-board readers live in the boards/ package, one module per job site.
-from boards import workable, workday
+from boards import oracle, workable, workday
 from boards.common import HEADERS, MONITOR_USER_AGENT, hours_since as _hours_since, posted_at as _posted_at
 
 # ---------------------------------------------------------------------------
@@ -1007,14 +1007,17 @@ def fetch_smartrecruiters_jobs(url: str, get_json=None) -> list[dict] | None:
     return _dedupe_jobs(jobs)
 
 
-def fetch_oracle_hcm_jobs(url: str) -> list[dict] | None:
-    """https://<host>.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?...finder=findReqs;siteNumber=<site>,..."""
+def fetch_oracle_hcm_jobs(url: str, get_json=None) -> list[dict] | None:
+    """https://<host>.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?...finder=findReqs;siteNumber=<site>,...
+    (your entries on Oracle, and the companies' Oracle sites: boards/oracle.py). A posting's countries are those of
+    its main place and its other places, so one in India and the US isn't left out as outside the US."""
+    get_json = get_json or (lambda u, params=None: _get_json(u, params))
     parsed = urlparse(url)
     site = re.search(r"siteNumber=([^,;&]+)", parsed.query)
     if not site:
         log.warning(f"  [oracle] No siteNumber in the finder of {url}")
         return None
-    data = _get_json(url)
+    data = get_json(url)
     items = data.get("items") if isinstance(data, dict) else None
     if not isinstance(items, list):
         return None
@@ -1023,12 +1026,19 @@ def fetch_oracle_hcm_jobs(url: str) -> list[dict] | None:
         for req in (item.get("requisitionList") or []) if isinstance(item, dict) else []:
             if not isinstance(req, dict) or not req.get("Title") or not req.get("Id"):
                 continue
-            jobs.append({
+            others = [o for o in req.get("secondaryLocations") or [] if isinstance(o, dict)]
+            countries = [_to_text(c) for c in [req.get("PrimaryLocationCountry")] + [o.get("CountryCode") for o in others]
+                         if _to_text(c)]
+            job = {
                 "title": _to_text(req["Title"])[:200],
                 "url": f"https://{parsed.netloc}/hcmUI/CandidateExperience/en/sites/{site.group(1)}/job/{_to_text(req['Id'])}",
-                "location": _to_text(req.get("PrimaryLocation")),
-                "countries": [_to_text(req.get("PrimaryLocationCountry"))] if req.get("PrimaryLocationCountry") else [],
-            })
+                "location": "; ".join(dict.fromkeys(p for p in [_to_text(req.get("PrimaryLocation"))]
+                                                    + [_to_text(o.get("Name")) for o in others] if p)),
+                "countries": list(dict.fromkeys(countries)),
+            }
+            if _posted_at(req.get("PostedDate")):
+                job["posted"] = _posted_at(req.get("PostedDate"))
+            jobs.append(job)
     return _dedupe_jobs(jobs)
 
 
@@ -1331,8 +1341,9 @@ _UUID_RE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 def job_keys(url: str) -> set[tuple]:
     """Numbers that identify a job across different links to it: the Greenhouse job id
     (also in gh_jid=), an Ashby/Lever UUID, a Workday requisition (the company's, on any of
-    its sites and either form of their address; "-1" suffix dropped), or otherwise a long
-    number in the path on the same site."""
+    its sites and either form of their address; "-1" suffix dropped), an Oracle requisition
+    (its host's, whatever the language or site in the link), or otherwise a long number in
+    the path on the same site."""
     parsed = urlparse(str(url or "").strip().lower())
     host = parsed.netloc.removeprefix("www.")
     query = parse_qs(parsed.query)
@@ -1354,6 +1365,8 @@ def job_keys(url: str) -> set[tuple]:
             keys.add(("uuid", parts[1]))
     else:
         keys |= {("uuid", u) for u in _UUID_RE.findall(parsed.path)}
+    if oracle.job_number(url):  # (host and requisition number, whatever the language or site in the link; GS and Uber's own links too)
+        keys.add(("oracle",) + oracle.job_number(url))
     if "myworkday" in host:
         token = parsed.path.rstrip("/").rsplit("_", 1)[-1]
         trimmed = re.fullmatch(r"(.*\d.*?)-\d{1,2}", token)
@@ -1392,8 +1405,8 @@ _BOARD_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
 def board_api_url(job_url) -> tuple[str, str] | None:
     """(platform, the board's job-board API URL) for a posting link on Greenhouse, Ashby, Lever,
-    SmartRecruiters or Workable (or the site's address, on Workday), else None (also for a link
-    that isn't a valid URL)."""
+    SmartRecruiters, Workable or Oracle (or the site's address, on Workday), else None (also for a
+    link that isn't a valid URL)."""
     try:
         parsed = urlparse(str(job_url or "").strip())
     except ValueError:  # e.g. "https://[x": one bad row in a list mustn't stop the run
@@ -1418,6 +1431,9 @@ def board_api_url(job_url) -> tuple[str, str] | None:
     elif host.endswith((".myworkdayjobs.com", ".myworkdaysite.com")):
         site = workday.site_of(job_url)  # (the company's Workday site: host and site path, any locale; boards/workday.py)
         return ("workday", site) if site else None
+    elif host.endswith(".oraclecloud.com"):
+        site = oracle.site_of(job_url)  # (the company's Oracle site: host and site number; boards/oracle.py)
+        return ("oracle", oracle.api_url(*site)) if site else None
     else:
         return None
     return (platform, api.format(slug)) if _BOARD_SLUG.match(slug) else None
@@ -1427,6 +1443,17 @@ def _url_key(url) -> str:
     """A URL without its query, for comparing board URLs: "https://host/path", lower-case."""
     parsed = urlparse(str(url or "").strip().lower())
     return f"{parsed.scheme}://{parsed.netloc}{parsed.path.rstrip('/')}"
+
+
+def _registry_key(board_url: str) -> str:
+    """A board's key in the registry: a Workday or Oracle site's site_key (one host can have
+    several sites, and a Workday site two forms of address), else its _url_key."""
+    platform = _board_platform(board_url)
+    if platform == "workday":
+        return workday.site_key(board_url)
+    if platform == "oracle":
+        return oracle.site_key(board_url)
+    return _url_key(board_url)
 
 
 def _board_page(api_url: str) -> str:
@@ -1439,17 +1466,21 @@ def _board_page(api_url: str) -> str:
         return f"https://jobs.ashbyhq.com/{parts[-1]}"
     if host == "apply.workable.com" or _board_platform(api_url) == "workday":
         return api_url
+    if _board_platform(api_url) == "oracle":
+        return oracle.page_url(api_url)
     if host == "api.smartrecruiters.com":
         return f"https://careers.smartrecruiters.com/{parts[-2]}"
     return f"https://{'jobs.eu.lever.co' if host == 'api.eu.lever.co' else 'jobs.lever.co'}/{parts[-1]}"
 
 
 def _board_platform(api_url: str) -> str:
-    """"greenhouse", "ashby", "lever", "workable", "smartrecruiters" or "workday" for a board's URL; "unknown" for anything
-    else (e.g. a registry entry from a newer version), which plan_boards then leaves out."""
+    """"greenhouse", "ashby", "lever", "workable", "smartrecruiters", "workday" or "oracle" for a board's URL; "unknown"
+    for anything else (e.g. a registry entry from a newer version), which plan_boards then leaves out."""
     host = urlparse(api_url).netloc
     if host.endswith((".myworkdayjobs.com", ".myworkdaysite.com")):
         return "workday"
+    if oracle.is_api_url(api_url):
+        return "oracle"
     if host.endswith("greenhouse.io"):
         return "greenhouse"
     if host.endswith("ashbyhq.com"):
@@ -1472,7 +1503,7 @@ def grow_board_registry(known: dict, links, via: str, today: str) -> int:
         board = board_api_url(link)
         if not board:
             continue
-        key = workday.site_key(board[1]) if board[0] == "workday" else _url_key(board[1])
+        key = _registry_key(board[1])
         if board[0] == "workable":
             code = workable.job_code(link)
             if code and code not in codes.setdefault(key, []):
@@ -1485,6 +1516,7 @@ def grow_board_registry(known: dict, links, via: str, today: str) -> int:
             names[key][str(company).strip()] += 1
     for key in sorted(urls):
         slug = workday.tenant_of(urls[key]) if _board_platform(urls[key]) == "workday" else \
+            urlparse(urls[key]).netloc.split(".")[0] if _board_platform(urls[key]) == "oracle" else \
             urls[key].rstrip("/").split("/")[-2 if "greenhouse" in key else -1]
         name = names[key].most_common(1)[0][0] if names[key] else slug
         known[key] = {"url": urls[key], "name": name, "added": today, "via": via}
@@ -1648,12 +1680,17 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
 
     platforms = set(entry.get("platforms") or ("greenhouse", "ashby", "lever"))
     skip = {_url_key(t.get("url")) for t in targets if t.get("url")}
-    # (and a Workday site one of your entries searches, like NVIDIA's new-grad search)
+    # (and a Workday site one of your entries searches, like NVIDIA's new-grad search, or an Oracle site one reads, like JPMorgan's)
     skip |= {workday.site_key(t["url"]) for t in targets if _is_workday_entry(t)}
+    skip |= {oracle.site_key(t["url"]) for t in targets if t.get("url") and oracle.site_key(t["url"])}
     # (and a company's Workday site when one of your entries, paused or not, has the company's name, like
     # PayPal's, on its Eightfold page: the same jobs under other numbers, so each would be emailed twice)
     yours = {_entry_key(t.get("name")) for t in targets
              if t.get("url") and t.get("mode") != "feed" and not _is_workday_entry(t)} - {""}
+    # (and the same for a company's Oracle site, unless each of your entries with its name reads links the
+    # Oracle site's can be matched with, like your Goldman Sachs and Uber entries: see oracle.FRONT_ENDS)
+    yours_unmatched = {_entry_key(t.get("name")) for t in targets
+                       if t.get("url") and t.get("mode") != "feed" and not oracle.knows_links_of(t["url"])} - {""}
     skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
     tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
     skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
@@ -1687,7 +1724,8 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
             for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
             if key not in skip and _board_platform(info["url"]) in platforms
             and _entry_key(info.get("name")) not in skip_companies
-            and not (_board_platform(info["url"]) == "workday" and _entry_key(info.get("name")) in yours)]
+            and not (_board_platform(info["url"]) == "workday" and _entry_key(info.get("name")) in yours)
+            and not (_board_platform(info["url"]) == "oracle" and _entry_key(info.get("name")) in yours_unmatched)]
 
 
 def _is_workday_entry(target: dict) -> bool:
@@ -1720,24 +1758,25 @@ def boards_due(entry: dict, meta: dict) -> bool:
 def format_boards_page(meta: dict, checked: list[dict]) -> str:
     """boards.md: every company job board the monitor checks."""
     counts = Counter(_board_platform(b["url"]) for b in checked)
-    checked_keys = {b.get("_board_key") or _url_key(b["url"]) for b in checked}
-    missing = {_url_key(u) for u in meta.get("missing") or {}}
+    checked_keys = {b.get("_board_key") or _registry_key(b["url"]) for b in checked}
+    missing = {_registry_key(u) for u in meta.get("missing") or {}}
     rows = sorted((info for key, info in meta["known"].items() if key in checked_keys),
                   key=lambda i: (str(i.get("name")).lower(), i["url"]))
-    gone = sum(1 for i in rows if _url_key(i["url"]) in missing)
+    gone = sum(1 for i in rows if _registry_key(i["url"]) in missing)
     waiting = sum(1 for i in rows if _board_platform(i["url"]) == "workable" and not i.get("tenant"))
     last = meta.get("workday") or {}
     lines = [
         "# Company job boards the monitor checks",
         "",
         "Checked about every hour for tech roles. A company is added the first time one of the lists "
-        "the monitor reads links to its Greenhouse, Ashby, Lever, Workable, SmartRecruiters or Workday board, and stays from then on. To add "
+        "the monitor reads links to its Greenhouse, Ashby, Lever, Workable, SmartRecruiters, Workday or Oracle board, and stays from then on. To add "
         "one yourself, add it under `companies` in targets/startups.json (for a Workable company, with a link to "
         "one of its postings: it is matched in Workable's job file through its job codes or, failing that, its name).",
         "",
         f"{len(rows)} boards: {counts['greenhouse']} Greenhouse, {counts['ashby']} Ashby, {counts['lever']} Lever, "
         f"{counts['workable']} Workable" + (f" ({waiting} not matched in Workable's file yet, so not checked yet)" if waiting else "")
-        + f", {counts['smartrecruiters']} SmartRecruiters" + (f", {counts['workday']} Workday." if counts["workday"] else ".")
+        + f", {counts['smartrecruiters']} SmartRecruiters" + (f", {counts['workday']} Workday" if counts["workday"] else "")
+        + (f", {counts['oracle']} Oracle." if counts["oracle"] else ".")
         + (f" {gone} weren't found at the last try (tried again daily)." if gone else ""),
         "",
         *([f"Workday sites are read after everything else, for a few minutes each run (sites not tried yet first, then "
@@ -1754,7 +1793,7 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
         "|---|---|---|---|",
     ]
     for info in rows:
-        flag = " (not found lately)" if _url_key(info["url"]) in missing else ""
+        flag = " (not found lately)" if _registry_key(info["url"]) in missing else ""
         if _board_platform(info["url"]) == "workable" and not info.get("tenant"):
             flag = " (not matched in Workable's file yet: no current job of it found there)"
         elif _board_platform(info["url"]) == "workable" and info.get("matched_by") == "name":
@@ -3426,13 +3465,15 @@ def _sibling_urls(targets: list[dict]) -> dict[str, set[str]]:
 
 
 def _posting_ids(url: str) -> set[tuple]:
-    """The ids in a link that name exactly one posting: a Greenhouse job id, or the posting
-    id of an Ashby or Lever link (the part after the board name; some boards are named by a
-    company-wide id, which isn't one). Other numbers job_keys finds can be shared: Apple uses
-    one number for a role in several cities, and a Workday requisition can be posted twice."""
+    """The ids in a link that name exactly one posting: a Greenhouse job id, an Oracle site's
+    requisition number (also in your Goldman Sachs and Uber entries' links, see oracle.FRONT_ENDS),
+    or the posting id of an Ashby or Lever link (the part after the board name; some boards are
+    named by a company-wide id, which isn't one). Other numbers job_keys finds can be shared: Apple
+    uses one number for a role in several cities, and a Workday requisition can be posted twice."""
     host = urlparse(str(url or "").strip().lower()).netloc
     ats = host.endswith(".ashbyhq.com") or host.endswith(".lever.co")
-    return {key for key in job_keys(url) if key[0] in ("gh", "workable", "sr") or (key[0] == "uuid" and ats)}
+    return {key for key in job_keys(url)
+            if key[0] in ("gh", "workable", "sr", "oracle") or (key[0] == "uuid" and ats)}
 
 
 def _mark_reported(state: dict, url: str, jobs: list[dict], shown_as: str):

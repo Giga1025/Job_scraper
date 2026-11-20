@@ -23,7 +23,7 @@ to check split into three files it lists under `target_files`:
 |---|---|
 | `targets/big_tech.json` | Big tech and other companies with a hand-made entry each (finance, crypto, AI labs, data and infrastructure; about 60) |
 | `targets/new_grad_lists.json` | New-grad lists maintained on GitHub by others |
-| `targets/startups.json` | Startups, unicorns and mid-size companies on Greenhouse, Ashby, Lever, Workable or SmartRecruiters, and companies of any size on Workday (see [Startup and mid-size company job boards](#startup-and-mid-size-company-job-boards) and [Workday](#workday)) |
+| `targets/startups.json` | Startups, unicorns and mid-size companies on Greenhouse, Ashby, Lever, Workable or SmartRecruiters, and companies of any size on Workday or Oracle (see [Startup and mid-size company job boards](#startup-and-mid-size-company-job-boards) and [Workday](#workday)) |
 
 Each file holds a list of entries (under `"targets"`); a config can also have its own
 `"targets"` list, checked first. Which config is used:
@@ -162,7 +162,16 @@ lists without emailing.
 
 Most startups and mid-size companies post on Greenhouse, Ashby, Lever, Workable or
 SmartRecruiters, whose job boards can be read one company at a time (Workable's through one
-file of all its customers' jobs, see below). The
+file of all its customers' jobs, see below). Big employers often use Workday (see below) or
+Oracle Recruiting Cloud (American Express, Fortinet, Oracle, Texas Instruments, Cummins: about
+180 company sites in the lists). An Oracle site (`<host>.oraclecloud.com/hcmUI/CandidateExperience/
+.../sites/<site>`, one host can have several) is read through the API its career page uses, its
+newest 100 postings each hour, with their countries (main and other places) for the US filter and
+their posting date for a company's first check; `boards/oracle.py`. Goldman Sachs's and Uber's
+own career sites (your entries) show their Oracle sites' postings under the same numbers, so a job
+on both is emailed once; any other company's Oracle site isn't read while one of your entries has
+its name (the two would email each job twice), unless its own site is mapped the same way
+(`FRONT_ENDS` in `boards/oracle.py`). The
 `"mode": "boards"` entry in `targets/startups.json` checks the whole board of each company
 in a registry that only grows:
 
