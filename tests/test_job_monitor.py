@@ -3670,6 +3670,8 @@ class _FakeTab:
         self.test.fetch_headers.append(headers)
         if self.test.browser_answers.get(url) == "stuck asking for more":
             self.test.until_killed()
+        if body is None:  # (a GET: a posting's own page, for its place)
+            return _FakeHandle(json.dumps(dict(zip(("status", "text"), self.test.wd_detail(url, "fetch")))))
         status, text = self.test.wd_answer(url, body, "fetch")
         return _FakeHandle(json.dumps({"status": status, "text": text}))
 
@@ -3728,6 +3730,8 @@ class WorkdayTestCase(MonitorTestCase):
         self.chromiums = set()     # the fake Chromium processes started (one per launch)
         self.killed = []           # those the watchdog killed
         self.chromium_killed = threading.Event()
+        self.details = {}          # a posting's number -> what Workday's page for it says ("jobPostingInfo")
+        self.detail_asks = []      # (posting page asked, how)
 
         def start():
             self.playwrights.append(FakePlaywright(self))
@@ -3755,6 +3759,14 @@ class WorkdayTestCase(MonitorTestCase):
             {"title": title, "externalPath": f"/job/New-York-NY/{title.replace(' ', '-')}_R{rid}",
              "postedOn": posted, "locationsText": rest[0] if rest else "New York, NY"}
             for rid, title, posted, *rest in site[start:start + limit]]})
+
+    def wd_detail(self, url, how):
+        """A posting's own page in Workday's API (/wday/cxs/<tenant>/<site>/job/...): what
+        self.details has for its number, or 404."""
+        self.detail_asks.append((url, how))
+        number = jm.re.search(r"_R(\d+)$", url)
+        info = self.details.get(int(number.group(1))) if number else None
+        return (200, json.dumps({"jobPostingInfo": info})) if info is not None else (404, "")
 
     def fake_kill(self, pids):
         self.killed += sorted(pids)
@@ -4475,6 +4487,143 @@ class WorkdayBrowserTests(WorkdayTestCase):
         self.assertEqual((loaded.status, loaded.detail, tab.closed), ("challenge", "429, challenge", True))
         browser.close()
         browser.close()  # (again: nothing happens)
+
+
+class WorkdayPlaceTests(WorkdayTestCase):
+    """A posting whose place the list doesn't give ("2 Locations", or nothing): Workday's page for
+    it is asked, for those the email would list, so one outside the US isn't emailed."""
+
+    AUSTRALIA = {"location": "Homebush", "additionalLocations": ["Brisbane"], "country": {"descriptor": "Australia"}}
+
+    def detail(self, rid):
+        return f"https://acme.wd5.myworkdayjobs.com/wday/cxs/acme/External/job/New-York-NY/Software-Engineer_R{rid}"
+
+    def test_postings_the_list_doesnt_place_are_asked_and_kept_out_when_outside_the_us(self):
+        for refused in (True, False):
+            with self.subTest(refused=refused):
+                jm.STATE_PATH.unlink(missing_ok=True)
+                self.detail_asks.clear()
+                self.api_refuses = refused
+                self.wd[WD_API] = []
+                self.run_wd()  # (the site joins the registry: its first read records nothing)
+                self.details = {
+                    6: self.AUSTRALIA,
+                    5: {"location": "Sydney", "additionalLocations": ["Tampa, FL"], "country": {"descriptor": "Australia"}},
+                    4: {"location": "Remote", "jobRequisitionLocation": {"country": {"descriptor": "United States of America"}}},
+                    3: {"location": "London", "country": {"descriptor": "United Kingdom"}},
+                }
+                self.wd[WD_API] = [(6, "Software Engineer", "Posted Today", "2 Locations"),
+                                   (5, "Software Developer", "Posted Today", "2 Locations"),
+                                   (4, "ML Engineer", "Posted Today", ""),
+                                   (3, "Infrastructure Engineer", "Posted Today", ""),
+                                   (2, "Sales Manager", "Posted Today", "2 Locations"),
+                                   (7, "Backend Software Engineer", "Posted Today", "Austin, TX")]
+                if not refused:  # (plain requests: the posting's page is asked the same way)
+                    for rid, info in self.details.items():
+                        self.pages[self.detail(rid).replace("Software-Engineer", {6: "Software-Engineer", 5: "Software-Developer",
+                                                            4: "ML-Engineer", 3: "Infrastructure-Engineer"}[rid])] = \
+                            json.dumps({"jobPostingInfo": info})
+                reported = self.run_wd()
+                # Australia (and Brisbane) and London aren't emailed; Australia with a US city is, and so is the US.
+                self.assertEqual(sorted(reported.get("Acme", [])), ["Backend Software Engineer", "ML Engineer", "Software Developer"])
+                if refused:  # (asked from inside the site's page; no other posting's page)
+                    self.assertEqual([how for _, how in self.detail_asks], ["fetch"] * 4)
+                    self.assertEqual({u.rsplit("_R", 1)[1] for u, _ in self.detail_asks}, {"6", "5", "4", "3"})
+                    self.assertNotIn("content-type", self.fetch_headers[-1])
+                else:
+                    asked = [u for u, _ in self.requests_made if "/job/" in u]
+                    self.assertEqual({u.rsplit("_R", 1)[1] for u in asked}, {"6", "5", "4", "3"})
+                # Recorded as seen either way, and not asked again.
+                self.assertEqual(len(self.saved_state()[WD_SITE]), 6)
+                asks = len(self.detail_asks) + len(self.requests_made)
+                self.assertEqual(self.run_wd(), {})
+                self.assertEqual(len(self.detail_asks) + len([u for u, _ in self.requests_made]), asks + 1)  # (the feed only)
+                self.requests_made.clear()
+
+    def test_a_posting_whose_page_cant_be_had_is_kept(self):
+        self.api_refuses = True
+        self.wd[WD_API] = []
+        self.run_wd()
+        self.wd[WD_API] = [(6, "Software Engineer", "Posted Today", "2 Locations")]  # (no page: 404)
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer"]})
+        self.assertEqual(len(self.detail_asks), 1)
+
+    def test_at_most_a_few_postings_are_asked_per_site(self):
+        self.api_refuses = True
+        self.patch(jm.workday, "PLACES_PER_SITE", 2)
+        self.wd[WD_API] = []
+        self.run_wd()
+        self.details = {rid: self.AUSTRALIA for rid in (7, 8, 9)}  # (R1 is the feed's)
+        self.wd[WD_API] = [(rid, "Software Engineer", "Posted Today", "2 Locations") for rid in (9, 8, 7)]
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer"]})  # (the third wasn't asked: kept)
+        self.assertEqual(len(self.detail_asks), 2)
+
+    def test_old_postings_and_your_entries_postings_the_filters_drop_arent_asked(self):
+        self.api_refuses = True
+        mine = target(name="Acme Corp", url=WorkdayEntryTests.MINE, mode="browser", link_selector="")
+        self.mark_known(WorkdayEntryTests.MINE)
+        self.wd[WD_API] = []
+        self.run_wd(mine, boards=False)
+        self.details = {7: self.AUSTRALIA, 8: self.AUSTRALIA, 9: self.AUSTRALIA}
+        self.wd[WD_API] = [(9, "Senior Software Engineer", "Posted Today", "2 Locations"),  # (left out: senior)
+                           (8, "Software Engineer", "Posted 30+ Days Ago", "2 Locations"),  # (not new: too old)
+                           (7, "Software Engineer", "Posted Today", "2 Locations")]
+        self.assertEqual(self.run_wd(mine, boards=False), {})  # (the one asked is in Australia)
+        self.assertEqual([u.rsplit("_R", 1)[1] for u, _ in self.detail_asks], ["7"])
+
+    def test_asking_stops_after_two_failures_in_a_row_and_never_stops_the_site(self):
+        self.api_refuses = True
+        self.wd[WD_API] = []
+        self.run_wd()
+        self.wd[WD_API] = [(rid, "Software Engineer", "Posted Today", "2 Locations") for rid in (9, 8, 7)]  # (no pages: 404)
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer"] * 3})
+        self.assertEqual(len(self.detail_asks), 2)
+        # A choice that breaks (a bug) leaves the postings as the list gives them; the site is still read.
+        self.wd[WD_API] = [(rid, "Software Engineer", "Posted Today", "2 Locations") for rid in (12, 11, 10)]
+        self.patch(jm, "place_unclear", mock.Mock(side_effect=RuntimeError("bug")))
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer"] * 3})
+        self.assertEqual(len(self.detail_asks), 2)
+
+    def test_asking_stops_when_the_sites_time_for_it_is_up(self):
+        self.api_refuses = True
+        clock = [0.0]
+        self.patch(jm.workday, "_monotonic", lambda: clock[0])
+        self.patch(jm.workday, "_sleep", lambda s: clock.__setitem__(0, clock[0] + max(s, 25)))  # (each ask: 25 s)
+        self.wd[WD_API] = []
+        self.run_wd()
+        self.details = {rid: self.AUSTRALIA for rid in range(7, 17)}
+        self.wd[WD_API] = [(rid, "Software Engineer", "Posted Today", "2 Locations") for rid in range(16, 6, -1)]
+        self.run_wd()
+        self.assertLessEqual(len(self.detail_asks), 3)  # (60 s: 3 asks at most, not 10)
+
+    def test_postings_arent_asked_without_the_us_filter(self):
+        self.assertIsNone(jm._workday_place_wanted({}, [], None, us_only=False))
+        self.assertIsNone(jm._workday_place_wanted({"us_only": False}, [], None, us_only=True))
+        self.assertIsNotNone(jm._workday_place_wanted({}, [], None, us_only=True))
+
+    def test_what_workdays_page_says_decides(self):
+        located = jm.workday.located
+        cases = [  # (what the page says, where the posting is noted, outside the US)
+            (self.AUSTRALIA, "Homebush; Brisbane", True),
+            ({"location": "Sydney", "additionalLocations": ["Tampa, FL"], "country": {"descriptor": "Australia"}}, "Sydney; Tampa, FL", False),
+            ({"location": "Annapolis Junction, MD", "additionalLocations": ["McLean, VA"],
+              "country": {"descriptor": "United States of America"}}, "Annapolis Junction, MD; McLean, VA", False),
+            ({"location": "London", "jobRequisitionLocation": {"country": {"descriptor": "United Kingdom"}}}, "London", True),
+            ({"location": "Somewhere"}, "Somewhere", False),  # (no country: the text decides, as before)
+            (None, "2 Locations", False),  # (no page: kept)
+            ({"other": 1}, "2 Locations", False),
+        ]
+        for info, where, outside in cases:
+            with self.subTest(info=info):
+                job = located({"title": "Software Engineer", "url": "u", "location": "2 Locations"},
+                              None if info is None else {"jobPostingInfo": info} if "other" not in (info or {}) else info)
+                self.assertEqual((job["location"], jm.is_outside_us(job)), (where, outside))
+        self.assertTrue(jm.place_unclear({"location": "2 Locations"}))
+        self.assertTrue(jm.place_unclear({"location": ""}))
+        self.assertTrue(jm.place_unclear({"location": "Kronberg Campus, Kronberg"}))
+        self.assertFalse(jm.place_unclear({"location": "Austin, TX"}))
+        self.assertFalse(jm.place_unclear({"location": "London"}))  # (the US filter already knows)
+        self.assertFalse(jm.place_unclear({"location": "2 Locations", "primary_country": "India"}))
 
 
 class WorkdayEntryTests(WorkdayTestCase):

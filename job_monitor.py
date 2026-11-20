@@ -1856,6 +1856,12 @@ def is_outside_us(job: dict) -> bool:
     countries = [c.strip().lower() for c in job.get("countries") or [] if str(c).strip()]
     if countries:
         return not any(c in _US_COUNTRY_NAMES for c in countries)
+    primary = str(job.get("primary_country") or "").strip().lower()
+    if primary:
+        # Workday names the country of a posting's first location only (boards/workday.py,
+        # located()): outside the US unless that's the US or one of its others is clearly there.
+        others = str(job.get("location") or "").split(";")[1:]
+        return primary not in _US_COUNTRY_NAMES and not any(_US_WORDS.search(o) or _US_CODE.search(o) for o in others)
     location = str(job.get("location") or "").strip()
     if not location:
         return False
@@ -1864,6 +1870,16 @@ def is_outside_us(job: dict) -> bool:
         if _US_WORDS.search(part) or _US_CODE.search(part) or not _NON_US_WORDS.search(part):
             return False  # this part is (or may be) in the US
     return True
+
+
+def place_unclear(job: dict) -> bool:
+    """True when nothing about the job says whether it's in the US: no country, and a location
+    that's empty or names nowhere the US filter knows ("2 Locations", "Homebush", "Remote")."""
+    if job.get("countries") or job.get("primary_country"):
+        return False
+    location = str(job.get("location") or "")
+    parts = [p.strip() for p in re.split(r";|\||\bor\b|/", location, flags=re.IGNORECASE) if p.strip()]
+    return not any(_US_WORDS.search(p) or _US_CODE.search(p) or _NON_US_WORDS.search(p) for p in parts)
 
 
 # ===================================================================
@@ -2737,6 +2753,30 @@ def fetch_target_jobs(url: str, mode: str, link_selector: str, wait_for: str) ->
     return current_jobs
 
 
+def _title_wanted(target: dict, job: dict, role_patterns: dict | None) -> bool:
+    """A company job board's posting with a tech title ("_tech_titles") and no gig-work word
+    ("_skip_titles"); every posting for a target without them."""
+    tech, skip = target.get("_tech_titles"), target.get("_skip_titles")
+    if tech is None and skip is None:
+        return True
+    # "new grad" and the like count as tech only with an engineering word ("Entry-Level Geologist" doesn't).
+    level, engineering = target.get("_level_titles"), (role_patterns or {}).get("engineering_signals")
+    title = _title_core(job["title"])
+    techy = tech is None or tech.search(title) or (level and level.search(title) and (engineering is None or engineering.search(title)))
+    return bool(techy and not (skip and skip.search(title)))
+
+
+def _workday_place_wanted(target: dict, keywords: list[str], role_patterns: dict | None, us_only: bool):
+    """For a target on Workday: which of its postings to ask Workday the place of (workday.Reader.read):
+    those the US filter would email (a title it wants: _title_wanted, split_new_jobs) but can't place
+    from their location (place_unclear). None when the target isn't filtered by place."""
+    if not target.get("us_only", us_only):
+        return None
+    keywords = target.get("keyword_filters", keywords)
+    return lambda job: place_unclear(job) and _title_wanted(target, job, role_patterns) \
+        and bool(split_new_jobs([job], keywords, role_patterns)[0])
+
+
 def check_target(
     target: dict,
     state: dict,
@@ -2831,18 +2871,11 @@ def check_target(
         if outside:
             say(f"  [location] Skipped {len(outside)} new posting(s) outside the US")
             new_jobs = [j for j in new_jobs if not is_outside_us(j)]
-    tech, skip = target.get("_tech_titles"), target.get("_skip_titles")
-    # "new grad" and the like count as tech only with an engineering word ("Entry-Level Geologist" doesn't).
-    level, engineering = target.get("_level_titles"), (role_patterns or {}).get("engineering_signals")
-    if tech is not None or skip is not None:
-        def wanted(job):
-            title = _title_core(job["title"])
-            techy = tech is None or tech.search(title) or (level and level.search(title) and (engineering is None or engineering.search(title)))
-            return techy and not (skip and skip.search(title))
-        other = [j for j in new_jobs if not wanted(j)]
+    if target.get("_tech_titles") is not None or target.get("_skip_titles") is not None:
+        other = [j for j in new_jobs if not _title_wanted(target, j, role_patterns)]
         if other:
             say(f"  [tech] Skipped {len(other)} new posting(s) that aren't tech roles")
-            new_jobs = [j for j in new_jobs if wanted(j)]
+            new_jobs = [j for j in new_jobs if _title_wanted(target, j, role_patterns)]
     new_jobs, left_out = split_new_jobs(new_jobs, target.get("keyword_filters", default_keywords), role_patterns)
 
     where = f" ({name})" if quiet else ""
@@ -2959,7 +2992,8 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
         workday_entry = _is_workday_entry(target)
         if is_board and _board_platform(url) == "workday" and workday_sites:
             try:  # (all of them now, as time allows: every other target is done)
-                fetched.update(_read_workday_sites(reader, workday_sites, board_entries[0], board_meta, state, feed_urls))
+                place = _workday_place_wanted(workday_sites[0], keywords, role_patterns, us_only)
+                fetched.update(_read_workday_sites(reader, workday_sites, board_entries[0], board_meta, state, feed_urls, place))
             except Exception:
                 log.exception("  [workday] Could not read the company Workday sites this run")
             workday_sites = []
@@ -2977,7 +3011,8 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
         try:
             with _problems_logged() as problems:
                 if workday_entry:
-                    target = {**target, "_prefetched": workday.read_entry(reader, url, state.get(url), name),
+                    place = _workday_place_wanted(target, keywords, role_patterns, us_only)
+                    target = {**target, "_prefetched": workday.read_entry(reader, url, state.get(url), name, place),
                               "_new_within_days": workday.NEW_WITHIN_DAYS}
                 new_jobs, left_out = check_target(target, state, keywords, role_patterns, us_only, outcome)
         except Exception as exc:
@@ -3198,9 +3233,11 @@ PROBLEMS_HELP = ("Their postings may still reach you through the new-grad lists.
                  "\"Fixing an entry that stopped working\" in the README; to stop the warning, pause it with \"enabled\": false.")
 
 
-def _read_workday_sites(reader, sites: list[dict], entry: dict, meta: dict, state: dict, feed_urls: set) -> dict:
+def _read_workday_sites(reader, sites: list[dict], entry: dict, meta: dict, state: dict, feed_urls: set,
+                        place=None) -> dict:
     """Read the registry's Workday sites (boards/workday.py) as time allows, most overdue first;
-    each one tried is noted in the registry (workday.note), and the run's summary goes in meta["workday"]."""
+    each one tried is noted in the registry (workday.note), and the run's summary goes in meta["workday"].
+    place: which postings to ask Workday the place of (_workday_place_wanted)."""
     linked = workday.newest_links((r.get("url"), r.get("first_seen")) for f in feed_urls
                                   for r in state.get(f) or [] if isinstance(r, dict))
     sites = workday.order(sites, meta["known"], linked)
@@ -3209,7 +3246,7 @@ def _read_workday_sites(reader, sites: list[dict], entry: dict, meta: dict, stat
     log.info(f"Reading up to {len(sites)} company Workday sites...")
     # (the setting, up to RUN_MINUTES; and whatever it says, the reader starts no site once the run is RUN_MINUTES old)
     minutes = _setting(entry, "workday_minutes_per_run", workday.MINUTES_PER_RUN, 0, workday.RUN_MINUTES)
-    results, summary = workday.read_sites(reader, sites, seen, minutes, known=meta["known"])
+    results, summary = workday.read_sites(reader, sites, seen, minutes, known=meta["known"], place=place)
     now = datetime.now().isoformat(timespec="seconds")
     workday.note(meta["known"], sites, results, now)
     meta["workday"] = {**summary, "at": now}

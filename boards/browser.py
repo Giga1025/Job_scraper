@@ -45,15 +45,16 @@ GRACE_SECONDS = 15  # past a call's own time limit (or for a call without one) b
 
 # Run inside the page, again and again (Playwright's wait_for_function, which keeps its time limit
 # even when the page's script is stuck): the first time, POST a JSON body to the page's own site
-# (same origin, with the page's cookies) as the page's own code does; once the answer is in,
-# return it as JSON text {status, text}.
+# (same origin, with the page's cookies) as the page's own code does (a GET when body is null);
+# once the answer is in, return it as JSON text {status, text}.
 _POST_JSON = """([url, body, headers, ms, key]) => {
   const box = window[key] || (window[key] = {});
   if (!box.started) {
     box.started = true;
     const stop = new AbortController();
     const timer = setTimeout(() => stop.abort(), ms);
-    fetch(url, {method: "POST", headers, body: JSON.stringify(body), credentials: "same-origin", signal: stop.signal})
+    const how = body === null ? {method: "GET"} : {method: "POST", body: JSON.stringify(body)};
+    fetch(url, {...how, headers, credentials: "same-origin", signal: stop.signal})
       .then(async resp => { box.done = JSON.stringify({status: resp.status, text: await resp.text()}); })
       .catch(err => { box.done = JSON.stringify({status: 0, text: String(err)}); })
       .finally(() => clearTimeout(timer));
@@ -264,12 +265,14 @@ class Browser:
             loaded.status, loaded.detail = "error", _says(exc)
         return loaded
 
-    def post_json(self, loaded: Loaded, url: str, body: dict, timeout: float):
-        """POST body to url from inside the open tab, waiting at most timeout seconds;
-        (HTTP status or 0, the answer's JSON or None)."""
+    def post_json(self, loaded: Loaded, url: str, body: dict | None, timeout: float):
+        """POST body to url from inside the open tab (GET if body is None), waiting at most
+        timeout seconds; (HTTP status or 0, the answer's JSON or None)."""
         self._asked += 1
         ms = max(1, int(timeout * 1000))
         headers = {"content-type": "application/json", "accept": "application/json", **loaded.headers}
+        if body is None:
+            headers = {k: v for k, v in headers.items() if k.lower() != "content-type"}
         with self._watch(timeout + GRACE_SECONDS):
             try:
                 handle = loaded.page.wait_for_function(_POST_JSON, arg=[url, body, headers, ms, f"__jobMonitorAsk{self._asked}"],
@@ -280,6 +283,10 @@ class Browser:
             except Exception as exc:
                 log.debug(f"  [browser] asking for more from the page failed: {_says(exc)}")
                 return 0, None
+
+    def get_json(self, loaded: Loaded, url: str, timeout: float):
+        """GET url from inside the open tab: like post_json."""
+        return self.post_json(loaded, url, None, timeout)
 
     def done(self, loaded: Loaded):
         """Close the tab a Loaded holds (if any)."""

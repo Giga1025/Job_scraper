@@ -52,6 +52,13 @@ postings it didn't email you and, besides those, the REPORTED_RETENTION latest i
 busy site's new postings never push out what it emailed: a list linking one later doesn't email
 it again.
 
+Where a posting is (Reader.read's place, located()): the job list gives a posting's place as text,
+and for many only "2 Locations" or nothing. For the new postings job_monitor picks (those the
+email would list whose place the US filter can't tell from that text), Workday's own page for
+the posting (GET /wday/cxs/<tenant>/<site>/job/...) is asked while the site is open, at most
+PLACES_PER_SITE a site read: it names the country of the posting's first place
+("primary_country") and its other places, which job_monitor.is_outside_us decides on.
+
 Your own entries on a Workday site (read_entry; NVIDIA, Salesforce, Circle, Intel in
 targets/big_tech.json) are read the same way, with the entry's filters (the part of its link
 after "?"), whatever their "mode". Their links keep the form already recorded for each posting
@@ -88,6 +95,8 @@ MINUTES_PER_RUN = 6.0           # "workday_minutes_per_run" on the boards entry 
 RUN_MINUTES = 20                # no Workday site is started once the run is this old (GitHub stops it at 30)
 MAX_SKIPPED_IN_A_ROW = 3        # then Workday reading stops until the next run
 FAILED_TRIES_TO_WAIT = 2        # a company site that couldn't be read this many tries in a row waits a day
+PLACES_PER_SITE = 20            # postings whose place is asked (place()) per site read, at most
+PLACES_SECONDS_PER_SITE = 60    # and for at most this long (and not after 2 failures in a row)
 PAGE_TIMEOUT_SECONDS = 15       # for a page to load and get its job list (it usually takes 2-4 s)
 API_TIMEOUT_SECONDS = 20
 
@@ -208,6 +217,28 @@ def jobs_of(postings, prefix: str, now: datetime) -> list[dict]:
     return jobs
 
 
+def located(job: dict, data) -> dict:
+    """Note on a posting where Workday's page for it (data: the JSON of
+    /wday/cxs/<tenant>/<site>/job/..., or None) says it is: "location" becomes its first
+    location and then its others, "; " between them (the list says only "2 Locations", or
+    nothing, for some), and "primary_country" the country of its first location (Workday
+    gives no country for the others). Unchanged if data says neither."""
+    info = data.get("jobPostingInfo") if isinstance(data, dict) else None
+    if not isinstance(info, dict):
+        return job
+    country = info.get("country") if isinstance(info.get("country"), dict) else \
+        (info.get("jobRequisitionLocation") or {}).get("country") if isinstance(info.get("jobRequisitionLocation"), dict) else None
+    country = _text(country.get("descriptor")) if isinstance(country, dict) else ""
+    first = _text(info.get("location"))
+    others = [_text(o) for o in info.get("additionalLocations") or [] if _text(o)] \
+        if isinstance(info.get("additionalLocations"), list) else []
+    if first:
+        job["location"] = "; ".join([first] + others)[:300]
+    if country:
+        job["primary_country"] = country
+    return job
+
+
 def newest(first, more, prefix: str, seen=frozenset(), now: datetime | None = None, size: int | None = None) -> list[dict] | None:
     """The postings of a site's newest pages: first (the first page's answer), then more(offset)
     (None if it can't be read: what was read is kept), until a page has a posting seen before
@@ -287,13 +318,16 @@ class Reader:
         self._last = self.clock()
 
     def read(self, site: str, seen=frozenset(), facets=None, words: str = "", prefix: str | None = None,
-             page: str | None = None, name: str = "", quiet: bool = True, counts: bool = True) -> tuple[str, list | None]:
+             page: str | None = None, name: str = "", quiet: bool = True, counts: bool = True,
+             place=None) -> tuple[str, list | None]:
         """A site's newest postings (see newest()), with these filters: ("ok", postings),
         ("missing", None) (404), ("skipped", None) (a bot check, no answer in time, an error:
         tried again next run) or ("stopped", None) (not tried: Workday reading has stopped for
         this run, or the run is run_minutes old). quiet: problems are logged as debug, not as warnings.
         counts: False for a site already known to fail (failing()), whose skip doesn't count toward
-        the MAX_SKIPPED_IN_A_ROW in a row unless it is a bot check."""
+        the MAX_SKIPPED_IN_A_ROW in a row unless it is a bot check. place: which postings to ask
+        Workday the place of (see located()), of those not seen before and posted in the last
+        NEW_WITHIN_DAYS days."""
         if not self.stopped and self.clock() - self.started >= self.run_minutes * 60:
             self.stopped = f"the run is {self.run_minutes:g} minutes old, and GitHub stops a run at 30"
             log.info(f"  [workday] No more Workday sites this run: {self.stopped}.")
@@ -304,9 +338,10 @@ class Reader:
         prefix = prefix or own_prefix
         body = {"appliedFacets": facets or {}, "limit": PAGE_SIZE, "offset": 0, "searchText": words or ""}
         now = datetime.now(timezone.utc)
-        status, jobs, why = (None, None, "") if self.api_refused else self._by_api(api, body, prefix, seen, now)
+        ask = (seen, place, now)
+        status, jobs, why = (None, None, "") if self.api_refused else self._by_api(api, body, prefix, ask)
         if status is None:
-            status, jobs, why = self._by_browser(page or own_prefix, body, prefix, seen, now)
+            status, jobs, why = self._by_browser(page or own_prefix, body, prefix, ask)
         if status == "refused":  # (a bot check: it counts toward the stop whatever the site's history)
             status, counts = "skipped", True
         if status == "skipped":
@@ -325,8 +360,9 @@ class Reader:
             log.warning(f"  [workday] Workday reading stops for this run: {self.stopped}.")
         return status, jobs
 
-    def _by_api(self, api, body, prefix, seen, now):
+    def _by_api(self, api, body, prefix, ask):
         """(status, postings, why) from plain requests; status None: use the browser."""
+        seen, place, now = ask
         def post(offset):
             self._wait()
             try:
@@ -362,11 +398,25 @@ class Reader:
             return data if status == "ok" else None
 
         jobs = newest(first, more, prefix, seen, now)
-        return (None, None, "") if jobs is None else ("ok", jobs, "")
+        if jobs is None:
+            return None, None, ""
 
-    def _by_browser(self, page_url, body, prefix, seen, now):
+        def detail(path):
+            self._wait()
+            try:
+                resp = requests.get(api[:-len("/jobs")] + path, timeout=API_TIMEOUT_SECONDS,
+                                    headers={**HEADERS, "Accept": "application/json"})
+                return resp.json() if resp.status_code == 200 else None
+            except Exception:
+                return None
+
+        self._locate(jobs, prefix, seen, place, now, detail)
+        return "ok", jobs, ""
+
+    def _by_browser(self, page_url, body, prefix, ask):
         """(status, postings, why) from the site's search page in the browser; status "refused":
         skipped because of a bot check."""
+        seen, place, now = ask
         self._wait()
         started = self.clock()
         loaded = self.browser.open(page_url, lambda url, method: method == "POST" and bool(_JOBS_CALL.search(urlparse(url).path)),
@@ -407,25 +457,59 @@ class Reader:
             jobs = newest(first, more, prefix, seen, now, size)
             if jobs is None:
                 return "skipped", None, "the page's job list wasn't one"
+
+            def detail(path):
+                self._wait()
+                status, data = self.browser.get_json(loaded, re.sub(r"/jobs/?$", "", loaded.request_url) + path,
+                                                     API_TIMEOUT_SECONDS)
+                return data if status == 200 else None
+
+            self._locate(jobs, prefix, seen, place, now, detail)
             log.debug(f"  [workday] read through the browser in {self.clock() - started:.1f} s")
             return "ok", jobs, ""
         finally:
             self.browser.done(loaded)
 
+    def _locate(self, jobs, prefix, seen, place, now, detail):
+        """Ask Workday where the postings place() picks are (of those not seen before and posted in
+        the last NEW_WITHIN_DAYS days), one request each (detail: a posting's path -> its JSON, or
+        None), and note it on them (located()): at most PLACES_PER_SITE, for PLACES_SECONDS_PER_SITE,
+        until 2 in a row fail. One not asked, or whose page can't be had, keeps the place the list
+        gives. Nothing here stops the site being read."""
+        if place is None:
+            return
+        try:
+            recent = now - timedelta(days=NEW_WITHIN_DAYS)
+            picked = [job for job in jobs if posting_key(job["url"]) not in seen and job["url"].startswith(prefix + "/")
+                      and (not job.get("posted") or datetime.fromisoformat(job["posted"]) >= recent) and place(job)]
+            until, failed, asked = self.clock() + PLACES_SECONDS_PER_SITE, 0, 0
+            for job in picked[:PLACES_PER_SITE]:
+                if failed >= 2 or self.clock() >= until or self.clock() - self.started >= self.run_minutes * 60:
+                    break
+                data = detail(job["url"][len(prefix):])
+                asked += 1
+                failed = 0 if isinstance(data, dict) else failed + 1
+                located(job, data)
+            if asked < len(picked):
+                log.debug(f"  [workday] {len(picked) - asked} postings' place not asked (time, failures, or "
+                          f"at most {PLACES_PER_SITE} a site)")
+        except Exception as exc:
+            log.debug(f"  [workday] asking where postings are failed: {exc!r}")
+
     def close(self):
         self.browser.close()
 
 
-def read_entry(reader: Reader, link: str, recorded, name: str = "") -> list[dict] | None:
+def read_entry(reader: Reader, link: str, recorded, name: str = "", place=None) -> list[dict] | None:
     """Your entry's postings (a link to a Workday search, with its filters), or None if it can't
     be read this run. A posting already recorded (recorded: the entry's saved postings) keeps the
-    link it was recorded with."""
+    link it was recorded with. place: see Reader.read."""
     facets, words, prefix, page = search_of(link)
     links = {}
     for job in recorded if isinstance(recorded, list) else []:
         if isinstance(job, dict) and isinstance(job.get("url"), str):
             links.setdefault(posting_key(job["url"]), job["url"])
-    status, jobs = reader.read(site_of(link), set(links), facets, words, prefix, page, name, quiet=False)
+    status, jobs = reader.read(site_of(link), set(links), facets, words, prefix, page, name, quiet=False, place=place)
     if status == "stopped":
         log.warning(f"  [workday] Not read this run: {reader.stopped}.")
     if status != "ok":
@@ -488,13 +572,14 @@ def note(known: dict, sites: list[dict], results: dict, now: str):
             info.pop("failed_tries", None)
 
 
-def read_sites(reader: Reader, sites: list[dict], seen: dict, minutes: float, known: dict | None = None) -> tuple[dict, dict]:
+def read_sites(reader: Reader, sites: list[dict], seen: dict, minutes: float, known: dict | None = None,
+               place=None) -> tuple[dict, dict]:
     """Read the registry's sites (board targets, in this order) one at a time until minutes have
     passed, the run is the reader's run_minutes old, or Workday reading stops; seen: {url:
     posting_key values already recorded}; known: the registry ({board key: info}). A site still
     waiting its day there (waiting()) isn't tried; skipping one already known to fail (failing())
     whose day is up doesn't count toward the MAX_SKIPPED_IN_A_ROW in a row unless it is a bot
-    check. Returns ({url: (status, postings, None)} for the sites tried: "ok", "missing" (404) or
+    check. place: see Reader.read. Returns ({url: (status, postings, None)} for the sites tried: "ok", "missing" (404) or
     "failed" (skipped: read next time), and a summary: {"sites", "read", "skipped", "missing",
     "left", "why" (why some were left), "minutes"})."""
     known = known or {}
@@ -512,7 +597,7 @@ def read_sites(reader: Reader, sites: list[dict], seen: dict, minutes: float, kn
         if why:
             break
         status, jobs = reader.read(site["url"], seen.get(site["url"], frozenset()), name=site.get("name") or "",
-                                   counts=not failing(known.get(site.get("_board_key"))))
+                                   counts=not failing(known.get(site.get("_board_key"))), place=place)
         if status == "stopped":  # (not tried: the run is too old to start another site)
             why = reader.stopped
             break

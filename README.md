@@ -254,6 +254,16 @@ Where plain requests work (from your own computer, for instance), the browser is
 a site whose plain request fails (a server error or no answer, say); if it can't start there, that
 site is skipped and the others are still read with plain requests.
 
+**Outside the US.** Workday's job list gives each posting's place as text, and for many only
+"2 Locations" or nothing at all (Accenture's), so the US filter can't tell a posting in Germany
+or India from one in Virginia. For a new posting the email would list (a title your filters want,
+posted in the last 7 days) whose place the text doesn't settle, the monitor asks Workday for
+that posting's own page while the site is open (one request each, at most 20 a site a visit):
+it names the country of the posting's first place and its other places. The posting is left
+out unless that country is the US or one of its other places is clearly in the US ("McLean,
+VA"); the email shows its places instead of "2 Locations". A posting whose page can't be had
+(or past the 20) is kept, as before.
+
 **Under 30 minutes.** GitHub stops a run at 30 minutes, so no Workday site (your entries or the
 company sites) is started once the run is 20 minutes old, whatever `workday_minutes_per_run`
 says; the sites left wait for the next run. A site started just before that takes a minute or
