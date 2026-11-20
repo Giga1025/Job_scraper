@@ -1046,6 +1046,9 @@ MUST_KEEP = [
     # Wrongly dropped by a first version of the "not tech" list (found by auditing every title it dropped):
     "Assistant Data Solutions Engineer", "Sales, Marketing, and Distribution Technology - Marketing and Distribution Technology",
     "Data Analyst - Shift D Wednesday-Saturday 5:00pm-3:30am",
+    # Simplify's Quant category (read since Nov 2026): quant researchers, developers and traders stay.
+    "Quantitative Trader", "Graduate Quantitative Researcher", "Quantitative Developer Grad", "ETF Quantitative Developer",
+    "Trading System Engineer New Grad", "Quantitative Investment Analyst", "Quantitative Researcher - Trading Team",
 ]
 MUST_LEAVE_OUT = [
     "Senior Software Engineer", "Sr. Software Engineer", "Staff ML Engineer", "Principal Engineer",
@@ -1075,6 +1078,9 @@ MUST_LEAVE_OUT = [
     "Forklift Operator", "Investment Banking Analyst", "AI Tutor - Software Engineering",
     "Legal Research Attorney - AI Training", "Economists - Economic Analysis for AI Training",
     "Res Life Embedded Clinician", "Project Dorado | Robotics Teleoperator",
+    # ... but not its trading and investment analysts, or its misfiled jobs.
+    "Trading Analyst", "Trading Associate", "Trading Graduate Program - Trading", "Investment Analyst - Parametric",
+    "Food Services Worker - Student Worker",
 ]
 
 
@@ -4195,6 +4201,16 @@ class WorkdayBoardTests(WorkdayTestCase):
         self.pages[SIMPLIFY_URL] = json.dumps(rows + [simplify_row("Acme", "Software Engineer, Data", url=wd_link(9, "Software Engineer, Data") + "?utm_source=Simplify")])
         self.assertEqual(self.run_wd(), {})
 
+    def test_the_shipped_config_finds_companies_in_both_whole_simplify_lists(self):
+        # The new-grad feed only keeps tech rows from the last 90 days; its whole list (and the internship
+        # list) are read for companies, so one that last hired in the spring, or under Hardware, is checked too.
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        [feed] = [t for t in config["targets"] if t.get("format") == "simplify"]
+        self.assertIn(INTERNSHIPS_URL, [i["url"] for i in entry["find_companies_in"]])
+        self.assertIn(feed["url"], [i["url"] for i in entry["find_companies_in"]])
+        self.assertIn("Quant", feed["categories"])
+
     def test_the_shipped_boards_entry_reads_workday_sites(self):
         config = jm.load_config(REPO_DIR / "config_all.json")
         [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
@@ -4885,6 +4901,87 @@ class JobIdentityTests(MonitorTestCase):
                 self.assertEqual(jm._drop_repeats([sf], state, current, set(), others, match_titles=False), [sf])
                 state = {current: [{**dublin, jm.REPORTED_MARK: jm.SHOWN_AS_MATCH}, sf]}
                 self.assertEqual(jm._drop_repeats([sf], state, current, set(), others, match_titles=False), [])
+
+
+class ForgetClosedPostingsTests(MonitorTestCase):
+    """A company job board's posting that has closed is remembered FORGET_GONE_DAYS, then forgotten,
+    so state.json holds open roles and recently closed ones rather than every role a company had."""
+
+    def board_target(self, url, jobs):
+        return {"name": "Acme", "url": url, "mode": "api", "_board": True, "_compact": True, "_quiet": True,
+                "_prefetched": jobs, "_forget_gone_days": jm.FORGET_GONE_DAYS}
+
+    def on(self, day):
+        self.patch(jm, "_today", lambda: day)
+
+    def test_a_closed_posting_is_forgotten_after_sixty_days_and_one_back_in_time_is_kept(self):
+        url = "https://boards-api.greenhouse.io/v1/boards/acme/jobs"
+        job = lambda n: {"title": "Software Engineer", "url": f"https://boards.greenhouse.io/acme/jobs/{n}"}  # noqa: E731
+        state = {}
+        self.on("2026-11-20")
+        jm.check_target(self.board_target(url, [job(1), job(2), job(3)]), state, [], None)
+        self.assertEqual([r.get(jm.GONE_KEY) for r in state[url]], [None, None, None])
+        # 2 and 3 close; 2 comes back a month later; 3 stays closed.
+        jm.check_target(self.board_target(url, [job(1)]), state, [], None)
+        self.assertEqual({r["url"][-1]: r.get(jm.GONE_KEY) for r in state[url]}, {"1": None, "2": "2026-11-20", "3": "2026-11-20"})
+        self.on("2026-12-20")
+        new, _ = jm.check_target(self.board_target(url, [job(1), job(2)]), state, [], None)
+        self.assertEqual(new, [])  # (back, not new)
+        self.assertEqual({r["url"][-1]: r.get(jm.GONE_KEY) for r in state[url]}, {"1": None, "2": None, "3": "2026-11-20"})
+        self.on("2027-01-18")  # (59 days)
+        jm.check_target(self.board_target(url, [job(1), job(2)]), state, [], None)
+        self.assertEqual(sorted(r["url"][-1] for r in state[url]), ["1", "2", "3"])
+        self.on("2027-01-19")  # (60 days: forgotten)
+        jm.check_target(self.board_target(url, [job(1), job(2)]), state, [], None)
+        self.assertEqual(sorted(r["url"][-1] for r in state[url]), ["1", "2"])
+        # A posting still listed is never forgotten, however long ago it was first seen.
+        self.on("2028-01-01")
+        jm.check_target(self.board_target(url, [job(1), job(2)]), state, [], None)
+        self.assertEqual(sorted(r["url"][-1] for r in state[url]), ["1", "2"])
+
+    def test_a_posting_emailed_to_you_is_never_forgotten(self):
+        # Closed for a season and reopened with the same link: it was emailed once, so it must not be again.
+        url = "https://boards-api.greenhouse.io/v1/boards/acme/jobs"
+        posting = {"title": "Software Engineer, New Grad", "url": "https://boards.greenhouse.io/acme/jobs/4001234"}
+        state = {url: [{"url": posting["url"], jm.REPORTED_MARK: jm.SHOWN_AS_MATCH},
+                       {"url": "https://boards.greenhouse.io/acme/jobs/5", jm.EARLIER_COMPANY_MARK: True,
+                        jm.REPORTED_MARK: jm.SHOWN_AS_MATCH}]}
+        self.on("2026-11-20")
+        jm.check_target(self.board_target(url, []), state, [], None)
+        self.on("2027-08-15")
+        jm.check_target(self.board_target(url, []), state, [], None)
+        self.assertEqual(len(state[url]), 2)
+        new, _ = jm.check_target(self.board_target(url, [posting]), state, [], None)
+        self.assertEqual(new, [])
+
+    def test_without_forget_days_nothing_is_marked_or_forgotten(self):
+        old = [{"url": "https://x.example/1"}, {"url": "https://x.example/2"}]
+        self.on("2030-01-01")
+        merged = jm.merge_jobs_new_first(old, [{"url": "https://x.example/1"}], 1000)
+        self.assertEqual(merged, old)  # (Workday sites, SmartRecruiters, your entries and the lists: as before)
+        merged = jm.merge_jobs_new_first(old + [{"url": "https://x.example/3", jm.GONE_KEY: "2000-01-01"}],
+                                         [{"url": "https://x.example/1"}], 1000)
+        self.assertEqual(len(merged), 3)
+
+    def test_only_boards_whose_whole_list_is_read_forget(self):
+        known = {
+            "greenhouse:acme": {"name": "Acme", "url": "https://boards-api.greenhouse.io/v1/boards/acme/jobs"},
+            "ashby:beta": {"name": "Beta", "url": "https://api.ashbyhq.com/posting-api/job-board/beta"},
+            "lever:gamma": {"name": "Gamma", "url": "https://api.lever.co/v0/postings/gamma"},
+            "sr:delta": {"name": "Delta", "url": "https://api.smartrecruiters.com/v1/companies/delta/postings"},
+            "wd:eps": {"name": "Eps", "url": "https://eps.wd1.myworkdayjobs.com/Careers"},
+        }
+        meta = {"known": known, "list_etags": {}}
+        boards = jm.plan_boards({"platforms": ["greenhouse", "ashby", "lever", "smartrecruiters", "workday"]}, [], {}, meta, False)
+        self.assertEqual({b["name"]: b.get("_forget_gone_days") for b in boards},
+                         {"Acme": 60, "Beta": 60, "Gamma": 60, "Delta": None, "Eps": None})
+
+    def test_state_json_is_written_compactly(self):
+        jm.save_state({"https://x.example/board": [{"url": "https://x.example/1"}]})
+        text = jm.STATE_PATH.read_text()
+        self.assertNotIn("\n ", text)
+        self.assertIn('[{"url":"https://x.example/1"}]', text)
+        self.assertEqual(jm.load_state()["https://x.example/board"], [{"url": "https://x.example/1"}])
 
 
 # ===================================================================

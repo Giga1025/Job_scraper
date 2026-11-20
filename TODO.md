@@ -13,7 +13,7 @@ Jobright aren't needed.
       entries too.
 - [ ] **Workday, after the first days**: check in the run logs and `boards.md` that sites are read
       on GitHub (not skipped as bot checks), how often each comes round, and how much `state.json`
-      grows (about 21 MB expected, to about 38 MB; GitHub warns about a file over 50 MB); adjust
+      grows (see "State size" below); adjust
       `workday_minutes_per_run` to match (whatever it says, no Workday site is started after a
       run's 24th minute, so runs end before the next one is due; the workflow's limit is 40).
 
@@ -35,6 +35,29 @@ Jobright aren't needed.
 - [ ] **US filter misses** ("IN - Jaipur", "2 Locations") and engineering-but-not-software titles.
 - [x] **Duplicate link**: Salesforce sometimes listed one job with and without the page's filters
       after "?". Workday entries now keep a link a posting was already recorded with.
+
+## State size (`state.json` on `monitor-state`; GitHub warns at 50 MB, refuses 100 MB)
+- [x] **Forget closed postings** (Nov 2026): it was 22.6 MB after the whole new-grad list added
+      1,039 companies, and grew every day, because each company board kept every posting it had
+      ever listed (up to 1,000 a board; the median board had 20, so almost none reached the cap).
+      Now a Greenhouse, Ashby, Lever or Workable board keeps the postings it lists now plus those
+      that closed in the last 60 days: a closed one gets a "gone" date and is deleted after 60
+      days missing (one that comes back loses the date). Postings still listed are never deleted.
+      A posting that was emailed to you is never forgotten (about 1%), so a reopened one isn't
+      emailed twice. The file is also written without indentation (22.6 MB -> 18.5 MB, same
+      content), and each run logs its size ("Saved state.json: ... MB") so growth can be watched.
+- [ ] **Check the size after late January 2027**: nothing is forgotten before about Jan 19 (the
+      postings already closed all got the first day's date), so until then the boards still grow
+      about 0.13 MB a day; then they should level off at about 13-16 MB. If the whole file still
+      heads for 50 MB, in this order:
+      1. Workday sites: each keeps up to 100 postings not emailed plus 100 emailed, about 140
+         bytes each (long links): 49 MB if all ~1,770 sites filled both (about 25 MB likelier).
+         Store a short key (tenant + job number) instead of the whole link, or keep fewer.
+      2. Save the state compressed (state.json.gz: 18 MB -> about 3 MB). The workflow's save step
+         and the loader both change, with a fallback to read the old file once.
+      3. Split the state into several files (one per platform), each well under the limits.
+- [ ] SmartRecruiters boards still keep up to 1,000 postings each (0.8 MB today): only their
+      newest pages are read, so a posting missing there may still be open and isn't forgotten.
 
 ## Housekeeping
 - [ ] Delete the stale `state.json` on `main` (the state lives on the `monitor-state` branch).

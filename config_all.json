@@ -216,7 +216,15 @@
       "clinician",
       "clinicians",
       "teleoperator",
-      "teleoperators"
+      "teleoperators",
+      "trading analyst",
+      "trading analysts",
+      "trading associate",
+      "trading graduate",
+      "investment analyst",
+      "investment associate",
+      "valuation analyst",
+      "portfolio implementation"
     ],
     "non_tech_ok_if": [
       "software engineer",
@@ -263,7 +271,8 @@
       "postdoctoral",
       "postdoc",
       "data solutions engineer",
-      "distribution technology"
+      "distribution technology",
+      "quantitative investment"
     ],
     "exclude_non_engineering": [
       "tutor",
@@ -477,7 +486,11 @@
       "client experience associate",
       "applecare",
       "economist",
-      "economists"
+      "economists",
+      "food service",
+      "food services",
+      "worker",
+      "workers"
     ],
     "exclude_other_disciplines": [
       "mechanical",

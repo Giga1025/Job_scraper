@@ -144,7 +144,7 @@ company ("Clay (via SimplifyJobs New Grad)"). `config_all.json` uses three:
 
 | Feed | `format` | What's read |
 |---|---|---|
-| [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions) | `simplify` | its `listings.json`: rows in the given `categories` |
+| [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions) | `simplify` | its `listings.json`: rows in the given `categories` (Software, AI/ML/Data and Quant; not Hardware or Product) |
 | [speedyapply 2027 SWE](https://github.com/speedyapply/2027-SWE-College-Jobs) and [AI](https://github.com/speedyapply/2027-AI-College-Jobs) | `speedyapply` | the tables in `NEW_GRAD_USA.md` |
 
 They live in `targets/new_grad_lists.json`. Each feed remembers every posting it has listed in the last `max_age_days` (90 for Simplify,
@@ -170,9 +170,13 @@ in a registry that only grows:
   postings); it ships with about 50 well-known startups,
 - every company the new-grad lists link to on one of those sites, added the first time it
   shows up,
-- every company the lists under `find_companies_in` link to (SimplifyJobs' internship list:
-  companies that hire interns usually hire new grads too). These lists are only used to find
-  companies; their postings aren't emailed.
+- every company the lists under `find_companies_in` link to: SimplifyJobs' internship list
+  (companies that hire interns usually hire new grads too) and SimplifyJobs' whole new-grad
+  list, every row since it started and every category (the new-grad feed itself only emails
+  tech rows from the last 90 days, so a company that last hired new grads in the spring, or is
+  listed under Hardware or Product, would otherwise never be checked: about 1,075 more boards,
+  400 of them Workday sites, in Nov 2026). These lists are only used to find companies; their
+  postings aren't emailed from here.
 
 Companies on **Workable** join the same registry (as their Workable account); the code is in
 `boards/workable.py`. Workable refuses quick reading of each company's page ("429 Too Many
@@ -322,10 +326,28 @@ link (an edited title or location).
   `paypal.wd1.myworkdayjobs.com` under other numbers, so each new role would be emailed twice;
 - each site remembers (the link only) its 100 latest postings that weren't emailed to you, and
   besides those its 100 latest that were, so a busy site (Walmart, CVS) never forgets one it
-  emailed and a list linking it later doesn't email it again. That is about 21 MB of
-  `state.json` for the 1,340 sites (about 155 bytes a posting, plus the few emailed), reached over
-  weeks as sites fill up: `state.json`, about 17 MB today, grows to about 38 MB. GitHub warns
-  about a file over 50 MB and refuses one over 100 MB.
+  emailed and a list linking it later doesn't email it again. That is up to about 140 bytes a
+  posting, so up to about 28 KB a site (and 49 MB if all ~1,770 sites filled up both; about 25 MB
+  is likelier), reached over weeks as sites fill up. See "How big state.json gets" below.
+
+**How big `state.json` gets.** GitHub warns about a file over 50 MB and refuses one over 100 MB
+(the state then couldn't be saved), so the state keeps only what it needs:
+- a company job board on Greenhouse, Ashby, Lever or Workable remembers (the link only, about 90
+  bytes) every posting it lists now, and a posting it no longer lists (closed) for 60 days
+  (`FORGET_GONE_DAYS`): the day a posting is first missing it gets a `"gone"` date, and it is
+  forgotten once it has been missing 60 days; one that comes back loses the date and isn't
+  emailed again. A posting that was emailed to you is never forgotten (about 1% of them), so one
+  reopened months later with the same link isn't emailed twice. Before this (Nov 2026) every
+  posting a board ever listed stayed, so the file grew every day with the roles companies posted,
+  not only with new companies. Postings already closed when this started all got that first
+  day's date, so the first are forgotten around Jan 19, 2027: until then the boards grow as
+  before (about 0.13 MB a day), then level off at their open postings plus 60 days of closed ones
+  (about 13-16 MB, against 9.3 MB in Nov 2026);
+- SmartRecruiters boards keep the latest 1,000 (their newest postings are read, not the whole
+  list, so a posting missing from them may still be open), Workday sites as above, your own
+  entries the latest 1,000, the new-grad lists their last 90 or 120 days, the left-out list 7 days;
+- the file is written without indentation (about a fifth smaller), and each run logs its size
+  ("Saved state.json: 18.5 MB").
 
 The log and `boards.md` say how many sites each run read, couldn't read, and left for the next
 run (and `boards.md`, how many runs a round of all sites takes at that pace). `boards.md` also
