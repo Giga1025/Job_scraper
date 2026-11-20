@@ -33,6 +33,8 @@ REPO_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_DIR))
 
 import job_monitor as jm  # noqa: E402
+from boards import browser as browser_module  # noqa: E402
+from boards.browser import Browser as RealBrowser  # noqa: E402
 
 URL = "https://acme.example/careers"
 SELECTOR = "a[href*='/jobs/']"
@@ -2379,17 +2381,17 @@ class BoardTests(MonitorTestCase):
         self.assertTrue(jm._phrase_pattern(entry["tech_titles"]).search("Member of Technical Staff, Inference"))
 
     def test_a_registry_entry_of_an_unknown_kind_is_left_out(self):
-        # e.g. a Workday site saved by a newer version: never read as if it were something else.
+        # e.g. an iCIMS site saved by a newer version: never read as if it were something else.
         self.start((1, "New Grad Software Engineer"))
         meta = self.boards_meta()
-        meta["known"]["https://acme.wd5.myworkdayjobs.com/external"] = {
-            "url": "https://acme.wd5.myworkdayjobs.com/External", "name": "Acme Workday", "added": "2026-11-16", "via": "x"}
+        meta["known"]["https://careers-acme.icims.com/jobs"] = {
+            "url": "https://careers-acme.icims.com/jobs", "name": "Acme iCIMS", "added": "2026-11-16", "via": "x"}
         jm.save_state({}, boards=meta)
         self.age_board_check()
         with self.assertLogs(jm.log, "INFO") as logs:
             self.run_boards()
         self.assertIn("1 read, 0 unchanged since the last check, 0 not found, 0 could not be read", "\n".join(logs.output))
-        self.assertNotIn("Acme Workday", jm.boards_page_path().read_text())
+        self.assertNotIn("Acme iCIMS", jm.boards_page_path().read_text())
 
     def test_lever_eu_boards_are_read_from_the_eu_api(self):
         self.pages["https://api.eu.lever.co/v0/postings/beta"] = json.dumps(
@@ -2666,7 +2668,7 @@ class HealthTests(MonitorTestCase):
         for message, expected in cases.items():
             self.assertIn(expected, jm._problem_reason([message]), message)
         # A fast path that fails while a fallback works is fine.
-        self.assertIsNone(jm._health_record(None, "Salesforce", 20, ["[wd-api] 429 Too Many Requests"], "cfg"))
+        self.assertIsNone(jm._health_record(None, "Microsoft", 20, ["[ms-api] 429 Too Many Requests"], "cfg"))
 
     def test_removed_and_paused_entries_are_not_reported(self):
         self.refuse_other(429)
@@ -3556,6 +3558,1026 @@ class SmartRecruitersTests(MonitorTestCase):
         self.assertIn("smartrecruiters", entry["platforms"])
 
 
+WD_SITE = "https://acme.wd5.myworkdayjobs.com/External"
+WD_API = "https://acme.wd5.myworkdayjobs.com/wday/cxs/acme/External/jobs"
+WD_BETA_API = "https://beta.wd1.myworkdayjobs.com/wday/cxs/beta/Careers/jobs"
+
+
+def wd_link(rid, title="Software Engineer", site="acme.wd5.myworkdayjobs.com/en-US/External"):
+    """A link to a posting on a Workday site (Acme's by default), as the new-grad lists give it."""
+    return f"https://{site}/job/New-York-NY/{title.replace(' ', '-')}_R{rid}"
+
+
+class _FakeWait:
+    """page.expect_event("requestfinished"): the request the page made (its answer in full) that the
+    predicate wanted, or a timeout."""
+
+    def __init__(self, predicate):
+        self.predicate, self.request = predicate, None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, kind, exc, tb):
+        if kind is None and self.request is None:
+            raise TimeoutError("Timeout 15000ms exceeded.")  # (Playwright's is also named TimeoutError)
+        return False
+
+    @property
+    def value(self):
+        return self.request
+
+
+class _FakeRequest:
+    def __init__(self, url, body):
+        self.url, self.method, self.post_data, self.answer = url, "POST", json.dumps(body), None
+        self.headers = {"content-type": "application/json", "accept": "application/json", "x-calypso-csrf-token": "t0k",
+                        "user-agent": "Mozilla/5.0", "referer": "https://example.invalid/"}
+
+    def response(self):
+        return self.answer
+
+
+class _FakeJobsResponse:
+    def __init__(self, request, status, text, hangs=None):
+        self.url, self.status, self._text, self.request, self._hangs = request.url, status, text, request, hangs
+
+    def text(self):
+        if self._hangs:
+            self._hangs()  # (a page whose script is stuck: Chromium can't hand over the body)
+        return self._text
+
+
+class _FakeDoc:
+    def __init__(self, status, headers=None):
+        self.status, self.headers = status, headers or {}
+
+
+class _FakeHandle:
+    def __init__(self, value):
+        self.value = value
+
+    def json_value(self):
+        return self.value
+
+
+class _FakeTab:
+    """A browser tab on a fake Workday site: opening a site's search page makes the page ask the
+    site's jobs API (test.wd) for its first page, with the filters in the page's address, as the
+    real page does. test.browser_answers[api] makes it a bot check ("challenge"), a page that
+    never asks ("timeout"), a 404 ("missing"), a server error ("unavailable": 500, as Workday
+    answers for a company name it doesn't have), a page that goes on to another site and never
+    asks ("elsewhere"), a page that ignores the filters, a crash ("boom"), or a page whose script
+    gets stuck once its job list is in ("stuck") or when asked for more ("stuck asking for more"):
+    Chromium then doesn't answer until the watchdog kills it."""
+
+    def __init__(self, test):
+        self.test, self.closed, self._waiting, self.waited_for, self.url = test, False, None, [], "about:blank"
+
+    def expect_event(self, event, predicate, timeout=None):
+        self.waited_for.append(event)
+        self._waiting = _FakeWait(predicate)
+        return self._waiting
+
+    def goto(self, url, wait_until=None, timeout=None):
+        test = self.test
+        test.loads.append(url)
+        self.url = url
+        api = jm.workday.api_of(jm.workday.site_of(url))[0]
+        how = test.browser_answers.get(api)
+        if how == "boom":
+            raise RuntimeError("Target page, context or browser has been closed")
+        if how == "challenge":
+            return _FakeDoc(403, {"cf-mitigated": "challenge"})
+        if how == "missing":
+            return _FakeDoc(404)
+        if how == "unavailable":
+            return _FakeDoc(500)
+        if how == "elsewhere":
+            self.url = "https://community.workday.com/maintenance-page"
+        elif how != "timeout":
+            facets = {} if how == "ignores filters" else {k: v for k, v in jm.parse_qs(jm.urlparse(url).query).items()}
+            body = {"appliedFacets": facets, "limit": 20, "offset": 0, "searchText": ""}
+            status, text = test.wd_answer(api, body, "page")
+            request = _FakeRequest(api, body)
+            request.answer = _FakeJobsResponse(request, status, text, test.until_killed if how == "stuck" else None)
+            if self._waiting and self._waiting.predicate(request) and self._waiting.request is None:
+                self._waiting.request = request
+        return _FakeDoc(200)
+
+    def wait_for_function(self, script, arg=None, polling=None, timeout=None):
+        url, body, headers, _, _ = arg
+        self.test.fetch_headers.append(headers)
+        if self.test.browser_answers.get(url) == "stuck asking for more":
+            self.test.until_killed()
+        status, text = self.test.wd_answer(url, body, "fetch")
+        return _FakeHandle(json.dumps({"status": status, "text": text}))
+
+    def close(self):
+        self.closed = True
+
+
+class FakePlaywright:
+    """Stands in for a started Playwright (boards/browser.py): one Chromium, its tabs on fake Workday sites."""
+
+    def __init__(self, test):
+        self.test, self.chromium, self.stopped, self.launched, self.closed, self.tabs = test, self, False, 0, False, []
+
+    def launch(self, **kwargs):
+        if self.test.browser_broken:
+            raise RuntimeError("Executable doesn't exist at /ms-playwright/chromium\nRun playwright install")
+        self.launched += 1
+        self.test.chromiums.add(1000 + len(self.test.chromiums))  # (its process, for the watchdog)
+        return self
+
+    def new_context(self, **kwargs):
+        self.context_options = kwargs
+        return self
+
+    def new_page(self):
+        tab = _FakeTab(self.test)
+        self.tabs.append(tab)
+        return tab
+
+    def close(self):
+        self.closed = True
+
+    def stop(self):
+        self.stopped = True
+
+
+class WorkdayTestCase(MonitorTestCase):
+    """Fake Workday sites (self.wd: each site's jobs API -> its postings, newest first, as (id, title,
+    postedOn[, location]), or an HTTP status), read by plain requests (refused when
+    self.api_refuses, as from GitHub's machines since Nov 2026) or through a fake browser."""
+
+    def setUp(self):
+        super().setUp()
+        self.slept = []
+        self.patch(jm.workday, "_sleep", self.slept.append)
+        self.wd = {WD_API: []}
+        self.posts = []            # (API URL, offset, how: "api", "page" (the page's own request) or "fetch" (asked from the page))
+        self.loads = []            # pages opened in the browser
+        self.fetch_headers = []
+        self.bodies = []           # what each request for a page of jobs asked
+        self.fail_offsets = set()  # pages of the job list that fail (500)
+        self.api_refuses = False
+        self.browser_answers = {}
+        self.browser_broken = False
+        self.playwrights = []      # one per run that started the browser
+        self.chromiums = set()     # the fake Chromium processes started (one per launch)
+        self.killed = []           # those the watchdog killed
+        self.chromium_killed = threading.Event()
+
+        def start():
+            self.playwrights.append(FakePlaywright(self))
+            return self.playwrights[-1]
+
+        self.patch(jm.workday, "Browser", lambda: RealBrowser(start=start))
+        self.patch(browser_module, "_chromiums", lambda: set(self.chromiums))
+        self.patch(browser_module, "_kill", self.fake_kill)
+        self.patch(jm.requests, "post", self.fake_wd_post)
+        self.patch(jm, "fetch_browser", mock.Mock(side_effect=AssertionError("Workday isn't read with fetch_browser")))
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Acme", "New Grad Software Engineer", url=wd_link(1, "New Grad Software Engineer"))])
+
+    def wd_answer(self, api, body, how):
+        self.posts.append((api, body.get("offset"), how))
+        self.bodies.append(body)
+        site = self.wd.get(api)
+        if body.get("offset") in self.fail_offsets:
+            return 500, ""
+        if site is None:
+            return 404, ""
+        if isinstance(site, int):
+            return site, ""
+        start, limit = body["offset"], body["limit"]
+        return 200, json.dumps({"total": len(site), "jobPostings": [
+            {"title": title, "externalPath": f"/job/New-York-NY/{title.replace(' ', '-')}_R{rid}",
+             "postedOn": posted, "locationsText": rest[0] if rest else "New York, NY"}
+            for rid, title, posted, *rest in site[start:start + limit]]})
+
+    def fake_kill(self, pids):
+        self.killed += sorted(pids)
+        self.chromium_killed.set()
+
+    def until_killed(self):
+        """A call into a stuck page: it doesn't come back until the watchdog kills Chromium (then it fails)."""
+        if not self.chromium_killed.wait(10):
+            raise AssertionError("the watchdog didn't stop the browser")
+        self.chromium_killed.clear()
+        raise RuntimeError("Target page, context or browser has been closed")
+
+    def fake_wd_post(self, url, *args, **kwargs):
+        if self.api_refuses:
+            self.posts.append((url, kwargs["json"].get("offset"), "api"))
+            refused = FakeResponse("<html>Just a moment...</html>", status_code=429)
+            refused.headers["Cf-Mitigated"] = "challenge"
+            return refused
+        status, text = self.wd_answer(url, kwargs["json"], "api")
+        return FakeResponse(text, status_code=status)
+
+    def asked(self, how=None):
+        return [(api, offset) for api, offset, via in self.posts if how is None or via == how]
+
+    def entry(self, **extra):
+        return {"name": "Company job boards", "mode": "boards", "every_hours": 1, "catch_up_days": 3,
+                "platforms": ["greenhouse", "ashby", "lever", "workday"],
+                "tech_titles": ["software", "ml", "infrastructure", "new grad"], **extra}
+
+    def run_wd(self, *extra_targets, boards=True, **entry_extra):
+        targets = [target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                          categories=["Software"], max_age_days=7), *extra_targets] + ([self.entry(**entry_extra)] if boards else [])
+        return self.run_monitor(targets, email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)[1]
+
+    def known(self):
+        return self.saved_state().get(jm.BOARDS_KEY, {}).get("known", {})
+
+    def two_sites(self, *more):
+        """Acme and Beta (and these other companies) on Workday, in the feed."""
+        self.wd[WD_BETA_API] = [(9, "Software Engineer", "Posted Today")]
+        rows = [simplify_row("Acme", "New Grad Software Engineer", url=wd_link(1)),
+                simplify_row("Beta", "Software Engineer", url="https://beta.wd1.myworkdayjobs.com/Careers/job/X/SWE_R99")]
+        for name in more:
+            self.wd[f"https://{name.lower()}.wd1.myworkdayjobs.com/wday/cxs/{name.lower()}/Careers/jobs"] = [(1, "Software Engineer", "Posted Today")]
+            rows.append(simplify_row(name, "Software Engineer", url=f"https://{name.lower()}.wd1.myworkdayjobs.com/Careers/job/X/SWE_R1"))
+        self.pages[SIMPLIFY_URL] = json.dumps(rows)
+
+
+class WorkdayBoardTests(WorkdayTestCase):
+    """Company Workday sites found through the lists (the "boards" entry with "workday")."""
+
+    def test_workday_links_are_recognised(self):
+        cases = {
+            wd_link(5): WD_SITE,
+            "https://acme.wd5.myworkdayjobs.com/External/job/Remote/SWE_R5/apply": WD_SITE,
+            "https://ebay.wd5.myworkdayjobs.com/apply/job/Toronto/Engineer_R0076353": "https://ebay.wd5.myworkdayjobs.com/apply",
+            "https://acme.wd5.myworkdayjobs.com/en-us/External": WD_SITE,
+            "https://wd5.myworkdaysite.com/en-US/recruiting/chewy/CHEWY/job/Boston/SWE_R1":
+                "https://wd5.myworkdaysite.com/recruiting/chewy/CHEWY",
+        }
+        for link, site in cases.items():
+            self.assertEqual(jm.board_api_url(link), ("workday", site), link)
+        for link in ("https://acme.wd5.myworkdayjobs.com/", "https://acme.wd5.myworkdayjobs.com/wday/cxs/acme/External/jobs",
+                     "https://wd5.myworkdaysite.com/recruiting/chewy", "https://acme.myworkdayjobs.com/External"):
+            self.assertIsNone(jm.board_api_url(link), link)
+        self.assertEqual(jm.workday.api_of("https://wd5.myworkdaysite.com/recruiting/chewy/CHEWY"),
+                         ("https://wd5.myworkdaysite.com/wday/cxs/chewy/CHEWY/jobs",
+                          "https://wd5.myworkdaysite.com/en-US/recruiting/chewy/CHEWY"))
+        self.assertEqual(jm._board_platform(WD_SITE), "workday")
+        self.assertEqual(jm._board_page(WD_SITE), WD_SITE)
+        # One site whichever form of its address a link uses; a posting is its company's job number.
+        other_form = "https://wd5.myworkdaysite.com/en-US/recruiting/acme/External/job/Boston/SWE_R5?utm_source=Simplify"
+        self.assertEqual(jm.workday.site_key(other_form), jm.workday.site_key(wd_link(5)))
+        self.assertEqual(jm.workday.site_key(wd_link(5)), jm._url_key(WD_SITE))
+        self.assertEqual(jm.job_keys(other_form), jm.job_keys(wd_link(5)))
+        # (two companies on the same wdN.myworkdaysite.com host don't share job numbers)
+        self.assertNotEqual(jm.job_keys(other_form), jm.job_keys(other_form.replace("/acme/", "/beta/")))
+
+    def test_only_the_newest_pages_of_a_workday_site_are_read(self):
+        reader = jm.workday.Reader(pause=0)
+        self.wd[WD_API] = [(i, f"Software Engineer {i}", "Posted Today") for i in range(1, 46)]
+        status, jobs = reader.read(WD_SITE)
+        self.assertEqual((status, len(jobs), [o for _, o in self.asked()]), ("ok", 45, [0, 20, 40]))  # to the end of the list
+        self.assertEqual((jobs[0]["url"], jobs[0]["location"]), (wd_link(1, "Software Engineer 1"), "New York, NY"))
+        self.assertTrue(jm._posted_since(jobs[0], datetime.now(timezone.utc) - timedelta(minutes=5)))
+        # Up to the first page with a posting seen before...
+        self.posts.clear()
+        seen = {jm.workday.posting_key(wd_link(25, "Software Engineer 25"))}
+        self.assertEqual((len(reader.read(WD_SITE, seen)[1]), len(self.posts)), (40, 2))
+        # ...or one older than a week, and never more than MAX_PAGES.
+        self.wd[WD_API] = [(i, "Software Engineer", "Posted 2 Days Ago") for i in range(1, 30)] + \
+                          [(i, "Software Engineer", "Posted 8 Days Ago") for i in range(30, 200)]
+        self.assertEqual(len(reader.read(WD_SITE)[1]), 40)
+        self.wd[WD_API] = [(i, "Software Engineer", "Posted Yesterday") for i in range(1, 200)]
+        self.assertEqual(len(reader.read(WD_SITE)[1]), 20 * jm.workday.MAX_PAGES)
+        self.assertEqual(self.loads, [])  # (Workday answered plain requests: no browser)
+
+    def test_a_workday_site_found_through_a_list_is_checked_like_a_board(self):
+        self.wd[WD_API] = [
+            (2, "Software Engineer", "Posted Today"),
+            (1, "New Grad Software Engineer", "Posted Yesterday"),   # the new-grad list has it already
+            (4, "Software Engineer", "Posted 2 Days Ago", "Bengaluru, India"),
+            (5, "Account Executive", "Posted 2 Days Ago"),
+            (3, "ML Engineer", "Posted 30+ Days Ago"),               # too old to catch up
+        ]
+        self.assertEqual(self.run_wd(), {})  # the list's first check
+        # The next run finds Acme's Workday site: its first check emails its recent tech roles.
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer"]})
+        info = self.known()[jm._url_key(WD_SITE)]
+        self.assertEqual((info["name"], bool(info["caught_up"]), bool(info["tried_at"])), ("Acme", True, True))
+        page = jm.boards_page_path().read_text()
+        self.assertIn("1 Workday.", page)
+        self.assertIn("1 read, 0 couldn't be read (tried again later), 0 left for a later run.", page)
+        self.assertIn("so each is read only every several hours. Last run", page)  # (all read: no pace to tell)
+        self.assertEqual(self.saved_state()[WD_SITE][0], {"url": wd_link(2), "reported": "match"})  # (the link only, like other boards)
+        # Next run: a new posting is emailed; an old one we hadn't seen (it moved up the list) isn't.
+        self.wd[WD_API][:0] = [(7, "Software Engineer, Infrastructure", "Posted Today"), (6, "Software Engineer II", "Posted 30+ Days Ago")]
+        self.posts.clear()
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer, Infrastructure"]})
+        self.assertEqual(self.asked(), [(WD_API, 0)])  # its first page had postings seen before
+        self.assertEqual(self.run_wd(), {})
+
+    def test_workday_sites_are_read_one_request_at_a_time_after_everything_else(self):
+        self.two_sites()
+        self.wd[WD_API] = [(i, "Software Engineer", "Posted Today") for i in range(30, 0, -1)]
+        order = []
+        real_get, real_post = jm.requests.get, jm.requests.post
+        self.patch(jm.requests, "get", lambda url, *a, **k: order.append(url) or real_get(url, *a, **k))
+        self.patch(jm.requests, "post", lambda url, *a, **k: order.append(url) or real_post(url, *a, **k))
+        self.mark_known(GH_ACME)
+        self.pages[GH_ACME] = gh_board((1, "Software Engineer"))
+        mine = target(name="Zed", url=GH_ACME, mode="api")  # (after the Workday sites by name)
+        self.run_wd(mine)
+        order.clear()
+        self.slept.clear()
+        self.run_wd(mine, workday_seconds_between_requests=3)
+        workday = [i for i, u in enumerate(order) if "myworkday" in u]
+        self.assertLess(order.index(GH_ACME), workday[0])
+        # Two pages of Acme's (30 postings), one of Beta's: a pause before each request but the first.
+        self.assertEqual([order[i] for i in workday], [WD_API, WD_API, WD_BETA_API])
+        self.assertEqual(len(self.slept), 2)
+        self.assertTrue(all(2.9 < pause <= 3 for pause in self.slept), self.slept)
+
+    def test_where_plain_requests_work_only_a_site_whose_plain_request_fails_opens_the_browser(self):
+        self.two_sites("Gamma", "Delta")
+        self.run_wd()
+        self.assertEqual((self.loads, self.playwrights), ([], []))  # (all read with plain requests: no browser)
+        self.wd[WD_BETA_API] = 500  # (as for a company name Workday doesn't have)
+        self.run_wd()
+        self.assertEqual(self.loads, ["https://beta.wd1.myworkdayjobs.com/en-US/Careers"])
+        [playwright] = self.playwrights
+        self.assertEqual((playwright.launched, playwright.stopped), (1, True))
+        # If the browser can't start there, that site is skipped and the others are still read with plain requests.
+        self.loads.clear()
+        self.posts.clear()
+        self.browser_broken = True
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.run_wd()
+        output = "\n".join(logs.output)
+        self.assertNotIn("Workday reading stops", output)
+        self.assertEqual(output.count("a site whose plain request fails is skipped this run; the others are still read"), 1)
+        self.assertIn("3 of 4 company Workday sites read", output)
+        self.assertEqual(sorted(api for api, _ in self.asked("api")), sorted(self.wd))
+        self.assertEqual(self.loads, [])
+
+    def test_workday_reading_stops_when_its_time_is_up_and_continues_next_run(self):
+        self.two_sites()
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
+        clock = [0.0]
+
+        def tick():
+            clock[0] += 50
+            return clock[0]
+
+        self.patch(jm.workday, "_monotonic", tick)
+        self.run_wd()
+        self.posts.clear()
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.run_wd(workday_minutes_per_run=1)
+        self.assertIn("1 of 2 company Workday sites read", "\n".join(logs.output))
+        self.assertIn("1 wait for a later run (time's up: 1 min a run)", "\n".join(logs.output))
+        self.assertIn("1 read, 0 couldn't be read (tried again later), 1 left for a later run (time's up: 1 min a run).",
+                      jm.boards_page_path().read_text())
+        self.assertIn("so each is read only every several hours: at the last run's pace, reading all 2 takes about 2 runs. Last run",
+                      jm.boards_page_path().read_text())
+        self.assertIn("Beta | [Workday](https://beta.wd1.myworkdayjobs.com/Careers) (not read yet: waiting for its turn)",
+                      jm.boards_page_path().read_text())
+        self.assertEqual(self.asked(), [(WD_API, 0)])
+        # Next run Beta's turn comes first (never read), then Acme's (read longest ago).
+        self.posts.clear()
+        self.run_wd(workday_minutes_per_run=1)
+        self.assertEqual(self.asked(), [(WD_BETA_API, 0)])
+        self.posts.clear()
+        self.run_wd(workday_minutes_per_run=5)
+        self.assertEqual(self.asked(), [(WD_API, 0), (WD_BETA_API, 0)])
+
+    def test_no_workday_site_is_started_once_the_run_is_20_minutes_old(self):
+        # GitHub stops a run at 30 minutes: whatever time workday_minutes_per_run leaves, no Workday site
+        # is started once the run (counted from when its Reader was made, at its start) is 20 minutes old.
+        clock = [5000.0]
+        self.patch(jm.workday, "_monotonic", lambda: clock[0])
+        self.two_sites("Gamma")
+        reader = jm.workday.Reader(pause=0)
+        clock[0] += 18 * 60  # (everything else took 18 minutes)
+        answer = self.wd_answer
+
+        def slow(*args):  # (each site takes a minute and a half)
+            clock[0] += 90
+            return answer(*args)
+
+        self.wd_answer = slow
+        sites = [{"url": WD_SITE, "name": "Acme"}] + [{"url": f"https://{n}.wd1.myworkdayjobs.com/Careers", "name": n} for n in ("beta", "gamma")]
+        with self.assertLogs(jm.log, "INFO") as logs:
+            results, summary = jm.workday.read_sites(reader, sites, {}, 20)
+        self.assertEqual(list(results), [WD_SITE, "https://beta.wd1.myworkdayjobs.com/Careers"])  # (Beta started at 19:30)
+        self.assertEqual((summary["read"], summary["left"], summary["why"]), (2, 1, "the run is 20 minutes old, and GitHub stops a run at 30"))
+        self.assertIn("No more Workday sites this run: the run is 20 minutes old", "\n".join(logs.output))
+        self.assertEqual(reader.read(WD_SITE), ("stopped", None))  # (your entries too)
+        self.assertEqual(len(self.asked()), 2)
+
+    def test_a_run_that_is_20_minutes_old_leaves_workday_for_the_next_run(self):
+        self.two_sites()
+        mine = target(name="Acme Corp", url=WD_SITE + "?workerSubType=abc", mode="browser", link_selector="")
+        self.run_wd(mine)
+        clock = [0.0]
+        self.patch(jm.workday, "_monotonic", lambda: clock[0])
+        feed_get = jm.requests.get
+
+        def slow_get(url, *args, **kwargs):
+            if url == SIMPLIFY_URL:
+                clock[0] += 20 * 60  # (this run, the lists took 20 minutes)
+            return feed_get(url, *args, **kwargs)
+
+        self.patch(jm.requests, "get", slow_get)
+        read_sites = mock.Mock(wraps=jm.workday.read_sites)
+        self.patch(jm.workday, "read_sites", read_sites)
+        self.posts.clear()
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.run_wd(mine, workday_minutes_per_run=25)
+        self.assertEqual(self.asked(), [])  # neither your Workday entry nor the company sites
+        self.assertIn("Acme Corp", "\n".join(logs.output))
+        self.assertIn("Not read this run: the run is 20 minutes old", "\n".join(logs.output))
+        self.assertEqual(read_sites.call_args.args[3], jm.workday.RUN_MINUTES)  # (the setting can't go past 20 minutes either)
+        self.assertIn("0 read, 0 couldn't be read (tried again later), 1 left for a later run (the run is 20 minutes old",
+                      jm.boards_page_path().read_text())
+        # A run of the usual length reads them.
+        self.patch(jm.requests, "get", feed_get)
+        self.run_wd(mine)
+        self.assertEqual(self.asked(), [(WD_API, 0), (WD_BETA_API, 0)])
+
+    def test_sites_never_read_come_first_newest_linked_first_then_the_longest_unread(self):
+        known = {f"k{i}": {"url": f"https://c{i}.wd1.myworkdayjobs.com/Careers", "added": "2026-11-10"} for i in range(5)}
+        known["k1"]["tried_at"], known["k3"]["tried_at"] = "2026-11-19T10:00:00", "2026-11-19T08:00:00"
+        known["k4"]["added"] = "2026-11-18"
+        sites = [{"url": info["url"], "_board_key": key} for key, info in known.items()]
+        ordered = jm.workday.order(sites, known, {"k2": "2026-11-19", "k0": "2026-11-12"})
+        self.assertEqual([s["_board_key"] for s in ordered], ["k2", "k0", "k4", "k3", "k1"])
+        self.assertEqual(jm.workday.newest_links([(wd_link(1), "2026-11-12"), (wd_link(2), "2026-11-19"), ("https://x.example/1", "2026-11-20")]),
+                         {jm._url_key(WD_SITE): "2026-11-19"})
+
+    def test_a_site_the_lists_link_under_both_forms_of_its_address_is_read_once_and_emails_once(self):
+        # The lists link Chewy (and Guidewire, Magna) both as chewy.wd5.myworkdayjobs.com/External and as
+        # wd5.myworkdaysite.com/recruiting/chewy/External: one site with the same postings.
+        other_form = "wd5.myworkdaysite.com/en-US/recruiting/acme/External"
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Acme", "Software Engineer", url=wd_link(1)),
+            simplify_row("Acme", "Software Engineer II", url=wd_link(2, "Software Engineer II", site=other_form))])
+        self.wd[WD_API] = self.wd["https://wd5.myworkdaysite.com/wday/cxs/acme/External/jobs"] = \
+            [(1, "Software Engineer", "Posted 5 Days Ago"), (2, "Software Engineer II", "Posted 5 Days Ago")]  # (the same list)
+        self.run_wd()
+        self.run_wd()
+        self.assertEqual([k for k in self.known() if "myworkday" in k], [jm._url_key(WD_SITE)])
+        self.posts.clear()
+        self.wd[WD_API].insert(0, (500, "Software Engineer, Platform", "Posted Today"))
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer, Platform"]})
+        self.assertEqual(self.asked(), [(WD_API, 0)])  # read once
+        # A posting the list gave under one form isn't emailed again by the site under the other.
+        rows = json.loads(self.pages[SIMPLIFY_URL])
+        self.pages[SIMPLIFY_URL] = json.dumps(rows + [simplify_row("Acme", "Software Engineer, Data", url=wd_link(700, "Software Engineer, Data", site=other_form))])
+        self.assertEqual(self.run_wd(), {"Acme (via SimplifyJobs New Grad)": ["Software Engineer, Data"]})
+        self.wd[WD_API].insert(0, (700, "Software Engineer, Data", "Posted Today"))
+        self.assertEqual(self.run_wd(), {})
+        # Nor the other way round.
+        self.wd[WD_API].insert(0, (800, "Software Engineer, Infrastructure", "Posted Today"))
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer, Infrastructure"]})
+        rows = json.loads(self.pages[SIMPLIFY_URL])
+        self.pages[SIMPLIFY_URL] = json.dumps(rows + [simplify_row("Acme", "Software Engineer, Infrastructure",
+                                                                   url=wd_link(800, "Software Engineer, Infrastructure", site=other_form))])
+        self.assertEqual(self.run_wd(), {})
+
+    def test_a_workday_site_your_entry_searches_is_not_checked_twice(self):
+        mine = target(name="Acme", url="https://acme.wd5.myworkdayjobs.com/en-US/External?workerSubType=abc", mode="api")
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
+        self.run_wd(mine)
+        self.run_wd(mine)
+        self.assertEqual([k for k in self.known() if "myworkday" in k], [jm._url_key(WD_SITE)])  # (found)
+        self.assertNotIn(WD_SITE, self.saved_state())  # (not checked)
+        self.assertEqual({o for _, o in self.asked()}, {0})
+
+    def test_a_companys_workday_site_is_not_read_when_one_of_your_entries_has_its_name(self):
+        # Your PayPal entry reads PayPal's Eightfold page, which lists the same jobs as PayPal's Workday site
+        # under other numbers: nothing could tell them apart, so reading both would email each new role twice.
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
+        self.pages[URL] = page(*jobs_named("Software Engineer"))
+        mine = target(name="ACME, Inc.", url=URL)  # (its own career page: same name, whatever the case or "Inc")
+        self.run_wd(mine)
+        self.wd[WD_API].insert(0, (3, "Software Engineer, Platform", "Posted Today"))
+        self.pages[URL] = page(*jobs_named("Software Engineer", "Software Engineer, Platform"))
+        self.assertEqual(self.run_wd(mine), {"ACME, Inc.": ["Software Engineer, Platform"]})  # (once)
+        self.assertEqual([k for k in self.known() if "myworkday" in k], [jm._url_key(WD_SITE)])  # (found)
+        self.assertNotIn(WD_SITE, self.saved_state())  # (not checked)
+        self.assertEqual(self.asked(), [])
+        # The same while your entry is paused (its postings stay yours); a board on another platform under
+        # the same name, and a Workday site when your entry with its name is on Workday too (the company's
+        # job numbers tell its postings apart there), are still read.
+        rows = [{"url": wd_link(1), "company": "Acme"}, {"url": "https://job-boards.greenhouse.io/acme/jobs/123", "company": "Acme"}]
+        state = {SIMPLIFY_URL: rows}
+        feed = target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed")
+
+        def plan(*yours):
+            return sorted(jm._board_platform(b["url"]) for b in jm.plan_boards(self.entry(), [feed, *yours], state, jm._board_meta({}), False))
+
+        self.assertEqual(plan(), ["greenhouse", "workday"])
+        self.assertEqual(plan(target(name="Acme", url="https://acme.eightfold.ai/careers", mode="eightfold", enabled=False)), ["greenhouse"])
+        self.assertEqual(plan(target(name="Acme", url="https://acme.wd5.myworkdayjobs.com/University", mode="browser")), ["greenhouse", "workday"])
+        self.assertEqual(plan(target(name="Acme Labs", url=URL)), ["greenhouse", "workday"])
+
+    def test_an_hourly_check_reads_a_workday_site_only_down_to_what_it_saw_before(self):
+        self.wd[WD_API] = [(i, "Account Executive", "Posted Today") for i in range(60, 0, -1)]
+        self.run_wd()
+        self.run_wd()  # the site's first check reads all three pages
+        self.wd[WD_API].insert(0, (61, "Software Engineer", "Posted Today"))
+        self.posts.clear()
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer"]})
+        self.assertEqual(self.asked(), [(WD_API, 0)])
+
+    def test_a_workday_site_keeps_its_latest_postings_and_those_it_emailed(self):
+        self.patch(jm.workday, "RETENTION", 3)
+        self.patch(jm.workday, "PAGE_SIZE", 2)
+        self.patch(jm.workday, "MAX_PAGES", 1)
+        self.wd[WD_API] = [(2, "Account Executive", "Posted Today"), (1, "Sales Manager", "Posted Today")]
+        self.run_wd()
+        self.run_wd()
+        self.wd[WD_API][:0] = [(4, "Account Executive II", "Posted Today"), (3, "Software Engineer II", "Posted Today")]
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer II"]})
+        # A busy site: its new postings push older ones out, but never one it emailed you...
+        self.wd[WD_API][:0] = [(6, "Store Manager", "Posted Today"), (5, "Cashier", "Posted Today")]
+        self.run_wd()
+        self.wd[WD_API][:0] = [(8, "Pharmacist", "Posted Today"), (7, "Stocker", "Posted Today")]
+        self.run_wd()
+        self.assertEqual([r["url"] for r in self.saved_state()[WD_SITE]],
+                         [wd_link(8, "Pharmacist"), wd_link(7, "Stocker"), wd_link(6, "Store Manager"), wd_link(3, "Software Engineer II")])
+        # ...so a list linking it a day later doesn't email it again.
+        rows = json.loads(self.pages[SIMPLIFY_URL])
+        self.pages[SIMPLIFY_URL] = json.dumps(rows + [simplify_row("Acme", "Software Engineer II", url=wd_link(3, "Software Engineer II"))])
+        self.assertEqual(self.run_wd(), {})
+        # (The postings emailed are kept up to their own limit, the latest first.)
+        old = [{"url": f"https://x.example/{i}", "reported": "match"} for i in range(3)] + [{"url": "https://x.example/p"}]
+        self.assertEqual([j["url"] for j in jm.merge_jobs_new_first(old, [{"url": "https://x.example/new"}], 1, max_reported=1)],
+                         ["https://x.example/new", "https://x.example/0"])
+
+    def test_a_workday_posting_emailed_from_a_list_is_not_emailed_again_from_the_site(self):
+        self.wd[WD_API] = [(1, "New Grad Software Engineer", "Posted Today")]
+        self.run_wd()
+        self.run_wd()  # (the site's first check)
+        # The list adds a posting (linked under another site path, with a tracking tag); then the site lists it too.
+        self.pages[SIMPLIFY_URL] = json.dumps([
+            simplify_row("Acme", "New Grad Software Engineer", url=wd_link(1, "New Grad Software Engineer")),
+            simplify_row("Acme", "Software Engineer, Platform", url=wd_link(8, "Software-Engineer-Platform", site="acme.wd5.myworkdayjobs.com/en-US/Careers") + "?utm_source=Simplify")])
+        self.assertEqual(self.run_wd(), {"Acme (via SimplifyJobs New Grad)": ["Software Engineer, Platform"]})
+        self.wd[WD_API].insert(0, (8, "Software Engineer, Platform", "Posted Today"))
+        self.assertEqual(self.run_wd(), {})
+        # And the other way round: the site's posting, listed later by the list, isn't emailed again.
+        self.wd[WD_API].insert(0, (9, "Software Engineer, Data", "Posted Today"))
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer, Data"]})
+        rows = json.loads(self.pages[SIMPLIFY_URL])
+        self.pages[SIMPLIFY_URL] = json.dumps(rows + [simplify_row("Acme", "Software Engineer, Data", url=wd_link(9, "Software Engineer, Data") + "?utm_source=Simplify")])
+        self.assertEqual(self.run_wd(), {})
+
+    def test_the_shipped_boards_entry_reads_workday_sites(self):
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        self.assertIn("workday", entry["platforms"])
+        self.assertEqual((entry["workday_minutes_per_run"], entry["workday_seconds_between_requests"]),
+                         (jm.workday.MINUTES_PER_RUN, jm.workday.SECONDS_BETWEEN_REQUESTS))
+
+
+class WorkdayBrowserTests(WorkdayTestCase):
+    """Reading Workday through the browser once plain requests are refused (as from GitHub's machines)."""
+
+    def setUp(self):
+        super().setUp()
+        self.api_refuses = True
+
+    def test_once_a_plain_request_is_refused_the_run_reads_workday_through_one_browser(self):
+        self.two_sites()
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today"), (1, "New Grad Software Engineer", "Posted Today")]
+        self.run_wd()
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer"], "Beta": ["Software Engineer"]})
+        self.assertIn("Workday refused a plain request (429); reading Workday through the browser", "\n".join(logs.output))
+        # The plain API was asked once; the sites' own pages gave their job lists.
+        self.assertEqual(self.posts, [(WD_API, 0, "api"), (WD_API, 0, "page"), (WD_BETA_API, 0, "page")])
+        self.assertEqual(self.loads, ["https://acme.wd5.myworkdayjobs.com/en-US/External", "https://beta.wd1.myworkdayjobs.com/en-US/Careers"])
+        [browser] = self.playwrights  # one browser for the run, a tab per site, all closed at the end
+        self.assertEqual((browser.launched, len(browser.tabs), all(t.closed for t in browser.tabs)), (1, 2, True))
+        self.assertEqual((browser.closed, browser.stopped), (True, True))
+        self.assertEqual(browser.context_options["user_agent"], jm.HEADERS["User-Agent"])
+        self.assertEqual(len(self.slept), 2)  # (a pause before each page but the first request)
+        self.assertEqual(self.saved_state()[WD_SITE], [{"url": wd_link(2), "reported": "match"},
+                                                       {"url": wd_link(1, "New Grad Software Engineer")}])
+
+    def test_more_pages_are_asked_from_inside_the_page_the_way_the_page_asks(self):
+        self.wd[WD_API] = [(i, "Software Engineer", "Posted Today") for i in range(45, 0, -1)]
+        self.run_wd()
+        self.run_wd()
+        self.assertEqual(self.asked(), [(WD_API, 0), (WD_API, 0), (WD_API, 20), (WD_API, 40)])  # (api refused, page, 2 more)
+        self.assertEqual(len(self.saved_state()[WD_SITE]), 45)
+        self.assertEqual(self.fetch_headers[0]["x-calypso-csrf-token"], "t0k")  # the page's own headers
+        self.assertNotIn("referer", self.fetch_headers[0])
+        # If asking for more fails, what the first page gave is kept.
+        self.wd["https://beta.wd1.myworkdayjobs.com/wday/cxs/beta/Careers/jobs"] = [(i, "Software Engineer", "Posted Today") for i in range(30)]
+        self.pages[SIMPLIFY_URL] = json.dumps(json.loads(self.pages[SIMPLIFY_URL]) + [
+            simplify_row("Beta", "Software Engineer", url="https://beta.wd1.myworkdayjobs.com/Careers/job/X/SWE_R1")])
+        self.fail_offsets = {20}
+        self.run_wd()  # (the list's new row: Beta joins the registry...)
+        self.run_wd()  # (...and is read)
+        self.assertEqual(len(self.saved_state()["https://beta.wd1.myworkdayjobs.com/Careers"]), 20)
+
+    def test_a_site_with_a_bot_check_or_no_job_list_is_skipped_and_tried_again_later(self):
+        self.two_sites()
+        self.run_wd()
+        self.browser_answers = {WD_API: "challenge", WD_BETA_API: "timeout"}
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.assertEqual(self.run_wd(), {})
+        output = "\n".join(logs.output)
+        self.assertIn("0 of 2 company Workday sites read in", output)
+        self.assertIn("2 couldn't be read (tried again later)", output)
+        self.assertIn("0 read, 0 unchanged since the last check, 0 not found, 2 could not be read this time", output)
+        self.assertNotIn(WD_SITE, self.saved_state())  # nothing recorded
+        self.assertEqual(len(self.loads), 2)
+        self.assertTrue(all(t.closed for t in self.playwrights[0].tabs))
+        self.browser_answers = {}
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
+        self.assertEqual(self.run_wd(), {"Acme": ["Software Engineer"], "Beta": ["Software Engineer"]})
+
+    def test_after_three_sites_in_a_row_cant_be_read_workday_stops_for_the_run(self):
+        self.two_sites("Gamma", "Delta")
+        self.run_wd()
+        for api in self.wd:
+            self.browser_answers[api] = "challenge"
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            self.run_wd()
+        self.assertIn("Workday reading stops for this run: 3 Workday sites in a row couldn't be read", "\n".join(logs.output))
+        self.assertEqual(len(self.loads), 3)
+        self.assertIn("0 read, 3 couldn't be read (tried again later), 1 left for a later run (3 Workday sites in a row",
+                      jm.boards_page_path().read_text())
+        # The one left comes first next time.
+        self.loads.clear()
+        self.browser_answers = {}
+        self.run_wd(workday_minutes_per_run=0)
+        self.assertEqual(self.loads, [])  # (0 minutes: company Workday sites paused)
+        self.run_wd()
+        self.assertEqual(self.loads[0], "https://gamma.wd1.myworkdayjobs.com/en-US/Careers")  # (by name: Acme, Beta, Delta were tried)
+
+    def test_boards_page_marks_sites_not_read_yet_and_those_that_failed_lately(self):
+        self.two_sites("Gamma")
+        self.run_wd()
+        self.browser_answers = {WD_API: "challenge", WD_BETA_API: "unavailable"}
+        self.run_wd()
+
+        def row(name):
+            [line] = [l for l in jm.boards_page_path().read_text().splitlines() if l.startswith(f"| {name} |")]
+            return line.split(" | ")[1]
+
+        # Tried but never read: still "not read yet" (and why); read: no note.
+        self.assertTrue(row("Acme").endswith("(not read yet: couldn't be read at its last try)"), row("Acme"))
+        self.assertTrue(row("Beta").endswith("(not read yet: couldn't be read at its last try)"), row("Beta"))
+        self.assertTrue(row("Gamma").endswith(")"))
+        self.assertNotIn("(", row("Gamma").split("](")[1].rstrip(")"))
+        gamma_api = "https://gamma.wd1.myworkdayjobs.com/wday/cxs/gamma/Careers/jobs"
+        self.browser_answers = {WD_BETA_API: "unavailable", gamma_api: "timeout"}
+        self.run_wd()
+        self.assertNotIn("(not", row("Acme"))
+        self.assertTrue(row("Beta").endswith("(not read yet: couldn't be read at its last 2 tries)"), row("Beta"))
+        self.assertTrue(row("Gamma").endswith("(couldn't be read at its last try)"), row("Gamma"))
+        known = self.known()
+        self.assertEqual([known[jm._url_key(f"https://{n}.wd1.myworkdayjobs.com/Careers")].get("failed_tries") for n in ("beta", "gamma")], [2, 1])
+        self.assertNotIn("failed_tries", known[jm._url_key(WD_SITE)])
+
+    def test_a_company_name_workday_doesnt_have_is_skipped_at_once_and_waits_a_day(self):
+        # Workday answers a company name it doesn't have with a server error (500) that leads to its
+        # "Workday is currently unavailable" page, the page it shows when it's down: so the site isn't
+        # counted as gone, but it's left at once (no waiting for the time limit), and after two such
+        # tries it waits at the back of the queue for a day.
+        self.two_sites("Gamma", "Delta")
+        self.run_wd()
+        self.browser_answers = {WD_BETA_API: "unavailable"}
+        reader = jm.workday.Reader(pause=0)
+        reader.api_refused = True
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            self.assertEqual(reader.read("https://beta.wd1.myworkdayjobs.com/Careers", quiet=False), ("skipped", None))
+        reader.close()
+        self.assertIn("skipped this run (the site answered with a server error (500): Workday may be down for a while, "
+                      "or the company is no longer on Workday)", "\n".join(logs.output))
+        self.assertEqual(self.asked(), [])  # (it never asked for its job list)
+        # A page that goes on to another site and never asks for its job list says where it went.
+        self.browser_answers = {WD_BETA_API: "elsewhere"}
+        reader = jm.workday.Reader(pause=0)
+        reader.api_refused = True
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            reader.read("https://beta.wd1.myworkdayjobs.com/Careers", quiet=False)
+        reader.close()
+        self.assertIn("timed out after 15 s; the page had gone to community.workday.com/maintenance-page", "\n".join(logs.output))
+        # In the runs: Beta is tried in its turn twice, then waits at the back for a day, not tried
+        # again before then even when every other site has been read.
+        self.browser_answers = {WD_BETA_API: "unavailable"}
+
+        def run_order():
+            self.loads.clear()
+            self.run_wd()
+            return [load.split("//")[1].split(".")[0] for load in self.loads]
+
+        self.assertEqual(run_order(), ["acme", "beta", "delta", "gamma"])  # (never tried: by name)
+        self.assertEqual(run_order(), ["acme", "beta", "delta", "gamma"])  # (all tried at the same time)
+        self.assertEqual(run_order(), ["acme", "delta", "gamma"])  # (Beta couldn't be read twice: it waits a day)
+        self.assertEqual(run_order(), ["acme", "delta", "gamma"])
+        self.assertIn("3 read, 0 couldn't be read (tried again later), 1 left for a later run "
+                      "(1 couldn't be read at its last tries and waits a day)", jm.boards_page_path().read_text())
+        self.assertNotIn(jm._url_key("https://beta.wd1.myworkdayjobs.com/Careers"), self.saved_state()[jm.BOARDS_KEY]["missing"])
+        # A day after its last try it takes its turn again (tried longest ago: first).
+        known = self.saved_state()[jm.BOARDS_KEY]["known"]
+        known[jm._url_key("https://beta.wd1.myworkdayjobs.com/Careers")]["tried_at"] = "2026-01-01T00:00:00"
+        state = self.saved_state()
+        state[jm.BOARDS_KEY]["known"] = known
+        jm.STATE_PATH.write_text(json.dumps(state))
+        self.loads.clear()
+        self.run_wd()
+        self.assertEqual(self.loads[0], "https://beta.wd1.myworkdayjobs.com/en-US/Careers")
+
+    def test_sites_that_always_fail_come_round_together_without_stopping_the_run(self):
+        # Sites that fail every time are tried in the same run, so they wait their day together and come
+        # round together, side by side at the front: skipping them then doesn't count toward the 3 in a row.
+        self.two_sites("Gamma", "Delta", "Epsilon")
+        self.run_wd()
+        dead = ("beta", "delta", "gamma")
+        self.browser_answers = {f"https://{n}.wd1.myworkdayjobs.com/wday/cxs/{n}/Careers/jobs": "unavailable" for n in dead}
+
+        def run_order():
+            self.loads.clear()
+            self.run_wd()
+            return [load.split("//")[1].split(".")[0] for load in self.loads]
+
+        run_order()
+        run_order()
+        self.assertEqual(run_order(), ["acme", "epsilon"])  # (the three wait their day at the back)
+        state = self.saved_state()
+        for n in dead:  # a day passes for them
+            state[jm.BOARDS_KEY]["known"][jm._url_key(f"https://{n}.wd1.myworkdayjobs.com/Careers")]["tried_at"] = "2026-01-01T00:00:00"
+        jm.STATE_PATH.write_text(json.dumps(state))
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.assertEqual(run_order(), ["beta", "delta", "gamma", "acme", "epsilon"])
+        self.assertNotIn("Workday reading stops for this run", "\n".join(logs.output))
+        self.assertIn("2 of 5 company Workday sites read", "\n".join(logs.output))
+        # Other sites that can't be read still stop it after 3 in a row (Workday may be down), and a site
+        # known to fail (its day up) between two of them, with a server error, neither counts nor clears the count.
+        self.browser_answers = {api: "challenge" for api in self.wd}
+        self.browser_answers[WD_BETA_API] = "unavailable"
+        sites = [{"url": WD_SITE, "name": "Acme", "_board_key": "acme"}] + \
+            [{"url": f"https://{n}.wd1.myworkdayjobs.com/Careers", "name": n, "_board_key": n} for n in ("beta", "delta", "gamma", "epsilon")]
+        a_day_ago = "2026-01-01T00:00:00"
+        known = {"acme": {"failed_tries": 1, "tried_at": a_day_ago}, "beta": {"failed_tries": 2, "tried_at": a_day_ago}}
+        reader = jm.workday.Reader(pause=0)
+        reader.api_refused = True
+        results, summary = jm.workday.read_sites(reader, sites, {}, 5, known)
+        reader.close()
+        self.assertEqual(list(results), [s["url"] for s in sites[:4]])
+        self.assertEqual((summary["left"], summary["why"][:28]), (1, "3 Workday sites in a row cou"))
+        reader = jm.workday.Reader(pause=0)
+        reader.api_refused = True
+        self.assertEqual(len(jm.workday.read_sites(reader, sites, {}, 5)[0]), 3)  # (without the registry: Beta counts)
+        reader.close()
+
+    def test_a_bot_check_counts_toward_the_stop_even_from_sites_known_to_fail(self):
+        # If Workday refuses the monitor for weeks, every site ends up failing its last tries. A bot check
+        # still counts toward the 3 in a row, so each run still stops after 3 such pages.
+        self.two_sites("Gamma", "Delta", "Epsilon")
+        self.browser_answers = {api: "challenge" for api in self.wd}
+        sites = [{"url": WD_SITE, "name": "Acme", "_board_key": "acme"}] + \
+            [{"url": f"https://{n}.wd1.myworkdayjobs.com/Careers", "name": n, "_board_key": n} for n in ("beta", "delta", "gamma", "epsilon")]
+        known = {s["_board_key"]: {"failed_tries": 7, "tried_at": "2026-01-01T00:00:00"} for s in sites}
+        reader = jm.workday.Reader(pause=0)
+        reader.api_refused = True
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            results, summary = jm.workday.read_sites(reader, sites, {}, 5, known)
+        reader.close()
+        self.assertEqual((len(self.loads), len(results), summary["left"]), (3, 3, 2))
+        self.assertIn("Workday reading stops for this run: 3 Workday sites in a row couldn't be read (last: Workday answered "
+                      "with a bot check", "\n".join(logs.output))
+        # A site still waiting its day isn't tried at all, even with nothing else left to read.
+        self.loads.clear()
+        now = datetime.now().isoformat(timespec="seconds")
+        known = {s["_board_key"]: {"failed_tries": 2, "tried_at": now} for s in sites}
+        reader = jm.workday.Reader(pause=0)
+        reader.api_refused = True
+        results, summary = jm.workday.read_sites(reader, sites, {}, 5, known)
+        reader.close()
+        self.assertEqual((self.loads, results, summary["left"]), ([], {}, 5))
+        self.assertEqual(summary["why"], "5 couldn't be read at their last tries and wait a day")
+
+    def test_no_browser_entry_is_read_after_the_workday_browser_opens(self):
+        # While the Workday browser is open, fetch_browser can't start Playwright (boards/browser.py), so
+        # every "browser" or "eightfold" entry must be read before Workday, wherever it is in the config.
+        self.two_sites()
+        opened = []  # whether a Workday browser was open at each fetch_browser call
+
+        def fetch_browser(url, wait_for="", wait_seconds=8):
+            opened.append(any(not playwright.stopped for playwright in self.playwrights))
+            return page(("1", "Software Engineer")), []
+
+        self.patch(jm, "fetch_browser", fetch_browser)
+        mine = target(name="Acme Corp", url=WD_SITE + "?workerSubType=abc", mode="browser", link_selector="")
+        zed = target(name="Zed", url="https://zed.example/careers", mode="browser")
+        yon = target(name="Yon", url="https://yon.example/careers", mode="eightfold")
+        self.run_wd(mine, zed, yon)  # (yours on Workday first in the config)
+        self.run_wd(mine, zed, yon)
+        self.assertEqual(opened, [False] * 4)
+        self.assertEqual(len(self.playwrights), 2)  # (the Workday browser was opened in each run, after them)
+        # The shipped config in the order a run reads it: nothing that needs fetch_browser after Workday.
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        mine = [t for t in config["targets"] if not t.get("_section") and t.get("mode") != "boards"]
+        boards = [{"name": "Acme", "url": WD_SITE, "_board": True}, {"name": "Zed", "url": GH_ACME, "_board": True}]
+        ordered = jm._workday_last(mine + boards)
+        on_workday = [i for i, t in enumerate(ordered) if jm._is_workday_entry(t) or (t.get("_board") and jm._board_platform(t["url"]) == "workday")]
+        self.assertTrue(on_workday and any(t.get("mode") == "browser" and not jm._is_workday_entry(t) for t in mine))
+        self.assertEqual([t["name"] for t in ordered[on_workday[0]:] if t.get("mode") in ("browser", "eightfold") and not jm._is_workday_entry(t)], [])
+        self.assertEqual(on_workday, list(range(on_workday[0], len(ordered))))
+
+    def test_a_site_that_is_gone_is_tried_again_a_day_later(self):
+        self.run_wd()
+        self.browser_answers = {WD_API: "missing"}
+        self.run_wd()
+        self.assertIn(WD_SITE, self.saved_state()[jm.BOARDS_KEY]["missing"])
+        self.loads.clear()
+        self.run_wd()
+        self.assertEqual(self.loads, [])
+
+    def test_the_browser_is_closed_even_when_the_run_fails(self):
+        self.run_wd()
+        self.patch(jm, "_finish_board_check", mock.Mock(side_effect=RuntimeError("something broke")))
+        with self.assertRaises(RuntimeError):
+            self.run_wd()
+        [browser] = self.playwrights
+        self.assertEqual((browser.launched, browser.closed, browser.stopped), (1, True, True))
+
+    def test_a_browser_that_cannot_start_stops_workday_reading_for_the_run(self):
+        self.two_sites()
+        self.run_wd()
+        self.browser_broken = True
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            self.assertEqual(self.run_wd(), {})
+        self.assertIn("Workday reading stops for this run: the browser couldn't start (RuntimeError: Executable doesn't exist",
+                      "\n".join(logs.output))
+        self.assertNotIn("Run playwright install", "\n".join(logs.output))  # (one line)
+        self.assertEqual(self.asked("api"), [(WD_API, 0)])
+
+    def test_a_page_whose_script_gets_stuck_is_left_and_the_next_site_gets_a_fresh_browser(self):
+        # A stuck page can hold a call that has no time limit of its own (reading the job list's body)
+        # forever: the watchdog kills Chromium GRACE_SECONDS past the page's limit, the site is skipped,
+        # and the next site is read in a fresh Chromium.
+        self.patch(browser_module, "GRACE_SECONDS", 0.5)
+        self.patch(jm.workday, "PAGE_TIMEOUT_SECONDS", 0.5)
+        self.wd[WD_BETA_API] = [(9, "Software Engineer", "Posted Today")]
+        self.browser_answers[WD_API] = "stuck"
+        reader = jm.workday.Reader(pause=0)
+        reader.api_refused = True
+        started = time.monotonic()
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            self.assertEqual(reader.read(WD_SITE, quiet=False), ("skipped", None))
+        self.assertLess(time.monotonic() - started, 5)
+        self.assertIn("skipped this run (the browser didn't answer within 1 s, so it was stopped)", "\n".join(logs.output))
+        self.assertEqual(self.killed, [1000])
+        status, jobs = reader.read("https://beta.wd1.myworkdayjobs.com/Careers")
+        self.assertEqual((status, len(jobs)), ("ok", 1))
+        reader.close()
+        [playwright] = self.playwrights
+        self.assertEqual((playwright.launched, self.killed, reader.stopped), (2, [1000], None))  # (the fresh one wasn't killed)
+        self.assertTrue(all(tab.waited_for == ["requestfinished"] for tab in playwright.tabs))  # (the job list in full)
+        self.assertEqual((playwright.closed, playwright.stopped), (True, True))
+
+    def test_a_page_that_gets_stuck_when_asked_for_more_keeps_its_first_page(self):
+        self.patch(browser_module, "GRACE_SECONDS", 0.5)
+        self.patch(jm.workday, "API_TIMEOUT_SECONDS", 0.5)
+        self.wd[WD_API] = [(i, "Software Engineer", "Posted Today") for i in range(45, 0, -1)]
+        self.wd[WD_BETA_API] = [(9, "Software Engineer", "Posted Today")]
+        self.browser_answers[WD_API] = "stuck asking for more"
+        reader = jm.workday.Reader(pause=0)
+        reader.api_refused = True
+        started = time.monotonic()
+        status, jobs = reader.read(WD_SITE)
+        self.assertEqual((status, len(jobs), self.killed), ("ok", 20, [1000]))
+        self.assertLess(time.monotonic() - started, 5)
+        self.assertEqual(reader.read("https://beta.wd1.myworkdayjobs.com/Careers")[0], "ok")
+        reader.close()
+        self.assertEqual((self.playwrights[0].launched, self.killed), (2, [1000]))
+
+    def test_the_browser_module_leaves_a_bot_check_at_once(self):
+        test = self
+
+        class Doc:
+            status, headers = 429, {"cf-mitigated": "challenge"}
+
+        tab = _FakeTab(self)
+        tab.goto = lambda url, **kw: (test.loads.append(url), Doc())[1]
+        browser = RealBrowser(start=lambda: mock.Mock(chromium=mock.Mock(launch=lambda **kw: mock.Mock(
+            new_context=lambda **kw: mock.Mock(new_page=lambda: tab)))))
+        loaded = browser.open("https://acme.wd5.myworkdayjobs.com/en-US/External", lambda url, method: True, 15)
+        self.assertEqual((loaded.status, loaded.detail, tab.closed), ("challenge", "429, challenge", True))
+        browser.close()
+        browser.close()  # (again: nothing happens)
+
+
+class WorkdayEntryTests(WorkdayTestCase):
+    """Your own entries on a Workday site (like NVIDIA's in targets/big_tech.json)."""
+
+    MINE = "https://acme.wd5.myworkdayjobs.com/en-US/External?redirect=/en-US/External/userHome&workerSubType=abc"
+
+    def mine(self, **extra):
+        return target(name="Acme Corp", url=self.MINE, **{"mode": "browser", "link_selector": "", **extra})
+
+    def test_your_entry_is_read_with_its_filters_whatever_its_mode(self):
+        for mode in ("api", "html", "browser"):
+            for refused in (False, True):
+                with self.subTest(mode=mode, refused=refused):
+                    jm.STATE_PATH.unlink(missing_ok=True)
+                    self.posts.clear()
+                    self.loads.clear()
+                    self.api_refuses = refused
+                    self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
+                    self.mark_known(self.MINE)
+                    self.assertEqual(self.run_wd(self.mine(mode=mode), boards=False), {"Acme Corp": ["Software Engineer"]})
+                    if refused:
+                        self.assertEqual(self.loads, ["https://acme.wd5.myworkdayjobs.com/en-US/External?workerSubType=abc"])
+                    else:
+                        self.assertEqual((self.loads, self.asked()), ([], [(WD_API, 0)]))
+                    self.assertEqual((self.bodies[-1]["appliedFacets"], self.bodies[-1]["searchText"]), ({"workerSubType": ["abc"]}, ""))
+        # Its location is kept, for the email.
+        self.assertEqual(self.saved_state()[self.MINE][0]["location"], "New York, NY")
+
+    def test_a_page_that_ignores_your_filters_is_asked_with_them(self):
+        self.api_refuses = True
+        self.browser_answers[WD_API] = "ignores filters"
+        self.wd[WD_API] = [(2, "Software Engineer", "Posted Today")]
+        self.mark_known(self.MINE)
+        self.run_wd(self.mine(), boards=False)
+        self.assertEqual(self.asked(), [(WD_API, 0), (WD_API, 0), (WD_API, 0)])  # refused, the page's own, then with the filters
+        self.assertEqual([via for _, _, via in self.posts], ["api", "page", "fetch"])
+
+    def test_postings_keep_the_links_they_were_recorded_with(self):
+        # Recorded by earlier versions: through the browser (links with the page's filters after "?")
+        # and through the API (without); the same postings now must not count as new.
+        with_filters = wd_link(1) + "?workerSubType=abc"
+        jm.save_state({self.MINE: [{"title": "Software Engineer", "url": with_filters},
+                                   {"title": "ML Engineer", "url": wd_link(2, "ML Engineer")}]})
+        self.wd[WD_API] = [(3, "Software Engineer III", "Posted Today"), (2, "ML Engineer", "Posted Yesterday"),
+                           (1, "Software Engineer", "Posted 2 Days Ago")]
+        for refused in (True, False):
+            with self.subTest(refused=refused):
+                self.api_refuses = refused
+                before = self.saved_state()[self.MINE]
+                reported = self.run_wd(self.mine(), boards=False)
+                self.assertEqual(reported, {"Acme Corp": ["Software Engineer III"]} if refused else {})
+                saved = self.saved_state()[self.MINE]
+                ids = [jm.compute_job_id(j) for j in saved]
+                self.assertEqual(len(ids), len(set(ids)))
+                self.assertEqual([j["url"] for j in saved], [wd_link(3, "Software Engineer III"), with_filters, wd_link(2, "ML Engineer")])
+                self.assertEqual(saved[1:], before[-2:])  # (the old records as they were)
+
+    def test_an_old_posting_your_entry_had_not_seen_is_not_new(self):
+        self.mark_known(self.MINE)
+        self.wd[WD_API] = [(3, "Software Engineer", "Posted Today"), (2, "ML Engineer", "Posted 30+ Days Ago")]
+        self.assertEqual(self.run_wd(self.mine(), boards=False), {"Acme Corp": ["Software Engineer"]})
+
+    def test_a_posting_a_list_already_gave_you_is_not_emailed_again_by_your_entry_and_the_other_way_round(self):
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Acme", "Software Engineer, Data", url=wd_link(5, "Software Engineer, Data") + "?utm_source=Simplify")])
+        self.mark_known(SIMPLIFY_URL, self.MINE)
+        self.assertEqual(self.run_wd(self.mine(), boards=False), {"Acme (via SimplifyJobs New Grad)": ["Software Engineer, Data"]})
+        self.wd[WD_API] = [(6, "Software Engineer, Platform", "Posted Today"), (5, "Software Engineer, Data", "Posted Today")]
+        self.assertEqual(self.run_wd(self.mine(), boards=False), {"Acme Corp": ["Software Engineer, Platform"]})
+        rows = json.loads(self.pages[SIMPLIFY_URL])
+        self.pages[SIMPLIFY_URL] = json.dumps(rows + [simplify_row("Acme", "Software Engineer, Platform", url=wd_link(6, "Software Engineer, Platform"))])
+        self.assertEqual(self.run_wd(self.mine(), boards=False), {})
+
+    def test_a_posting_whose_link_workday_changed_is_not_emailed_again(self):
+        self.mark_known(self.MINE)
+        self.wd[WD_API] = [(70, "Software Engineer II", "Posted Today")]
+        self.assertEqual(self.run_wd(self.mine(), boards=False), {"Acme Corp": ["Software Engineer II"]})
+        # The same job number under a new link (an edited title changes the path before "_R70").
+        self.wd[WD_API] = [(70, "Software Engineer II (Backend)", "Posted Today")]
+        self.assertEqual(self.run_wd(self.mine(), boards=False), {})
+        self.wd[WD_API].insert(0, (71, "Software Engineer III", "Posted Today"))
+        self.assertEqual(self.run_wd(self.mine(), boards=False), {"Acme Corp": ["Software Engineer III"]})
+
+    def test_your_entry_that_workday_refuses_is_reported_like_any_entry(self):
+        self.api_refuses = True
+        self.browser_answers[WD_API] = "challenge"
+        self.mark_known(self.MINE)
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            self.run_wd(self.mine(), boards=False)
+        self.assertIn("Acme Corp: skipped this run (Workday answered with a bot check or refusal (403, challenge))", "\n".join(logs.output))
+        record = self.saved_state()[jm.HEALTH_KEY][self.MINE]
+        self.assertEqual((record["kind"], record["why"]), ("failed", "the site is refusing access (403)"))
+        self.assertEqual(self.saved_state()[self.MINE], [])  # (nothing recorded)
+
+    def test_your_entries_are_read_before_the_company_sites_and_outside_their_time(self):
+        self.two_sites()
+        self.run_wd(self.mine())
+        self.posts.clear()
+        self.run_wd(self.mine(), workday_minutes_per_run=0)
+        self.assertEqual(self.asked(), [(WD_API, 0)])  # yours, even with no time for company sites
+        self.assertNotIn(WD_SITE, self.saved_state())  # (Acme's site is your entry's: not checked twice)
+
+
 class UsFilterTests(MonitorTestCase):
     def test_location_classification(self):
         outside = ["London, UK", "Singapore", "Bengaluru, India; Mumbai, India", "Dublin OR London",
@@ -3648,6 +4670,20 @@ class JobIdentityTests(MonitorTestCase):
         html = '<a href="/jobs/data-analyst-ii"><span>Apply</span><span>Now</span></a>'
         [job] = jm.extract_jobs_from_html(html, URL, SELECTOR)
         self.assertEqual(job["title"], "Data Analyst Ii")
+
+    def test_a_workday_requisition_recorded_without_being_shown_hides_no_other_city(self):
+        # Workday posts one job number in several cities ("-1" for the next one). A Dublin
+        # posting the entry saved without showing (outside the US) mustn't hide the San
+        # Francisco one; once a posting of that number has been shown, the others are repeats.
+        site = "https://circle.wd1.myworkdayjobs.com/en-US/Circle"
+        dublin = {"title": "Software Engineer", "url": f"{site}/job/Dublin/Software-Engineer_JR999999"}
+        sf = {"title": "Software Engineer", "url": f"{site}/job/San-Francisco-CA/Software-Engineer_JR999999-1"}
+        for current, others in ((site, set()), ("board", {"board"})):  # an entry, a company site
+            with self.subTest(current=current):
+                state = {current: [dublin, sf]}
+                self.assertEqual(jm._drop_repeats([sf], state, current, set(), others, match_titles=False), [sf])
+                state = {current: [{**dublin, jm.REPORTED_MARK: jm.SHOWN_AS_MATCH}, sf]}
+                self.assertEqual(jm._drop_repeats([sf], state, current, set(), others, match_titles=False), [])
 
 
 # ===================================================================

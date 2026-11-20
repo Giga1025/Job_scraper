@@ -6,8 +6,16 @@ Jobright aren't needed.
 ## Next
 - [ ] **iCIMS**: read companies' iCIMS career sites (about 6% of the lists' postings; research done:
       about 376 iCIMS portals and 95 company sites linked by the lists).
-- [ ] **Workday**: about 37% of the lists' postings, but Workday refuses GitHub's machines. Options:
-      run the monitor from your own computer, or wait and test again.
+- [x] **Workday**: about 37% of the lists' postings (about 1,340 company sites: about 640 from the
+      new-grad lists, about 700 more from the internship list). Read through the headless browser
+      when Workday refuses plain requests from GitHub's machines (since Nov 16), a few minutes per
+      run, in turns (each site about every 8 hours); your NVIDIA, Salesforce, Circle and Intel
+      entries too.
+- [ ] **Workday, after the first days**: check in the run logs and `boards.md` that sites are read
+      on GitHub (not skipped as bot checks), how often each comes round, and how much `state.json`
+      grows (about 21 MB expected, to about 38 MB; GitHub warns about a file over 50 MB); adjust
+      `workday_minutes_per_run` to match, keeping runs well under GitHub's 30 minutes (whatever it
+      says, no Workday site is started after a run's 20th minute).
 
 ## More companies
 - [ ] **Boards gone (404)**: 56 Greenhouse, Ashby and Lever boards no longer exist (Nov 19: 20, 19
@@ -25,7 +33,8 @@ Jobright aren't needed.
       loose title words ("Back End" night shift, CNC programmer, sales representative for
       infrastructure, curriculum developer, civil and environmental engineers). Decide on postdocs.
 - [ ] **US filter misses** ("IN - Jaipur", "2 Locations") and engineering-but-not-software titles.
-- [ ] **Duplicate link**: Salesforce sometimes lists one job with and without a tracking parameter.
+- [x] **Duplicate link**: Salesforce sometimes listed one job with and without the page's filters
+      after "?". Workday entries now keep a link a posting was already recorded with.
 
 ## Housekeeping
 - [ ] Delete the stale `state.json` on `main` (the state lives on the `monitor-state` branch).
