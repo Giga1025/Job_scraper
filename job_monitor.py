@@ -72,6 +72,13 @@ LOG_PATH = BASE_DIR / "monitor.log"
 # while it is still listed, so it can't be re-alerted after dropping off and
 # coming back; small enough that state.json doesn't grow without bound.
 STATE_RETENTION_PER_TARGET = 1000
+# A posting a company job board no longer lists (it closed) is remembered this long, then forgotten
+# (on boards whose whole list is read: Greenhouse, Ashby, Lever, Workable), so state.json holds each
+# company's open roles and those closed lately rather than every role it ever had. Remembering it a
+# while keeps one that comes back, or that a list links a few days later, from being emailed again.
+FORGET_GONE_DAYS = 60
+FORGET_GONE_PLATFORMS = ("greenhouse", "ashby", "lever", "workable")
+GONE_KEY = "gone"  # on such a posting: the day it was first missing from its board
 
 SMTP_TIMEOUT_SECONDS = 30
 
@@ -186,15 +193,19 @@ def _replace_file(src: str, dst: Path):
             time.sleep(0.2 * (attempt + 1))
 
 
-def save_json(path: Path, data):
+def save_json(path: Path, data, compact: bool = False):
     # Write a temp file and rename it into place, so a crash or a full disk
     # mid-write can never leave a truncated file behind. Resolve symlinks so
     # the link's target is updated rather than the link being replaced.
+    # compact: no indentation or spaces (state.json: about a fifth smaller; nobody reads it by eye).
     path = Path(os.path.realpath(path))
     fd, tmp_path = tempfile.mkstemp(dir=path.parent, prefix=f"{path.name}.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            if compact:
+                json.dump(data, f, separators=(",", ":"), ensure_ascii=False)
+            else:
+                json.dump(data, f, indent=2, ensure_ascii=False)
             f.flush()
             os.fsync(f.fileno())
         os.chmod(tmp_path, _file_mode(path))  # mkstemp creates it as 0600
@@ -476,7 +487,8 @@ def save_state(
                 else:
                     records[url] = record
             state[HEALTH_KEY] = records
-        save_json(STATE_PATH, state)
+        save_json(STATE_PATH, state, compact=True)
+        log.info(f"Saved {STATE_PATH.name}: {STATE_PATH.stat().st_size / 1e6:.1f} MB")
         page = left_out_page_path()
         if log_changed or (state.get(LEFT_OUT_LOG_KEY) and not page.exists()):
             save_text(page, format_left_out_page(state.get(LEFT_OUT_LOG_KEY) or []))
@@ -1670,7 +1682,8 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
     return [{"name": info["name"], "url": info["url"], "mode": "api", "_board": True, "_board_key": key,
              "_tech_titles": tech, "_skip_titles": skip_titles, "_level_titles": level, "_compact": True, "_quiet": True,
              "_catch_up_since": catch_up(info), "_recent_since": since,
-             **(workday_rules if _board_platform(info["url"]) == "workday" else {})}
+             **(workday_rules if _board_platform(info["url"]) == "workday" else {}),
+             **({"_forget_gone_days": FORGET_GONE_DAYS} if _board_platform(info["url"]) in FORGET_GONE_PLATFORMS else {})}
             for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
             if key not in skip and _board_platform(info["url"]) in platforms
             and _entry_key(info.get("name")) not in skip_companies
@@ -2242,11 +2255,19 @@ def diff_jobs(old_jobs: list[dict], new_jobs: list[dict]) -> list[dict]:
     return [j for j in new_jobs if compute_job_id(j) not in old_ids]
 
 
+def _today() -> str:
+    return datetime.now().date().isoformat()
+
+
 def merge_jobs_new_first(old_jobs: list[dict], current_jobs: list[dict], max_jobs: int,
-                         max_reported: int | None = None) -> list[dict]:
+                         max_reported: int | None = None, forget_days: float | None = None) -> list[dict]:
     """Keep new jobs first, then previously known jobs, with de-duplication and optional cap.
     With max_reported (Workday sites), the cap counts only postings not shown to you; up to
-    max_reported of those marked shown (REPORTED_MARK), the latest, are kept besides."""
+    max_reported of those marked shown (REPORTED_MARK), the latest, are kept besides.
+    With forget_days (company boards read whole, FORGET_GONE_PLATFORMS), a known posting that
+    isn't listed now gets GONE_KEY (today) and is forgotten once it has been missing that many
+    days; one listed again loses its GONE_KEY."""
+    today = _today() if forget_days else None
     old_ids = {compute_job_id(j) for j in old_jobs}
     current_ids = {compute_job_id(j) for j in current_jobs}
 
@@ -2264,6 +2285,8 @@ def merge_jobs_new_first(old_jobs: list[dict], current_jobs: list[dict], max_job
     for job in old_jobs:
         jid = compute_job_id(job)
         if jid in current_ids and jid not in merged_ids:
+            if today and GONE_KEY in job:  # (listed again)
+                job = {k: v for k, v in job.items() if k != GONE_KEY}
             merged.append(job)
             merged_ids.add(jid)
 
@@ -2271,8 +2294,15 @@ def merge_jobs_new_first(old_jobs: list[dict], current_jobs: list[dict], max_job
     for job in old_jobs:
         jid = compute_job_id(job)
         if jid not in merged_ids:
-            merged.append(job)
             merged_ids.add(jid)
+            if today:
+                gone = job.get(GONE_KEY)
+                try:
+                    if (datetime.fromisoformat(today) - datetime.fromisoformat(str(gone))).days >= forget_days:
+                        continue  # (missing from its board for forget_days: forgotten)
+                except (TypeError, ValueError):
+                    job = {**job, GONE_KEY: today}  # (missing since today, or a date that can't be read)
+            merged.append(job)
 
     if max_jobs > 0:
         # Never forget a job that is still listed, or it would be reported again next run.
@@ -2812,7 +2842,7 @@ def check_target(
     quiet = bool(target.get("_quiet"))
     say = log.debug if quiet else log.info
     catch_up = target.get("_catch_up_since")
-    keep = target.get("_retention", STATE_RETENTION_PER_TARGET), target.get("_retention_reported")
+    keep = target.get("_retention", STATE_RETENTION_PER_TARGET), target.get("_retention_reported"), target.get("_forget_gone_days")
 
     say(f"Checking: {name}")
     say(f"  URL: {url}")

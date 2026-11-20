@@ -4903,6 +4903,72 @@ class JobIdentityTests(MonitorTestCase):
                 self.assertEqual(jm._drop_repeats([sf], state, current, set(), others, match_titles=False), [])
 
 
+class ForgetClosedPostingsTests(MonitorTestCase):
+    """A company job board's posting that has closed is remembered FORGET_GONE_DAYS, then forgotten,
+    so state.json holds open roles and recently closed ones rather than every role a company had."""
+
+    def board_target(self, url, jobs):
+        return {"name": "Acme", "url": url, "mode": "api", "_board": True, "_compact": True, "_quiet": True,
+                "_prefetched": jobs, "_forget_gone_days": jm.FORGET_GONE_DAYS}
+
+    def on(self, day):
+        self.patch(jm, "_today", lambda: day)
+
+    def test_a_closed_posting_is_forgotten_after_sixty_days_and_one_back_in_time_is_kept(self):
+        url = "https://boards-api.greenhouse.io/v1/boards/acme/jobs"
+        job = lambda n: {"title": "Software Engineer", "url": f"https://boards.greenhouse.io/acme/jobs/{n}"}  # noqa: E731
+        state = {}
+        self.on("2026-11-20")
+        jm.check_target(self.board_target(url, [job(1), job(2), job(3)]), state, [], None)
+        self.assertEqual([r.get(jm.GONE_KEY) for r in state[url]], [None, None, None])
+        # 2 and 3 close; 2 comes back a month later; 3 stays closed.
+        jm.check_target(self.board_target(url, [job(1)]), state, [], None)
+        self.assertEqual({r["url"][-1]: r.get(jm.GONE_KEY) for r in state[url]}, {"1": None, "2": "2026-11-20", "3": "2026-11-20"})
+        self.on("2026-12-20")
+        new, _ = jm.check_target(self.board_target(url, [job(1), job(2)]), state, [], None)
+        self.assertEqual(new, [])  # (back, not new)
+        self.assertEqual({r["url"][-1]: r.get(jm.GONE_KEY) for r in state[url]}, {"1": None, "2": None, "3": "2026-11-20"})
+        self.on("2027-01-18")  # (59 days)
+        jm.check_target(self.board_target(url, [job(1), job(2)]), state, [], None)
+        self.assertEqual(sorted(r["url"][-1] for r in state[url]), ["1", "2", "3"])
+        self.on("2027-01-19")  # (60 days: forgotten)
+        jm.check_target(self.board_target(url, [job(1), job(2)]), state, [], None)
+        self.assertEqual(sorted(r["url"][-1] for r in state[url]), ["1", "2"])
+        # A posting still listed is never forgotten, however long ago it was first seen.
+        self.on("2028-01-01")
+        jm.check_target(self.board_target(url, [job(1), job(2)]), state, [], None)
+        self.assertEqual(sorted(r["url"][-1] for r in state[url]), ["1", "2"])
+
+    def test_without_forget_days_nothing_is_marked_or_forgotten(self):
+        old = [{"url": "https://x.example/1"}, {"url": "https://x.example/2"}]
+        self.on("2030-01-01")
+        merged = jm.merge_jobs_new_first(old, [{"url": "https://x.example/1"}], 1000)
+        self.assertEqual(merged, old)  # (Workday sites, SmartRecruiters, your entries and the lists: as before)
+        merged = jm.merge_jobs_new_first(old + [{"url": "https://x.example/3", jm.GONE_KEY: "2000-01-01"}],
+                                         [{"url": "https://x.example/1"}], 1000)
+        self.assertEqual(len(merged), 3)
+
+    def test_only_boards_whose_whole_list_is_read_forget(self):
+        known = {
+            "greenhouse:acme": {"name": "Acme", "url": "https://boards-api.greenhouse.io/v1/boards/acme/jobs"},
+            "ashby:beta": {"name": "Beta", "url": "https://api.ashbyhq.com/posting-api/job-board/beta"},
+            "lever:gamma": {"name": "Gamma", "url": "https://api.lever.co/v0/postings/gamma"},
+            "sr:delta": {"name": "Delta", "url": "https://api.smartrecruiters.com/v1/companies/delta/postings"},
+            "wd:eps": {"name": "Eps", "url": "https://eps.wd1.myworkdayjobs.com/Careers"},
+        }
+        meta = {"known": known, "list_etags": {}}
+        boards = jm.plan_boards({"platforms": ["greenhouse", "ashby", "lever", "smartrecruiters", "workday"]}, [], {}, meta, False)
+        self.assertEqual({b["name"]: b.get("_forget_gone_days") for b in boards},
+                         {"Acme": 60, "Beta": 60, "Gamma": 60, "Delta": None, "Eps": None})
+
+    def test_state_json_is_written_compactly(self):
+        jm.save_state({"https://x.example/board": [{"url": "https://x.example/1"}]})
+        text = jm.STATE_PATH.read_text()
+        self.assertNotIn("\n ", text)
+        self.assertIn('[{"url":"https://x.example/1"}]', text)
+        self.assertEqual(jm.load_state()["https://x.example/board"], [{"url": "https://x.example/1"}])
+
+
 # ===================================================================
 # state.json safety
 # ===================================================================
