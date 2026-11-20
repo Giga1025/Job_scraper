@@ -1030,9 +1030,22 @@ MUST_KEEP = [
     "Software Engineer II - React Native - Krak Frontend • Brazil; Argentina",
     "icon Infrastructure Software Engineer: Application Engineering : The D. E. Shaw group seeks a lead software engineer",
     "Infrastructure Engineer III - Amazon Connect : Lead and grow a team",
-    "Solutions Architect - Manufacturing", "Product Engineer - Manufacturing Operations",
+    "Product Engineer - Manufacturing Operations",
     "Hardware Tools Engineer", "RTL Tools & Methodology Engineer",
     "Leadership Development Program, Technology", "Architect - New College Grad 2026",
+    # Tech roles whose titles carry a word of the "not tech" list (Nov 2026: the owner asked for sales and
+    # other non-tech roles to go): the role itself is named, so they stay.
+    "Software Engineer, Sales Platform", "Machine Learning Engineer, Sales Engineering", "Data Engineer - Sales Analytics",
+    "Salesforce Developer", "Software Engineer - Partner Integrations", "Software Engineer, Recruiting Platform",
+    "Forward Deployed Engineer, Professional Services", "Electronic Trading Support Engineer",
+    "Cloud Infrastructure Support Engineer", "Production Support Engineer", "Field Engineer", "Junior Solution Architect",
+    "Implementation Engineer", "Embedded Security Operator", "Data Scientist - Clinical", "Software Engineer, Real Estate Tech",
+    "Research Scientist - Generative AI Graduate - Global Frontier Tech Recruitment Program - 2027 Start - PhD",
+    "Machine Learning Materials Science Postdoctoral Researcher - Molecular Foundry", "Data Analyst - Clinical Analytics",
+    "Business Intelligence Engineer, Prime Video Partner Experience", "Digital Automation Engineer - Cell Therapy",
+    # Wrongly dropped by a first version of the "not tech" list (found by auditing every title it dropped):
+    "Assistant Data Solutions Engineer", "Sales, Marketing, and Distribution Technology - Marketing and Distribution Technology",
+    "Data Analyst - Shift D Wednesday-Saturday 5:00pm-3:30am",
 ]
 MUST_LEAVE_OUT = [
     "Senior Software Engineer", "Sr. Software Engineer", "Staff ML Engineer", "Principal Engineer",
@@ -1046,6 +1059,20 @@ MUST_LEAVE_OUT = [
     "Software Engineer (Technical Leadership) - Machine Learning", "Manufacturing Engineer, Motors",
     # Text appended after the title must not rescue it:
     "Data Science Intern (Winter 2027) Early Career • San Francisco • Full time",
+    # Not tech even with an engineering word in the title (Nov 2026: "no sales engineer roles, and other not
+    # tech roles"); most were in real emails.
+    "Sales Engineer", "Enterprise Sales Engineer", "Solutions Engineer", "Pre-sales Solutions Engineer",
+    "Solutions Architect - Manufacturing", "Partner Solutions Architect", "Applied AI Architect, Enterprise",
+    "Customer Engineer, Google Cloud", "Field Application Engineer", "AI Support Engineer - San Francisco",
+    "Technical Support Engineer II", "Robotics Aftermarket - Inside Sales Representative", "Private Cloud AI Sales Specialist",
+    "Territory Development Executive - Software/SaaS", "Account Executive, Strategic Platform Partnerships",
+    "Manheim Mobile Vehicle Condition Inspector, West Palm Beach South, FL", "Mobile Diesel Tech II -Variable Shift",
+    "Certificate Curriculum Developer - Kenneth C. Griffin School of Computer Science - LTI",
+    "Registered Nurse New Graduate Progressive Care", "Quantitative Tutoring & Statistical Software Support (Student)",
+    "Campus Recruiter, Machine Learning and Quantitative Research", "Recruiter, AI/ML Research",
+    "Data Center Technician, Hardware Operations", "Critical Facility Engineer", "Research Scientist - Antibody Discovery",
+    "Clinical Research Coordinator I", "AppleCare Strategy & Solutions Analyst", "Car Wash Attendant", "Claims Adjuster",
+    "Forklift Operator", "Investment Banking Analyst", "AI Tutor - Software Engineering",
 ]
 
 
@@ -1073,6 +1100,14 @@ class RoleFilterTests(MonitorTestCase):
         self.assertEqual(wrongly_left_out, {})
         self.assertEqual(wrongly_kept, [])
 
+    def test_not_tech_postings_are_counted_but_not_listed_in_the_email(self):
+        jobs = [{"title": t, "url": f"https://acme.example/{i}", "company": "Acme",
+                 "reason": jm.role_exclusion_reason(t, self.patterns)}
+                for i, t in enumerate(["Sales Engineer", "Solutions Engineer", "Senior Software Engineer"])]
+        summary = jm.summarize_left_out(jobs, self.patterns)
+        self.assertEqual(summary["by_reason"], {"not tech": 2, "senior": 1})
+        self.assertEqual([j["title"] for j in summary["listed"]], ["Senior Software Engineer"])
+
     def test_unicode_dashes_and_ampersands(self):
         keep = ["Full\u2011Stack Engineer (Frontend focus)", "Software Engineer Intern / New\u2011Grad",
                 "Full\u2013Stack Engineer"]
@@ -1093,7 +1128,7 @@ class RoleFilterTests(MonitorTestCase):
         self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer"]})
         [(_, msg)] = self.emails_sent()
         body = msg.get_payload()[0].get_payload(decode=True).decode()
-        self.assertIn("Left out by your filters: 2 (senior 1, not engineering 1)", body)
+        self.assertIn("Left out by your filters: 2 (senior 1, not tech 1)", body)
         self.assertIn("Senior Software Engineer  [senior (Senior)]", body)
         self.assertNotIn("Account Executive", body)
         self.assertIn("+2 left out by filters", msg["Subject"])
@@ -3963,14 +3998,16 @@ class WorkdayBoardTests(WorkdayTestCase):
         self.run_wd(workday_minutes_per_run=5)
         self.assertEqual(self.asked(), [(WD_API, 0), (WD_BETA_API, 0)])
 
-    def test_no_workday_site_is_started_once_the_run_is_20_minutes_old(self):
-        # GitHub stops a run at 30 minutes: whatever time workday_minutes_per_run leaves, no Workday site
-        # is started once the run (counted from when its Reader was made, at its start) is 20 minutes old.
+    def test_no_workday_site_is_started_once_the_run_is_24_minutes_old(self):
+        # Runs come every 30 minutes: whatever time workday_minutes_per_run leaves, no Workday site is
+        # started once the run (counted from when its Reader was made, at its start) is RUN_MINUTES old.
+        limit = jm.workday.RUN_MINUTES
+        self.assertEqual((limit, jm.workday.MINUTES_PER_RUN), (24, 24))
         clock = [5000.0]
         self.patch(jm.workday, "_monotonic", lambda: clock[0])
         self.two_sites("Gamma")
         reader = jm.workday.Reader(pause=0)
-        clock[0] += 18 * 60  # (everything else took 18 minutes)
+        clock[0] += (limit - 2) * 60  # (everything else took 22 minutes)
         answer = self.wd_answer
 
         def slow(*args):  # (each site takes a minute and a half)
@@ -3980,14 +4017,24 @@ class WorkdayBoardTests(WorkdayTestCase):
         self.wd_answer = slow
         sites = [{"url": WD_SITE, "name": "Acme"}] + [{"url": f"https://{n}.wd1.myworkdayjobs.com/Careers", "name": n} for n in ("beta", "gamma")]
         with self.assertLogs(jm.log, "INFO") as logs:
-            results, summary = jm.workday.read_sites(reader, sites, {}, 20)
-        self.assertEqual(list(results), [WD_SITE, "https://beta.wd1.myworkdayjobs.com/Careers"])  # (Beta started at 19:30)
-        self.assertEqual((summary["read"], summary["left"], summary["why"]), (2, 1, "the run is 20 minutes old, and GitHub stops a run at 30"))
-        self.assertIn("No more Workday sites this run: the run is 20 minutes old", "\n".join(logs.output))
+            results, summary = jm.workday.read_sites(reader, sites, {}, limit)
+        self.assertEqual(list(results), [WD_SITE, "https://beta.wd1.myworkdayjobs.com/Careers"])  # (Beta started at 23:30)
+        self.assertEqual((summary["read"], summary["left"], summary["why"]),
+                         (2, 1, "the run is 24 minutes old, and runs come every 30 minutes"))
+        self.assertIn("No more Workday sites this run: the run is 24 minutes old", "\n".join(logs.output))
         self.assertEqual(reader.read(WD_SITE), ("stopped", None))  # (your entries too)
         self.assertEqual(len(self.asked()), 2)
 
-    def test_a_run_that_is_20_minutes_old_leaves_workday_for_the_next_run(self):
+    def test_the_workflows_time_limit_leaves_room_after_the_last_workday_site(self):
+        # Setup (up to ~4 min), RUN_MINUTES, a site started just before (up to ~3 min) and the email
+        # and save must all fit in the workflow's timeout-minutes, or the run is stopped unsaved.
+        workflow = (REPO_DIR / ".github" / "workflows" / "job-monitor.yml").read_text()
+        [limit] = [int(n) for n in jm.re.findall(r"^\s*timeout-minutes:\s*(\d+)", workflow, jm.re.MULTILINE)]
+        self.assertEqual(limit, jm.workday.JOB_MINUTES)
+        self.assertGreaterEqual(limit - jm.workday.RUN_MINUTES, 10)
+        self.assertLess(jm.workday.RUN_MINUTES, 30)  # (the next run is due 30 minutes after this one)
+
+    def test_a_run_that_is_24_minutes_old_leaves_workday_for_the_next_run(self):
         self.two_sites()
         mine = target(name="Acme Corp", url=WD_SITE + "?workerSubType=abc", mode="browser", link_selector="")
         self.run_wd(mine)
@@ -3997,7 +4044,7 @@ class WorkdayBoardTests(WorkdayTestCase):
 
         def slow_get(url, *args, **kwargs):
             if url == SIMPLIFY_URL:
-                clock[0] += 20 * 60  # (this run, the lists took 20 minutes)
+                clock[0] += jm.workday.RUN_MINUTES * 60  # (this run, the lists took 24 minutes)
             return feed_get(url, *args, **kwargs)
 
         self.patch(jm.requests, "get", slow_get)
@@ -4005,12 +4052,12 @@ class WorkdayBoardTests(WorkdayTestCase):
         self.patch(jm.workday, "read_sites", read_sites)
         self.posts.clear()
         with self.assertLogs(jm.log, "INFO") as logs:
-            self.run_wd(mine, workday_minutes_per_run=25)
+            self.run_wd(mine, workday_minutes_per_run=30)
         self.assertEqual(self.asked(), [])  # neither your Workday entry nor the company sites
         self.assertIn("Acme Corp", "\n".join(logs.output))
-        self.assertIn("Not read this run: the run is 20 minutes old", "\n".join(logs.output))
-        self.assertEqual(read_sites.call_args.args[3], jm.workday.RUN_MINUTES)  # (the setting can't go past 20 minutes either)
-        self.assertIn("0 read, 0 couldn't be read (tried again later), 1 left for a later run (the run is 20 minutes old",
+        self.assertIn("Not read this run: the run is 24 minutes old", "\n".join(logs.output))
+        self.assertEqual(read_sites.call_args.args[3], jm.workday.RUN_MINUTES)  # (the setting can't go past 24 minutes either)
+        self.assertIn("0 read, 0 couldn't be read (tried again later), 1 left for a later run (the run is 24 minutes old",
                       jm.boards_page_path().read_text())
         # A run of the usual length reads them.
         self.patch(jm.requests, "get", feed_get)

@@ -2318,7 +2318,8 @@ def filter_by_keywords(jobs: list[dict], keywords: list[str]) -> list[dict]:
 # Role filtering (exclusion-based)
 # ===================================================================
 # The role filter keeps every title unless it clearly says the role is senior,
-# an internship, pure frontend, non-engineering or non-software engineering.
+# an internship, pure frontend, not tech (even with an engineering word: sales engineers),
+# non-engineering or non-software engineering.
 # Unusual titles ("Member of Technical Staff", "Forward Deployed Engineer")
 # therefore pass. The word lists live in the config under "role_filter".
 def _phrase_pattern(phrases) -> re.Pattern | None:
@@ -2365,6 +2366,10 @@ def role_exclusion_reason(title: str, patterns: dict | None) -> str | None:
         return f"internship ({word})"
     if (word := hit("exclude_frontend")) and not hit("frontend_ok_if"):
         return f"frontend ({word})"
+    # Not tech even with an engineering word in it ("Sales Engineer", "Curriculum Developer"):
+    # only a title naming the role itself ("Software Engineer, Sales Platform") is kept.
+    if (word := hit("exclude_non_tech")) and not hit("non_tech_ok_if"):
+        return f"not tech ({word})"
     if (word := hit("exclude_non_engineering")) and not hit("engineering_signals"):
         return f"not engineering ({word})"
     if (word := hit("exclude_other_disciplines")) and not hit("software_signals"):
@@ -2406,7 +2411,8 @@ def left_out_page_link() -> str:
 
 def summarize_left_out(jobs: list[dict], patterns: dict | None, limit: int | None = None) -> dict:
     """Counts by reason, and the postings most worth a look: titles that still look like
-    engineering roles (an engineering or software/ML word in them), those left out for
+    engineering roles (an engineering or software/ML word in them; not those left out as
+    "not tech", like sales engineers, which are only counted), those left out for
     their kind of role before those left out for their level (senior, internship), then
     those with an engineering word, then a software/ML word. Order is otherwise kept
     (oldest first); a title repeated at one company is listed once. The rest are counted."""
@@ -2420,6 +2426,8 @@ def summarize_left_out(jobs: list[dict], patterns: dict | None, limit: int | Non
         return bool(patterns and patterns.get(key) and patterns[key].search(title))
 
     def technical(job: dict) -> bool:
+        if str(job.get("reason", "")).startswith("not tech"):
+            return False  # (sales engineers and the like, which you asked not to see: counted, and in left_out.md)
         if not (patterns and (patterns.get("software_signals") or patterns.get("engineering_signals"))):
             return True  # no word lists to judge by (e.g. keyword filters only): list them all
         title = _title_core(str(job.get("title", "")))
