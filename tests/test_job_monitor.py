@@ -161,7 +161,8 @@ class MonitorTestCase(unittest.TestCase):
         if self.page_sequence.get(url):
             return FakeResponse(self.page_sequence[url].pop(0))
         if url in self.pages:
-            return FakeResponse(self.pages[url])
+            page = self.pages[url]
+            return page if isinstance(page, FakeResponse) else FakeResponse(page)  # (a response: its status and headers too)
         raise jm.requests.ConnectionError(f"no fake page for {url}")
 
     def fake_post(self, url, *args, **kwargs):
@@ -2329,6 +2330,156 @@ class OracleBoardTests(MonitorTestCase):
                               target(name="Goldman Sachs", url=self.GS_PAGE, mode="browser"),
                               target(name="Goldman Sachs", url="https://www.goldmansachs.com/careers/students", mode="browser",
                                      paused=True)), [])
+
+
+def gh_redirect(board, job):
+    """Greenhouse's answer about an open job: a redirect naming its board."""
+    response = FakeResponse("", 301)
+    response.headers["location"] = f"https://job-boards.greenhouse.io/embed/job_app?for={board}&token={job}"
+    return response
+
+
+class FakeWeb:
+    """A get() for greenhouse.find_boards: url -> FakeResponse or page text (missing: 404)."""
+
+    def __init__(self, pages):
+        self.pages, self.asked = pages, []
+
+    def __call__(self, url, headers=None, timeout=None, allow_redirects=True):
+        self.asked.append(url)
+        page = self.pages.get(url, FakeResponse("", 404))
+        return page if isinstance(page, FakeResponse) else FakeResponse(page)
+
+
+def gh_site_board(site, *jobs):
+    """A Greenhouse board whose postings link to a company's own site: (id, title[, days ago])."""
+    now = datetime.now(timezone.utc)
+    return json.dumps({"jobs": [{"id": jid, "title": title, "location": {"name": "New York, NY"},
+                                 "absolute_url": f"https://{site}/positions/{jid}?gh_jid={jid}",
+                                 "first_published": (now - timedelta(days=rest[0] if rest else 0)).isoformat()}
+                                for jid, title, *rest in jobs]})
+
+
+class GreenhouseSitesTests(MonitorTestCase):
+    """Greenhouse boards behind postings on companies' own sites (boards/greenhouse.py)."""
+
+    EMBED = "https://boards.greenhouse.io/embed/job_app?token={}"
+    API = "https://boards-api.greenhouse.io/v1/boards/{}/jobs"
+
+    def link(self, job, site="careers.acme.com"):
+        return f"https://{site}/positions/{job}?gh_jid={job}"
+
+    def test_job_ids_on_companies_own_sites(self):
+        job_id = jm.greenhouse.job_id
+        self.assertEqual(job_id("https://careers.airbnb.com/positions/7859317?gh_jid=7859317"), "7859317")
+        self.assertEqual(job_id("https://www.alphasights.com/careers/open-roles?gh_jid=8184208&utm_source=Simplify"), "8184208")
+        for other in ("https://job-boards.greenhouse.io/airbnb/jobs/7859317?gh_jid=7859317",  # (board_api_url reads these)
+                      "https://careers.airbnb.com/positions/7859317", "https://acme.com/jobs?gh_jid=abc", "https://[x?gh_jid=1", None, ""):
+            self.assertIsNone(job_id(other), other)
+        self.assertEqual(jm.greenhouse.site_of("https://www.Careers.Acme.com:443/x"), "careers.acme.com")
+        self.assertEqual(jm.greenhouse.guesses("careers.airbnb.com", ["Airbnb"]), ["airbnb"])
+        self.assertEqual(jm.greenhouse.guesses("abnormal.ai", ["Abnormal Security"]), ["abnormal", "abnormalsecurity"])
+        self.assertEqual(jm.greenhouse.embedded_names(
+            '<script src="https://boards.greenhouse.io/embed/job_board/js?for=acmecareers"></script>'
+            '<a href="https://job-boards.greenhouse.io/acmecampus/jobs/1">x</a> boards-api.greenhouse.io/v1/boards/acmeapi/jobs'),
+            ["acmecareers", "acmecampus", "acmeapi"])
+
+    def test_a_posting_names_its_board_and_each_job_is_asked_about_once(self):
+        web = FakeWeb({self.EMBED.format(111): gh_redirect("acme", 111)})  # 222 and 333: closed (404)
+        links = [(self.link(222), "Acme"), (self.link(111), "Acme"), (self.link(333), "Acme"), (self.link(444), "Acme")]
+        memory = {}
+        found = jm.greenhouse.find_boards(links, memory, "2026-11-20", get=web)
+        self.assertEqual(found, [("https://job-boards.greenhouse.io/acme", "Acme")])
+        self.assertEqual(jm.board_api_url(found[0][0]), ("greenhouse", self.API.format("acme")))
+        # The three newest asked (in the order given: the lists' newest first); a board found: no guessing.
+        self.assertEqual([u for u in web.asked], [self.EMBED.format(j) for j in (222, 111, 333)])
+        self.assertEqual(memory["careers.acme.com"], {"boards": {"acme": "Acme"}, "asked": ["222", "111", "333"]})
+        web.asked.clear()
+        self.assertEqual(jm.greenhouse.find_boards(links, memory, "2026-11-20", get=web), found)
+        self.assertEqual(web.asked, [self.EMBED.format(444)])  # (each once)
+        # A job the boards found already list isn't asked about.
+        web.asked.clear()
+        jm.greenhouse.find_boards(links + [(self.link(555), "Acme")], memory, "2026-11-20", get=web,
+                                  listed=lambda names: {"555"} if names == ["acme"] else set())
+        self.assertEqual(web.asked, [])
+
+    def test_a_guess_is_taken_only_if_its_board_links_back_to_the_site(self):
+        links = [(self.link(222), "Acme Robotics")]  # closed: Greenhouse can't name its board
+        web = FakeWeb({self.API.format("acme"): gh_site_board("www.othersite.com", (1, "Engineer")),  # someone else's "acme"
+                       self.API.format("acmerobotics"): gh_site_board("jobs.acme.com", (1, "Engineer"))})  # (same domain)
+        memory = {}
+        found = jm.greenhouse.find_boards(links, memory, "2026-11-20", get=web)
+        self.assertEqual(found, [("https://job-boards.greenhouse.io/acmerobotics", "Acme Robotics")])
+        self.assertEqual(memory["careers.acme.com"]["guessed"], "2026-11-20")
+
+    def test_a_site_not_matched_is_guessed_again_a_week_later_and_a_page_can_name_its_board(self):
+        links = [(self.link(222), "Acme")]
+        memory = {}
+        web = FakeWeb({})
+        self.assertEqual(jm.greenhouse.find_boards(links, memory, "2026-11-20", get=web), [])
+        self.assertEqual(memory["careers.acme.com"]["guessed"], "2026-11-20")
+        # The posting's page embeds the board (a name no guess makes), whose postings link to the site.
+        web.pages[self.link(222)] = '<script src="https://boards.greenhouse.io/embed/job_board/js?for=acmeco"></script>'
+        web.pages[self.API.format("acmeco")] = gh_site_board("careers.acme.com", (1, "Engineer"))
+        self.assertEqual(jm.greenhouse.find_boards(links, memory, "2026-11-25", get=web), [])  # (not yet)
+        self.assertEqual(jm.greenhouse.find_boards(links, memory, "2026-11-27", get=web),
+                         [("https://job-boards.greenhouse.io/acmeco", "Acme")])
+        # A page that links another company's board on Greenhouse's own pages doesn't name this one's.
+        memory, web.pages[self.link(222)] = {}, '<a href="https://job-boards.greenhouse.io/portfolioco">a portfolio company</a>'
+        web.pages[self.API.format("portfolioco")] = json.dumps({"jobs": [{"id": 1, "title": "x", "absolute_url": gh_link(1)}]})
+        self.assertEqual(jm.greenhouse.find_boards(links, memory, "2026-11-27", get=web), [])
+
+    def test_a_site_several_companies_use_gets_each_its_board(self):
+        site = "app.careerpuck.com"
+        web = FakeWeb({self.EMBED.format(1): gh_redirect("lyft", 1), self.EMBED.format(2): gh_redirect("dominodatalab", 2)})
+        found = jm.greenhouse.find_boards([(self.link(1, site), "Lyft"), (self.link(2, site), "Domino Data Lab")], {},
+                                          "2026-11-20", get=web)
+        self.assertEqual(sorted(found), [("https://job-boards.greenhouse.io/dominodatalab", "Domino Data Lab"),
+                                         ("https://job-boards.greenhouse.io/lyft", "Lyft")])
+
+    def test_too_many_requests_stops_the_run_and_unanswered_jobs_are_asked_again(self):
+        web = FakeWeb({self.EMBED.format(1): FakeResponse("", 429)})
+        memory = {}
+        with self.assertLogs(jm.log, "INFO") as logs:
+            self.assertEqual(jm.greenhouse.find_boards([(self.link(1), "Acme"), (self.link(2), "Acme")], memory,
+                                                       "2026-11-20", get=web), [])
+        self.assertEqual(web.asked, [self.EMBED.format(1)])
+        self.assertEqual(memory["careers.acme.com"], {"boards": {}, "asked": []})  # (not "guessed": tried again next run)
+        self.assertTrue(any("too many requests" in line for line in logs.output))
+        web.pages[self.EMBED.format(1)] = gh_redirect("acme", 1)
+        self.assertEqual(jm.greenhouse.find_boards([(self.link(1), "Acme")], memory, "2026-11-20", get=web),
+                         [("https://job-boards.greenhouse.io/acme", "Acme")])
+
+    def test_a_companys_board_behind_its_own_site_is_found_checked_and_its_new_roles_emailed_once(self):
+        feed = target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                      categories=["Software"], max_age_days=7)
+        boards = {"name": "Company job boards", "mode": "boards", "every_hours": 1, "catch_up_days": 3,
+                  "tech_titles": ["software", "new grad"]}
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Acme", "Software Engineer", url=self.link(4000001))])
+        self.pages[self.EMBED.format(4000001)] = gh_redirect("acme", 4000001)
+        self.pages[self.API.format("acme")] = gh_site_board("careers.acme.com", (4000001, "Software Engineer"),
+                                                            (4000002, "Backend Engineer, New Grad"), (4000003, "Software Engineer II", 20))
+
+        def run():
+            reported = self.run_monitor([feed, boards], email=WORKING_EMAIL)[1]
+            meta = self.saved_state()[jm.BOARDS_KEY]
+            meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+            jm.save_state({}, boards=meta)
+            return reported
+
+        self.assertEqual(run(), {})  # (the list's first check records its row)
+        # The row's link is on Acme's own site: Greenhouse names the board, which joins the registry and is checked;
+        # its first check emails what went up in the last 3 days, but not the list's row again (the same job).
+        self.assertEqual(run(), {"Acme": ["Backend Engineer, New Grad"]})
+        meta = self.saved_state()[jm.BOARDS_KEY]
+        self.assertEqual([(i["name"], i["url"], i["via"]) for i in meta["known"].values()],
+                         [("Acme", self.API.format("acme"), "companies' own sites")])
+        self.assertEqual(meta["greenhouse_sites"]["careers.acme.com"]["boards"], {"acme": "Acme"})
+        self.pages[self.API.format("acme")] = gh_site_board("careers.acme.com", (4000001, "Software Engineer"),
+                                                            (4000002, "Backend Engineer, New Grad"), (4000004, "Software Engineer, ML"))
+        self.assertEqual(run(), {"Acme": ["Software Engineer, ML"]})
+        self.assertEqual(sum(1 for u, _ in self.requests_made if u == self.EMBED.format(4000001)), 1)  # (asked once)
+        self.assertIn("| Acme | [Greenhouse](https://job-boards.greenhouse.io/acme) |", jm.boards_page_path().read_text())
 
 
 class BoardTests(MonitorTestCase):

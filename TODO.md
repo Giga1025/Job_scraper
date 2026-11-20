@@ -26,6 +26,14 @@ Jobright aren't needed.
 - [x] **Oracle Recruiting Cloud** (Nov 2026): every Oracle company site the lists link (about 180:
       American Express, Fortinet, Oracle, Texas Instruments, Cummins...) is a company board now,
       read each hour (its newest 100 postings) with the reader the JPMorgan entry uses.
+- [x] **Greenhouse boards behind companies' own sites** (Nov 2026): the lists link about 260
+      companies' Greenhouse postings through their own careers sites (`...?gh_jid=...`: Airbnb,
+      AQR, Akuna Capital, Duolingo, Block...); `boards/greenhouse.py` works out each one's board
+      (about 225 found at once, about 210 of them new) and adds it to the registry.
+- [ ] **The sites still not matched** (about 30: Aurora, DigitalOcean, Oscar Health, Navan,
+      SentinelOne, Skyscanner...): they're matched once the lists link one of their open postings;
+      check `greenhouse_sites` in `state.json` after a few weeks for any still missing (some may
+      have left Greenhouse).
 - [ ] **Other job sites the lists link**: TikTok/ByteDance, Rippling, Jobvite, BambooHR.
 - [ ] **Beyond the four lists**: find more sources of companies (other new-grad lists, startup
       directories) so the registry grows past what the lists link.

@@ -187,6 +187,31 @@ in a registry that only grows:
   400 of them Workday sites, in Nov 2026). These lists are only used to find companies; their
   postings aren't emailed from here.
 
+**Greenhouse boards behind companies' own sites.** Many companies show their Greenhouse board
+on their own careers site, so the lists link `careers.airbnb.com/positions/7859317?gh_jid=7859317`,
+not `job-boards.greenhouse.io/airbnb/...`: the link carries the posting's Greenhouse job id but
+not the board's name, which reading the board needs. `boards/greenhouse.py` works the name out
+for each such site (about 260 in the lists: Airbnb, AQR, Akuna Capital, Duolingo, Block, C3.ai,
+Andreessen Horowitz...), each answer checked, and the board joins the registry like any other:
+
+1. **From a posting**: Greenhouse's embed address for a job (`boards.greenhouse.io/embed/
+   job_app?token=<job id>`) redirects to one naming its board while the posting is open. Each
+   job id is asked about once (3 a site a check, newest first), unless a board already found
+   for the site lists it; a site can have several boards (a main and a campus board, or a
+   careers platform several companies use, each named after its own company).
+2. **By a guess**, if Greenhouse knows none of the site's postings (all closed): names from the
+   site's address and the company's name, taken only if that board's postings link back to the
+   same site (the company sets those links).
+3. **From a posting's page**: the board a careers page embeds, taken if its postings link to the
+   same site (or to Greenhouse's pages, and the name starts like the company's: a page can link
+   other companies' boards).
+
+Guesses and pages are tried again a week later while a site has no board; at most 4 minutes a
+check (the first check takes about a minute, about 225 of the 256 sites; later ones seconds).
+What was found is kept in `state.json` (`greenhouse_sites`); the boards show in `boards.md` as
+"via companies' own sites". A posting on the board and the list's link to the company's site are
+one job (the same Greenhouse job id), so it isn't emailed twice.
+
 Companies on **Workable** join the same registry (as their Workable account); the code is in
 `boards/workable.py`. Workable refuses quick reading of each company's page ("429 Too Many
 Requests"), but it publishes one file of every customer's published jobs, updated hourly, for
