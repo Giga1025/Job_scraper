@@ -1030,9 +1030,22 @@ MUST_KEEP = [
     "Software Engineer II - React Native - Krak Frontend • Brazil; Argentina",
     "icon Infrastructure Software Engineer: Application Engineering : The D. E. Shaw group seeks a lead software engineer",
     "Infrastructure Engineer III - Amazon Connect : Lead and grow a team",
-    "Solutions Architect - Manufacturing", "Product Engineer - Manufacturing Operations",
+    "Product Engineer - Manufacturing Operations",
     "Hardware Tools Engineer", "RTL Tools & Methodology Engineer",
     "Leadership Development Program, Technology", "Architect - New College Grad 2026",
+    # Tech roles whose titles carry a word of the "not tech" list (Nov 2026: the owner asked for sales and
+    # other non-tech roles to go): the role itself is named, so they stay.
+    "Software Engineer, Sales Platform", "Machine Learning Engineer, Sales Engineering", "Data Engineer - Sales Analytics",
+    "Salesforce Developer", "Software Engineer - Partner Integrations", "Software Engineer, Recruiting Platform",
+    "Forward Deployed Engineer, Professional Services", "Electronic Trading Support Engineer",
+    "Cloud Infrastructure Support Engineer", "Production Support Engineer", "Field Engineer", "Junior Solution Architect",
+    "Implementation Engineer", "Embedded Security Operator", "Data Scientist - Clinical", "Software Engineer, Real Estate Tech",
+    "Research Scientist - Generative AI Graduate - Global Frontier Tech Recruitment Program - 2027 Start - PhD",
+    "Machine Learning Materials Science Postdoctoral Researcher - Molecular Foundry", "Data Analyst - Clinical Analytics",
+    "Business Intelligence Engineer, Prime Video Partner Experience", "Digital Automation Engineer - Cell Therapy",
+    # Wrongly dropped by a first version of the "not tech" list (found by auditing every title it dropped):
+    "Assistant Data Solutions Engineer", "Sales, Marketing, and Distribution Technology - Marketing and Distribution Technology",
+    "Data Analyst - Shift D Wednesday-Saturday 5:00pm-3:30am",
 ]
 MUST_LEAVE_OUT = [
     "Senior Software Engineer", "Sr. Software Engineer", "Staff ML Engineer", "Principal Engineer",
@@ -1046,6 +1059,20 @@ MUST_LEAVE_OUT = [
     "Software Engineer (Technical Leadership) - Machine Learning", "Manufacturing Engineer, Motors",
     # Text appended after the title must not rescue it:
     "Data Science Intern (Winter 2027) Early Career • San Francisco • Full time",
+    # Not tech even with an engineering word in the title (Nov 2026: "no sales engineer roles, and other not
+    # tech roles"); most were in real emails.
+    "Sales Engineer", "Enterprise Sales Engineer", "Solutions Engineer", "Pre-sales Solutions Engineer",
+    "Solutions Architect - Manufacturing", "Partner Solutions Architect", "Applied AI Architect, Enterprise",
+    "Customer Engineer, Google Cloud", "Field Application Engineer", "AI Support Engineer - San Francisco",
+    "Technical Support Engineer II", "Robotics Aftermarket - Inside Sales Representative", "Private Cloud AI Sales Specialist",
+    "Territory Development Executive - Software/SaaS", "Account Executive, Strategic Platform Partnerships",
+    "Manheim Mobile Vehicle Condition Inspector, West Palm Beach South, FL", "Mobile Diesel Tech II -Variable Shift",
+    "Certificate Curriculum Developer - Kenneth C. Griffin School of Computer Science - LTI",
+    "Registered Nurse New Graduate Progressive Care", "Quantitative Tutoring & Statistical Software Support (Student)",
+    "Campus Recruiter, Machine Learning and Quantitative Research", "Recruiter, AI/ML Research",
+    "Data Center Technician, Hardware Operations", "Critical Facility Engineer", "Research Scientist - Antibody Discovery",
+    "Clinical Research Coordinator I", "AppleCare Strategy & Solutions Analyst", "Car Wash Attendant", "Claims Adjuster",
+    "Forklift Operator", "Investment Banking Analyst", "AI Tutor - Software Engineering",
 ]
 
 
@@ -1073,6 +1100,14 @@ class RoleFilterTests(MonitorTestCase):
         self.assertEqual(wrongly_left_out, {})
         self.assertEqual(wrongly_kept, [])
 
+    def test_not_tech_postings_are_counted_but_not_listed_in_the_email(self):
+        jobs = [{"title": t, "url": f"https://acme.example/{i}", "company": "Acme",
+                 "reason": jm.role_exclusion_reason(t, self.patterns)}
+                for i, t in enumerate(["Sales Engineer", "Solutions Engineer", "Senior Software Engineer"])]
+        summary = jm.summarize_left_out(jobs, self.patterns)
+        self.assertEqual(summary["by_reason"], {"not tech": 2, "senior": 1})
+        self.assertEqual([j["title"] for j in summary["listed"]], ["Senior Software Engineer"])
+
     def test_unicode_dashes_and_ampersands(self):
         keep = ["Full\u2011Stack Engineer (Frontend focus)", "Software Engineer Intern / New\u2011Grad",
                 "Full\u2013Stack Engineer"]
@@ -1093,7 +1128,7 @@ class RoleFilterTests(MonitorTestCase):
         self.assertEqual(self.left_out, {"Acme": ["Senior Software Engineer"]})
         [(_, msg)] = self.emails_sent()
         body = msg.get_payload()[0].get_payload(decode=True).decode()
-        self.assertIn("Left out by your filters: 2 (senior 1, not engineering 1)", body)
+        self.assertIn("Left out by your filters: 2 (senior 1, not tech 1)", body)
         self.assertIn("Senior Software Engineer  [senior (Senior)]", body)
         self.assertNotIn("Account Executive", body)
         self.assertIn("+2 left out by filters", msg["Subject"])

@@ -100,17 +100,26 @@ Job titles vary a lot between companies ("Member of Technical Staff", "Technolog
 "Forward Deployed Engineer"), so a list of titles to *look for* misses roles. Instead,
 `role_filter` in the config lists what to *leave out*: every new posting is kept unless its
 title clearly says it is senior (`exclude_senior`), an internship (`exclude_internships`),
-pure frontend (`exclude_frontend`, unless also full stack/platform), non-engineering
-(`exclude_non_engineering`, unless an `engineering_signals` word is present) or
+pure frontend (`exclude_frontend`, unless also full stack/platform), not tech
+(`exclude_non_tech`: sales and pre-sales engineers, solutions engineers and architects,
+support engineers, technicians, recruiters, healthcare, teaching, wet-lab science and other
+jobs that aren't tech even with "engineer" or "developer" in the title; such a title is kept
+only when `non_tech_ok_if` names the role itself, as in "Software Engineer, Sales Platform"),
+non-engineering (`exclude_non_engineering`, unless an `engineering_signals` word is present) or
 non-software engineering (`exclude_other_disciplines`, unless a `software_signals` word is
 present). Matching is whole-word and case-insensitive. Edit the lists to taste; remove
 `role_filter` to turn it off.
 
+The "not tech" list was built from the ~8,500 titles the monitor had seen that passed the other
+lists (Nov 2026): it removes about half of the non-tech ones among them while keeping all but a
+handful of the ~5,100 tech ones (each word was checked against every title, and every title it
+drops was reviewed).
+
 Left-out postings are not dropped silently. They wait in `state.json` and are summarised in a
 "Left out by your filters" section at the bottom of the next email: a count for each reason,
 then up to 25 of them that still look like engineering roles (an engineering or software/ML
-word in the title), the ones left out for their kind of role before those left out for their
-level. If no email has gone out for `filtered_digest_hours` (default 24), a digest email carries
+word in the title; "not tech" ones such as sales engineers are only counted), the ones left out
+for their kind of role before those left out for their level. If no email has gone out for `filtered_digest_hours` (default 24), a digest email carries
 them. Every left-out posting of the last 7 days, with its reason, is also listed in
 `left_out.md` (next to `state.json`; on GitHub, on the `monitor-state` branch), and the email
 links to it. Monitors sharing a `state.json` (e.g. batch configs) share this list. This is on
