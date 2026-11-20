@@ -199,18 +199,25 @@ Andreessen Horowitz...), each answer checked, and the board joins the registry l
    job id is asked about once (3 a site a check, newest first), unless a board already found
    for the site lists it; a site can have several boards (a main and a campus board, or a
    careers platform several companies use, each named after its own company).
-2. **By a guess**, if Greenhouse knows none of the site's postings (all closed): names from the
-   site's address and the company's name, taken only if that board's postings link back to the
-   same site (the company sets those links).
-3. **From a posting's page**: the board a careers page embeds, taken if its postings link to the
-   same site (or to Greenhouse's pages, and the name starts like the company's: a page can link
-   other companies' boards).
+2. **By a guess**: names from the site's address (only for a site one company uses) and the
+   company's name, taken only if that board's postings link back to the same site (the company
+   sets those links). Weekly, also for a site with a board: the board a posting named can be a
+   side one (Thoughtworks' referrals board), the guess its main one.
+3. **From a posting's page**, if the site still has no board: the board a careers page embeds
+   (a closed posting's page too), taken if its postings link to the same site (or to
+   Greenhouse's pages, and the name starts like the company's: a page can link other
+   companies' boards).
 
-Guesses and pages are tried again a week later while a site has no board; at most 4 minutes a
-check (the first check takes about a minute, about 225 of the 256 sites; later ones seconds).
-What was found is kept in `state.json` (`greenhouse_sites`); the boards show in `boards.md` as
-"via companies' own sites". A posting on the board and the list's link to the company's site are
-one job (the same Greenhouse job id), so it isn't emailed twice.
+A request that got no answer (a timeout, an error) isn't taken as "no board": that step is tried
+again next run; after 10 unanswered requests of a kind in a row, or "too many requests", the rest
+wait for the next run; at most 4 minutes a check (the first takes about a minute on GitHub: 236
+boards for 267 sites in the dry run; later ones seconds). What was found is kept in `state.json`
+(`greenhouse_sites`); the boards show in `boards.md` as "via companies' own sites".
+
+A posting on the board and the lists' link to the company's site are one job (the same Greenhouse
+job id), and so is the same page's link without the id. A board isn't read while one of your
+entries reads that company's site and can't be matched with it both ways (it has the board's name
+and records the ids): your "Square / Block" entry reads block.xyz, so Block's board isn't read.
 
 Companies on **Workable** join the same registry (as their Workable account); the code is in
 `boards/workable.py`. Workable refuses quick reading of each company's page ("429 Too Many

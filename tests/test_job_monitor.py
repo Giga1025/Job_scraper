@@ -2377,12 +2377,24 @@ class GreenhouseSitesTests(MonitorTestCase):
                       "https://careers.airbnb.com/positions/7859317", "https://acme.com/jobs?gh_jid=abc", "https://[x?gh_jid=1", None, ""):
             self.assertIsNone(job_id(other), other)
         self.assertEqual(jm.greenhouse.site_of("https://www.Careers.Acme.com:443/x"), "careers.acme.com")
-        self.assertEqual(jm.greenhouse.guesses("careers.airbnb.com", ["Airbnb"]), ["airbnb"])
-        self.assertEqual(jm.greenhouse.guesses("abnormal.ai", ["Abnormal Security"]), ["abnormal", "abnormalsecurity"])
+        self.assertEqual(job_id("https://careers.acme.com/x?GH_JID=123"), "123")  # (any case, as job_keys reads it)
+        self.assertEqual(jm.greenhouse.guesses("careers.airbnb.com", ["Airbnb"]), [("airbnb", "Airbnb")])
+        self.assertEqual(jm.greenhouse.guesses("abnormal.ai", ["Abnormal Security"]),
+                         [("abnormal", "Abnormal Security"), ("abnormalsecurity", "Abnormal Security")])
+        # A site several companies use: no guess from its address (it isn't any one's); each named after its company.
+        self.assertEqual(jm.greenhouse.guesses("app.careerpuck.com", ["Lyft", "Domino Data Lab"]),
+                         [("lyft", "Lyft"), ("dominodatalab", "Domino Data Lab")])
         self.assertEqual(jm.greenhouse.embedded_names(
             '<script src="https://boards.greenhouse.io/embed/job_board/js?for=acmecareers"></script>'
-            '<a href="https://job-boards.greenhouse.io/acmecampus/jobs/1">x</a> boards-api.greenhouse.io/v1/boards/acmeapi/jobs'),
-            ["acmecareers", "acmecampus", "acmeapi"])
+            '<a href="https://job-boards.greenhouse.io/acmecampus/jobs/1">x</a> boards-api.greenhouse.io/v1/boards/acmeapi/jobs'
+            ' https://boards.greenhouse.io/embed/job_board?t=1&amp;for=acmeescaped {"u":"https:\\/\\/job-boards.eu.greenhouse.io\\/acmeeu"}'),
+            ["acmecareers", "acmecampus", "acmeapi", "acmeescaped", "acmeeu"])
+        # The same page's link with and without its Greenhouse job id is one posting (an entry reading the site records
+        # it without), and only for the number that is the job id.
+        self.assertIn(("block.xyz", "4567890"), jm.job_keys("https://block.xyz/careers/jobs/4567890?gh_jid=4567890"))
+        self.assertTrue(jm.job_keys("https://block.xyz/careers/jobs/4567890?gh_jid=4567890")
+                        & jm.job_keys("https://block.xyz/careers/jobs/4567890"))
+        self.assertEqual(jm.job_keys("https://acme.com/team/1234567/jobs?gh_jid=7654321"), {("gh", "7654321")})
 
     def test_a_posting_names_its_board_and_each_job_is_asked_about_once(self):
         web = FakeWeb({self.EMBED.format(111): gh_redirect("acme", 111)})  # 222 and 333: closed (404)
@@ -2393,7 +2405,7 @@ class GreenhouseSitesTests(MonitorTestCase):
         self.assertEqual(jm.board_api_url(found[0][0]), ("greenhouse", self.API.format("acme")))
         # The three newest asked (in the order given: the lists' newest first); a board found: no guessing.
         self.assertEqual([u for u in web.asked], [self.EMBED.format(j) for j in (222, 111, 333)])
-        self.assertEqual(memory["careers.acme.com"], {"boards": {"acme": "Acme"}, "asked": ["222", "111", "333"]})
+        self.assertEqual(memory["careers.acme.com"], {"boards": {"acme": "Acme"}, "asked": ["111", "222", "333"], "guessed": "2026-11-20"})
         web.asked.clear()
         self.assertEqual(jm.greenhouse.find_boards(links, memory, "2026-11-20", get=web), found)
         self.assertEqual(web.asked, [self.EMBED.format(444)])  # (each once)
@@ -2449,6 +2461,79 @@ class GreenhouseSitesTests(MonitorTestCase):
         web.pages[self.EMBED.format(1)] = gh_redirect("acme", 1)
         self.assertEqual(jm.greenhouse.find_boards([(self.link(1), "Acme")], memory, "2026-11-20", get=web),
                          [("https://job-boards.greenhouse.io/acme", "Acme")])
+
+    def test_no_answer_is_not_a_no(self):
+        # A guess or a page that got no answer (a timeout, a 5xx, a 403 from Greenhouse) isn't "no board":
+        # the site is tried again next run, not a week later.
+        links = [(self.link(222), "Acme")]
+        web = FakeWeb({self.API.format("acme"): FakeResponse("", 503), self.link(222): FakeResponse("", 502)})
+        memory = {}
+        self.assertEqual(jm.greenhouse.find_boards(links, memory, "2026-11-20", get=web), [])
+        self.assertNotIn("guessed", memory["careers.acme.com"])
+        web.pages[self.API.format("acme")] = gh_site_board("careers.acme.com", (1, "Engineer"))
+        self.assertEqual(jm.greenhouse.find_boards(links, memory, "2026-11-20", get=web),
+                         [("https://job-boards.greenhouse.io/acme", "Acme")])
+        # A closed posting's page (404) is often the site's usual page: it can still name the board.
+        memory, web = {}, FakeWeb({self.link(222): FakeResponse('<script src="https://boards.greenhouse.io/embed/job_board/js?for=acmeco">', 404),
+                                   self.API.format("acmeco"): gh_site_board("careers.acme.com", (1, "Engineer"))})
+        self.assertEqual(jm.greenhouse.find_boards(links, memory, "2026-11-20", get=web),
+                         [("https://job-boards.greenhouse.io/acmeco", "Acme")])
+
+    def test_greenhouse_giving_no_answer_again_and_again_stops_the_run(self):
+        # Greenhouse refuses the job lookups (as Workday refuses GitHub's machines): the run stops asking, but keeps guessing.
+        web = FakeWeb({self.EMBED.format(j): FakeResponse("", 403) for j in range(1, 40)})
+        links = [(self.link(j, f"site{j}.com"), f"Company {j}") for j in range(1, 40)]
+        memory = {}
+        with self.assertLogs(jm.log, "INFO") as logs:
+            jm.greenhouse.find_boards(links, memory, "2026-11-20", get=web)
+        lookups = [u for u in web.asked if "embed/job_app" in u]
+        self.assertLessEqual(len(lookups), jm.greenhouse.GIVE_UP_AFTER + jm.greenhouse.WORKERS)
+        self.assertTrue(any("No answer from Greenhouse to 10 lookup requests" in line for line in logs.output))
+        self.assertEqual(sum(1 for r in memory.values() if r["asked"]), 0)  # (asked again next run)
+        self.assertEqual(sum(1 for r in memory.values() if r.get("guessed")), 39)  # (the guesses were answered: no board)
+        # Refusing everything: the board reads stop too, and no site is put off for a week.
+        web, memory = FakeWeb({}), {}
+        web.pages = type("All403", (dict,), {"get": lambda self, url, default=None: FakeResponse("", 403)})()
+        with self.assertLogs(jm.log, "INFO"):
+            jm.greenhouse.find_boards(links, memory, "2026-11-20", get=web)
+        self.assertLessEqual(len([u for u in web.asked if "boards-api" in u]), jm.greenhouse.GIVE_UP_AFTER + jm.greenhouse.WORKERS)
+        self.assertEqual(sum(1 for r in memory.values() if r.get("guessed")), 0)
+
+    def test_a_side_board_doesnt_hide_the_main_one_and_odd_saved_records_are_repaired(self):
+        # Thoughtworks' open postings in the lists were on its referrals board; its guess finds its main board too.
+        web = FakeWeb({self.EMBED.format(1): gh_redirect("thoughtworksreferral", 1),
+                       self.API.format("thoughtworks"): gh_site_board("www.thoughtworks.com", (5, "Developer"))})
+        memory = {"thoughtworks.com": {"boards": ["not", "a", "dict"], "asked": "x"}, "other.com": "junk"}
+        found = jm.greenhouse.find_boards([(self.link(1, "thoughtworks.com"), "Thoughtworks")], memory, "2026-11-20", get=web)
+        self.assertEqual(sorted(found), [("https://job-boards.greenhouse.io/thoughtworks", "Thoughtworks"),
+                                         ("https://job-boards.greenhouse.io/thoughtworksreferral", "Thoughtworks")])
+        self.assertEqual(memory["other.com"], "junk")  # (a site not in this run's links is left as it is)
+        # The highest job ids asked about are kept (they grow over time), whatever the order they were asked in.
+        memory = {"careers.acme.com": {"boards": {"acme": "Acme"}, "asked": [str(n) for n in range(5000, 3000, -1)], "guessed": "2026-11-20"}}
+        jm.greenhouse.find_boards([(self.link(1), "Acme")], memory, "2026-11-20", get=FakeWeb({}))
+        self.assertEqual(len(memory["careers.acme.com"]["asked"]), jm.greenhouse.ASKED_KEPT)
+        self.assertEqual(memory["careers.acme.com"]["asked"][-1], "5000")
+
+    def test_a_board_your_entry_already_reads_on_the_site_is_not_read_again(self):
+        # Your "Square / Block" entry reads block.xyz and records its links without the Greenhouse job id; Block's
+        # Greenhouse board (found through the lists' block.xyz?gh_jid= links) would email each Block role a second time.
+        meta = {"known": {}, "list_etags": {}, "greenhouse_sites": {
+            "block.xyz": {"boards": {"block": "Block"}, "asked": [], "guessed": "2026-11-20"},
+            "pinterestcareers.com": {"boards": {"pinterest": "Pinterest"}, "asked": [], "guessed": "2026-11-20"}}}
+        jm.grow_board_registry(meta["known"], [("https://job-boards.greenhouse.io/block", "Block"),
+                                               ("https://job-boards.greenhouse.io/pinterest", "Pinterest")], "companies' own sites", "2026-11-20")
+        block = target(name="Square / Block", url="https://block.xyz/careers?locations=United%20States", mode="browser")
+        pinterest = target(name="Pinterest", url="https://www.pinterestcareers.com/jobs/?team=University", mode="browser")
+        state = {block["url"]: [{"url": "https://block.xyz/careers/jobs/4567890"}],
+                 pinterest["url"]: [{"url": "https://www.pinterestcareers.com/jobs/8214783/intern/?gh_jid=8214783"}]}
+
+        def plan(*mine):
+            return sorted(b["name"] for b in jm.plan_boards({}, list(mine), state, meta, False))
+
+        self.assertEqual(plan(), ["Block", "Pinterest"])
+        # Pinterest's entry has the board's name and records the job ids: the two are matched both ways, both read.
+        self.assertEqual(plan(block, pinterest), ["Pinterest"])
+        self.assertEqual(plan(target(name="Pinterest University", url=pinterest["url"], mode="browser")), ["Block"])
 
     def test_a_companys_board_behind_its_own_site_is_found_checked_and_its_new_roles_emailed_once(self):
         feed = target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",

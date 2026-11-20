@@ -1375,6 +1375,10 @@ def job_keys(url: str) -> set[tuple]:
             keys.add(("wd", workday.tenant_in(url) or host, token))
     elif not keys:
         keys |= {(host, n) for n in re.findall(r"(?<!\d)\d{7,}(?!\d)", parsed.path)}
+    elif not host.endswith("greenhouse.io"):
+        # A company site's link with its Greenhouse job id (block.xyz/careers/jobs/N?gh_jid=N, as the lists and the
+        # company's Greenhouse board give it) is also the same page's link without it (as an entry reading the site records it).
+        keys |= {(host, n) for n in re.findall(r"(?<!\d)\d{7,}(?!\d)", parsed.path) if ("gh", n) in keys}
     return keys
 
 
@@ -1703,6 +1707,7 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
     # Oracle site's can be matched with, like your Goldman Sachs and Uber entries: see oracle.FRONT_ENDS)
     yours_unmatched = {_entry_key(t.get("name")) for t in targets
                        if t.get("url") and t.get("mode") != "feed" and not oracle.knows_links_of(t["url"])} - {""}
+    skip |= _greenhouse_boards_yours_cover(targets, state, meta)
     skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
     tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
     skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
@@ -1738,6 +1743,29 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
             and _entry_key(info.get("name")) not in skip_companies
             and not (_board_platform(info["url"]) == "workday" and _entry_key(info.get("name")) in yours)
             and not (_board_platform(info["url"]) == "oracle" and _entry_key(info.get("name")) in yours_unmatched)]
+
+
+def _greenhouse_boards_yours_cover(targets: list[dict], state: dict, meta: dict) -> set[str]:
+    """The registry keys of the Greenhouse boards found through a company's own site
+    (boards/greenhouse.py) that one of your entries already reads on that site's domain, unless the
+    two can be matched both ways: the entry has the board's name (so each skips what the other
+    emailed) and the links it recorded carry the Greenhouse job id. Otherwise a role the board
+    emailed first (say while the entry's page was down) would be emailed again by the entry, like
+    your "Square / Block" entry (block.xyz/careers/jobs/N) and Block's board."""
+    by_domain = greenhouse.boards_by_domain(meta.get("greenhouse_sites"))
+    skip = set()
+    for t in targets:
+        site = greenhouse.site_of(t.get("url"))
+        if not site or site.endswith("greenhouse.io") or t.get("mode") in ("feed", "boards") or t.get("_board"):
+            continue
+        rows = state.get(t["url"]) if isinstance(state.get(t["url"]), list) else []
+        with_ids = any(isinstance(r, dict) and greenhouse.job_id(r.get("url")) for r in rows)
+        for name in by_domain.get(greenhouse.domain_of(site), ()):
+            key = _url_key(f"https://boards-api.greenhouse.io/v1/boards/{name}/jobs")
+            board_name = (meta["known"].get(key) or {}).get("name")
+            if not with_ids or _entry_key(board_name) != _entry_key(t.get("name")):
+                skip.add(key)
+    return skip
 
 
 def _listed_on_boards(state: dict):
