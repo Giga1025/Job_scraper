@@ -23,6 +23,15 @@ _JOB_PATH = re.compile(r"/sites/[^/]+/job/(\d+)(?:/|$)", re.IGNORECASE)
 _API_PATH = "/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
 _SITE_IN_FINDER = re.compile(r"siteNumber=([A-Za-z0-9_-]+)")
 
+# Companies' own career sites that show an Oracle site's postings under their own links, with the
+# Oracle requisition number in them (your Goldman Sachs and Uber entries read these): a posting
+# there and on the Oracle site the lists link is one job (job_number).
+FRONT_ENDS = {
+    "higher.gs.com": (re.compile(r"^/roles/(\d+)(?:/|$)"), "hdpc.fa.us2.oraclecloud.com"),  # Goldman Sachs
+    "jobs.uber.com": (re.compile(r"^/(?:[a-z]{2}(?:-[a-z]{2})?/)?jobs/(\d+)(?:/|$)", re.IGNORECASE),
+                      "iaziqy.fa.ocs.oraclecloud.com"),  # Uber
+}
+
 
 def _host(link) -> str:
     try:
@@ -67,12 +76,25 @@ def page_url(link) -> str:
 
 
 def job_number(link) -> tuple[str, str] | None:
-    """(host, requisition number) of a posting's link; None for anything else."""
-    host = _host(link)
+    """(Oracle host, requisition number) of a posting's link, on an Oracle site or a career site
+    in FRONT_ENDS; None for anything else."""
+    host = _host(link).removeprefix("www.")
+    path = urlparse(str(link).strip()).path if host else ""
+    if host in FRONT_ENDS:
+        pattern, oracle_host = FRONT_ENDS[host]
+        match = pattern.match(path)
+        return (oracle_host, match.group(1)) if match else None
     if not _HOST.match(host):
         return None
-    match = _JOB_PATH.search(urlparse(str(link).strip()).path)
+    match = _JOB_PATH.search(path)
     return (host, match.group(1)) if match else None
+
+
+def knows_links_of(url) -> bool:
+    """Whether postings read from this address (one of your entries) can be matched with an Oracle
+    site's by requisition number: an Oracle site, or a career site in FRONT_ENDS."""
+    host = _host(url).removeprefix("www.")
+    return bool(_HOST.match(host)) or host in FRONT_ENDS
 
 
 def is_api_url(url) -> bool:

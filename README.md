@@ -167,7 +167,11 @@ Oracle Recruiting Cloud (American Express, Fortinet, Oracle, Texas Instruments, 
 180 company sites in the lists). An Oracle site (`<host>.oraclecloud.com/hcmUI/CandidateExperience/
 .../sites/<site>`, one host can have several) is read through the API its career page uses, its
 newest 100 postings each hour, with their countries (main and other places) for the US filter and
-their posting date for a company's first check; `boards/oracle.py`. The
+their posting date for a company's first check; `boards/oracle.py`. Goldman Sachs's and Uber's
+own career sites (your entries) show their Oracle sites' postings under the same numbers, so a job
+on both is emailed once; any other company's Oracle site isn't read while one of your entries has
+its name (the two would email each job twice), unless its own site is mapped the same way
+(`FRONT_ENDS` in `boards/oracle.py`). The
 `"mode": "boards"` entry in `targets/startups.json` checks the whole board of each company
 in a registry that only grows:
 

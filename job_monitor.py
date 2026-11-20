@@ -1365,8 +1365,8 @@ def job_keys(url: str) -> set[tuple]:
             keys.add(("uuid", parts[1]))
     else:
         keys |= {("uuid", u) for u in _UUID_RE.findall(parsed.path)}
-    if host.endswith(".oraclecloud.com") and oracle.job_number(url):
-        keys.add(("oracle",) + oracle.job_number(url))  # (host and requisition number, whatever the language in the link)
+    if oracle.job_number(url):  # (host and requisition number, whatever the language or site in the link; GS and Uber's own links too)
+        keys.add(("oracle",) + oracle.job_number(url))
     if "myworkday" in host:
         token = parsed.path.rstrip("/").rsplit("_", 1)[-1]
         trimmed = re.fullmatch(r"(.*\d.*?)-\d{1,2}", token)
@@ -1687,6 +1687,10 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
     # PayPal's, on its Eightfold page: the same jobs under other numbers, so each would be emailed twice)
     yours = {_entry_key(t.get("name")) for t in targets
              if t.get("url") and t.get("mode") != "feed" and not _is_workday_entry(t)} - {""}
+    # (and the same for a company's Oracle site, unless each of your entries with its name reads links the
+    # Oracle site's can be matched with, like your Goldman Sachs and Uber entries: see oracle.FRONT_ENDS)
+    yours_unmatched = {_entry_key(t.get("name")) for t in targets
+                       if t.get("url") and t.get("mode") != "feed" and not oracle.knows_links_of(t["url"])} - {""}
     skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
     tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
     skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
@@ -1720,7 +1724,8 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
             for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
             if key not in skip and _board_platform(info["url"]) in platforms
             and _entry_key(info.get("name")) not in skip_companies
-            and not (_board_platform(info["url"]) == "workday" and _entry_key(info.get("name")) in yours)]
+            and not (_board_platform(info["url"]) == "workday" and _entry_key(info.get("name")) in yours)
+            and not (_board_platform(info["url"]) == "oracle" and _entry_key(info.get("name")) in yours_unmatched)]
 
 
 def _is_workday_entry(target: dict) -> bool:
@@ -3460,13 +3465,15 @@ def _sibling_urls(targets: list[dict]) -> dict[str, set[str]]:
 
 
 def _posting_ids(url: str) -> set[tuple]:
-    """The ids in a link that name exactly one posting: a Greenhouse job id, or the posting
-    id of an Ashby or Lever link (the part after the board name; some boards are named by a
-    company-wide id, which isn't one). Other numbers job_keys finds can be shared: Apple uses
-    one number for a role in several cities, and a Workday requisition can be posted twice."""
+    """The ids in a link that name exactly one posting: a Greenhouse job id, an Oracle site's
+    requisition number (also in your Goldman Sachs and Uber entries' links, see oracle.FRONT_ENDS),
+    or the posting id of an Ashby or Lever link (the part after the board name; some boards are
+    named by a company-wide id, which isn't one). Other numbers job_keys finds can be shared: Apple
+    uses one number for a role in several cities, and a Workday requisition can be posted twice."""
     host = urlparse(str(url or "").strip().lower()).netloc
     ats = host.endswith(".ashbyhq.com") or host.endswith(".lever.co")
-    return {key for key in job_keys(url) if key[0] in ("gh", "workable", "sr") or (key[0] == "uuid" and ats)}
+    return {key for key in job_keys(url)
+            if key[0] in ("gh", "workable", "sr", "oracle") or (key[0] == "uuid" and ats)}
 
 
 def _mark_reported(state: dict, url: str, jobs: list[dict], shown_as: str):

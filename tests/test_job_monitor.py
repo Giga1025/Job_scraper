@@ -2258,6 +2258,78 @@ class OracleBoardTests(MonitorTestCase):
         self.assertEqual([jm.oracle.site_of(b["url"])[1] for b in boards], ["CX_1002"])
         self.assertNotIn("_forget_gone_days", boards[0])  # (only its newest 100 are read: a missing one may be open)
 
+    GS_HOST = "hdpc.fa.us2.oraclecloud.com"
+    GS_PAGE = "https://higher.gs.com/roles?division=Engineering&country=United+States&sort=NEWEST"
+
+    def test_goldman_and_uber_links_name_their_oracle_postings(self):
+        # Your Goldman Sachs and Uber entries read the companies' own sites, which show their Oracle sites'
+        # postings under the same numbers: one job either way (checked live: Uber 304922, Goldman 176573).
+        gs = ("oracle", self.GS_HOST, "176573")
+        self.assertIn(gs, jm.job_keys("https://higher.gs.com/roles/176573"))
+        self.assertIn(gs, jm.job_keys(oracle_link(176573, site="LateralHiring", host=self.GS_HOST)))
+        self.assertIn(gs, jm._posting_ids("https://higher.gs.com/roles/176573?source=x"))
+        uber = ("oracle", "iaziqy.fa.ocs.oraclecloud.com", "304922")
+        for link in ("https://jobs.uber.com/en/jobs/304922/", "https://jobs.uber.com/jobs/304922",
+                     "https://www.jobs.uber.com/pt-br/jobs/304922/", oracle_link(304922, host="iaziqy.fa.ocs.oraclecloud.com")):
+            self.assertIn(uber, jm._posting_ids(link), link)
+        for other in ("https://higher.gs.com/roles", "https://higher.gs.com/about/176573", "https://jobs.uber.com/en/jobs/",
+                      "https://jobs.uber.com/en/saved-jobs/304922/", "https://example.com/roles/176573"):
+            self.assertFalse({k for k in jm.job_keys(other) if k[0] == "oracle"}, other)
+        self.assertTrue(jm.oracle.knows_links_of(self.GS_PAGE))
+        self.assertFalse(jm.oracle.knows_links_of("https://careers.example.com/jobs"))
+
+    def test_goldmans_oracle_site_and_your_entry_email_a_job_once(self):
+        today = datetime.now(timezone.utc).date().isoformat()
+        old = (datetime.now(timezone.utc) - timedelta(days=30)).date().isoformat()
+        gs_api = jm.oracle.api_url(self.GS_HOST, "LateralHiring")
+        page = {"html": ""}
+        self.patch(jm, "fetch_browser", lambda url, wait_for="", wait_seconds=8: (page["html"], []))
+
+        def run(*shown):
+            page["html"] = "".join(f'<a href="/roles/{n}">{title}</a>' for n, title in shown)
+            self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Goldman Sachs", "Software Engineer",
+                                                                url=oracle_link(999, site="LateralHiring", host=self.GS_HOST))])
+            feed = target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                          categories=["Software"], max_age_days=7)
+            mine = target(name="Goldman Sachs", url=self.GS_PAGE, mode="browser", link_selector="a[href*='/roles/']")
+            boards = {"name": "Company job boards", "mode": "boards", "every_hours": 1, "catch_up_days": 3,
+                      "platforms": ["oracle"], "tech_titles": ["software", "ml", "engineer"]}
+            reported = self.run_monitor([feed, mine, boards], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)[1]
+            meta = self.saved_state()[jm.BOARDS_KEY]
+            meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+            jm.save_state({}, boards=meta)
+            return reported
+
+        self.assertEqual(run((1000, "Software Engineer, Analyst")), {})  # (first checks)
+        # Your entry shows 1001; Goldman's Oracle site (linked by the list) has it too, and 1002, which your entry's page
+        # doesn't show (another division): each is emailed once.
+        self.pages[gs_api] = oracle_api((1001, "Software Engineer", today, "US"), (1002, "Backend Software Engineer", today, "US"),
+                                        (999, "Software Engineer", old, "US"))
+        self.assertEqual(run((1000, "Software Engineer, Analyst"), (1001, "Software Engineer")),
+                         {"Goldman Sachs": ["Software Engineer", "Backend Software Engineer"]})
+        self.assertIn(gs_api, self.saved_state())
+        # Later your entry shows 1002 (the site emailed it): not again; 1003 is new to both, emailed once.
+        self.pages[gs_api] = oracle_api((1003, "ML Engineer", today, "US"), (1001, "Software Engineer", today, "US"),
+                                        (1002, "Backend Software Engineer", today, "US"))
+        self.assertEqual(run((1001, "Software Engineer"), (1002, "Backend Software Engineer"), (1003, "ML Engineer")),
+                         {"Goldman Sachs": ["ML Engineer"]})
+
+    def test_an_oracle_site_with_the_name_of_an_entry_it_cant_be_matched_with_is_not_read(self):
+        # Your entry reads another site whose links don't carry the Oracle numbers: both would email each job.
+        meta = {"known": {}, "list_etags": {}}
+        jm.grow_board_registry(meta["known"], [(oracle_link(5, site="LateralHiring", host=self.GS_HOST), "Goldman Sachs"),
+                                               (oracle_link(6), "American Express")], "a list", "2026-11-20")
+
+        def plan(*mine):
+            return sorted(b["name"] for b in jm.plan_boards({"platforms": ["oracle"]}, list(mine), {}, meta, False))
+
+        self.assertEqual(plan(), ["American Express", "Goldman Sachs"])
+        self.assertEqual(plan(target(name="Goldman Sachs", url=self.GS_PAGE, mode="browser")), ["American Express", "Goldman Sachs"])
+        self.assertEqual(plan(target(name="American Express, Inc.", url="https://careers.americanexpress.com/jobs", mode="browser"),
+                              target(name="Goldman Sachs", url=self.GS_PAGE, mode="browser"),
+                              target(name="Goldman Sachs", url="https://www.goldmansachs.com/careers/students", mode="browser",
+                                     paused=True)), [])
+
 
 class BoardTests(MonitorTestCase):
     """Company job boards found through the feeds ("mode": "boards")."""
