@@ -233,7 +233,7 @@ def located(job: dict, data) -> dict:
     others = [_text(o) for o in info.get("additionalLocations") or [] if _text(o)] \
         if isinstance(info.get("additionalLocations"), list) else []
     if first:
-        job["location"] = "; ".join([first] + others)[:300]
+        job["location"] = "; ".join([first] + others[:50])  # (all of them: a US one can come last)
     if country:
         job["primary_country"] = country
     return job

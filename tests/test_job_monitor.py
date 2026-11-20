@@ -4610,6 +4610,9 @@ class WorkdayPlaceTests(WorkdayTestCase):
               "country": {"descriptor": "United States of America"}}, "Annapolis Junction, MD; McLean, VA", False),
             ({"location": "London", "jobRequisitionLocation": {"country": {"descriptor": "United Kingdom"}}}, "London", True),
             ({"location": "Somewhere"}, "Somewhere", False),  # (no country: the text decides, as before)
+            ({"location": "San Juan", "country": {"descriptor": "Puerto Rico"}}, "San Juan", False),  # (in the US)
+            ({"location": "Toronto", "additionalLocations": [f"Place {i}" for i in range(40)] + ["Austin, TX"],
+              "country": {"descriptor": "Canada"}}, "; ".join(["Toronto"] + [f"Place {i}" for i in range(40)] + ["Austin, TX"]), False),
             (None, "2 Locations", False),  # (no page: kept)
             ({"other": 1}, "2 Locations", False),
         ]

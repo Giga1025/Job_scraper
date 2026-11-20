@@ -1848,6 +1848,9 @@ _NON_US_WORDS = re.compile(
     re.IGNORECASE,
 )
 _US_COUNTRY_NAMES = {"us", "usa", "united states", "united states of america"}
+# Places Workday names as countries of their own that are in the US for this filter.
+_US_TERRITORIES = {"puerto rico", "guam", "united states virgin islands", "virgin islands, u.s.",
+                   "u.s. virgin islands", "american samoa", "northern mariana islands"}
 
 
 def is_outside_us(job: dict) -> bool:
@@ -1861,7 +1864,8 @@ def is_outside_us(job: dict) -> bool:
         # Workday names the country of a posting's first location only (boards/workday.py,
         # located()): outside the US unless that's the US or one of its others is clearly there.
         others = str(job.get("location") or "").split(";")[1:]
-        return primary not in _US_COUNTRY_NAMES and not any(_US_WORDS.search(o) or _US_CODE.search(o) for o in others)
+        return primary not in _US_COUNTRY_NAMES | _US_TERRITORIES \
+            and not any(_US_WORDS.search(o) or _US_CODE.search(o) for o in others)
     location = str(job.get("location") or "").strip()
     if not location:
         return False
