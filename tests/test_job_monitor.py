@@ -3963,14 +3963,16 @@ class WorkdayBoardTests(WorkdayTestCase):
         self.run_wd(workday_minutes_per_run=5)
         self.assertEqual(self.asked(), [(WD_API, 0), (WD_BETA_API, 0)])
 
-    def test_no_workday_site_is_started_once_the_run_is_20_minutes_old(self):
-        # GitHub stops a run at 30 minutes: whatever time workday_minutes_per_run leaves, no Workday site
-        # is started once the run (counted from when its Reader was made, at its start) is 20 minutes old.
+    def test_no_workday_site_is_started_once_the_run_is_24_minutes_old(self):
+        # Runs come every 30 minutes: whatever time workday_minutes_per_run leaves, no Workday site is
+        # started once the run (counted from when its Reader was made, at its start) is RUN_MINUTES old.
+        limit = jm.workday.RUN_MINUTES
+        self.assertEqual((limit, jm.workday.MINUTES_PER_RUN), (24, 24))
         clock = [5000.0]
         self.patch(jm.workday, "_monotonic", lambda: clock[0])
         self.two_sites("Gamma")
         reader = jm.workday.Reader(pause=0)
-        clock[0] += 18 * 60  # (everything else took 18 minutes)
+        clock[0] += (limit - 2) * 60  # (everything else took 22 minutes)
         answer = self.wd_answer
 
         def slow(*args):  # (each site takes a minute and a half)
@@ -3980,14 +3982,24 @@ class WorkdayBoardTests(WorkdayTestCase):
         self.wd_answer = slow
         sites = [{"url": WD_SITE, "name": "Acme"}] + [{"url": f"https://{n}.wd1.myworkdayjobs.com/Careers", "name": n} for n in ("beta", "gamma")]
         with self.assertLogs(jm.log, "INFO") as logs:
-            results, summary = jm.workday.read_sites(reader, sites, {}, 20)
-        self.assertEqual(list(results), [WD_SITE, "https://beta.wd1.myworkdayjobs.com/Careers"])  # (Beta started at 19:30)
-        self.assertEqual((summary["read"], summary["left"], summary["why"]), (2, 1, "the run is 20 minutes old, and GitHub stops a run at 30"))
-        self.assertIn("No more Workday sites this run: the run is 20 minutes old", "\n".join(logs.output))
+            results, summary = jm.workday.read_sites(reader, sites, {}, limit)
+        self.assertEqual(list(results), [WD_SITE, "https://beta.wd1.myworkdayjobs.com/Careers"])  # (Beta started at 23:30)
+        self.assertEqual((summary["read"], summary["left"], summary["why"]),
+                         (2, 1, "the run is 24 minutes old, and runs come every 30 minutes"))
+        self.assertIn("No more Workday sites this run: the run is 24 minutes old", "\n".join(logs.output))
         self.assertEqual(reader.read(WD_SITE), ("stopped", None))  # (your entries too)
         self.assertEqual(len(self.asked()), 2)
 
-    def test_a_run_that_is_20_minutes_old_leaves_workday_for_the_next_run(self):
+    def test_the_workflows_time_limit_leaves_room_after_the_last_workday_site(self):
+        # Setup (up to ~4 min), RUN_MINUTES, a site started just before (up to ~3 min) and the email
+        # and save must all fit in the workflow's timeout-minutes, or the run is stopped unsaved.
+        workflow = (REPO_DIR / ".github" / "workflows" / "job-monitor.yml").read_text()
+        [limit] = [int(n) for n in jm.re.findall(r"^\s*timeout-minutes:\s*(\d+)", workflow, jm.re.MULTILINE)]
+        self.assertEqual(limit, jm.workday.JOB_MINUTES)
+        self.assertGreaterEqual(limit - jm.workday.RUN_MINUTES, 10)
+        self.assertLess(jm.workday.RUN_MINUTES, 30)  # (the next run is due 30 minutes after this one)
+
+    def test_a_run_that_is_24_minutes_old_leaves_workday_for_the_next_run(self):
         self.two_sites()
         mine = target(name="Acme Corp", url=WD_SITE + "?workerSubType=abc", mode="browser", link_selector="")
         self.run_wd(mine)
@@ -3997,7 +4009,7 @@ class WorkdayBoardTests(WorkdayTestCase):
 
         def slow_get(url, *args, **kwargs):
             if url == SIMPLIFY_URL:
-                clock[0] += 20 * 60  # (this run, the lists took 20 minutes)
+                clock[0] += jm.workday.RUN_MINUTES * 60  # (this run, the lists took 24 minutes)
             return feed_get(url, *args, **kwargs)
 
         self.patch(jm.requests, "get", slow_get)
@@ -4005,12 +4017,12 @@ class WorkdayBoardTests(WorkdayTestCase):
         self.patch(jm.workday, "read_sites", read_sites)
         self.posts.clear()
         with self.assertLogs(jm.log, "INFO") as logs:
-            self.run_wd(mine, workday_minutes_per_run=25)
+            self.run_wd(mine, workday_minutes_per_run=30)
         self.assertEqual(self.asked(), [])  # neither your Workday entry nor the company sites
         self.assertIn("Acme Corp", "\n".join(logs.output))
-        self.assertIn("Not read this run: the run is 20 minutes old", "\n".join(logs.output))
-        self.assertEqual(read_sites.call_args.args[3], jm.workday.RUN_MINUTES)  # (the setting can't go past 20 minutes either)
-        self.assertIn("0 read, 0 couldn't be read (tried again later), 1 left for a later run (the run is 20 minutes old",
+        self.assertIn("Not read this run: the run is 24 minutes old", "\n".join(logs.output))
+        self.assertEqual(read_sites.call_args.args[3], jm.workday.RUN_MINUTES)  # (the setting can't go past 24 minutes either)
+        self.assertIn("0 read, 0 couldn't be read (tried again later), 1 left for a later run (the run is 24 minutes old",
                       jm.boards_page_path().read_text())
         # A run of the usual length reads them.
         self.patch(jm.requests, "get", feed_get)

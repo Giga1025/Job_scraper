@@ -264,15 +264,16 @@ out unless that country is the US or one of its other places is clearly in the U
 VA"); the email shows its places instead of "2 Locations". A posting whose page can't be had
 (or past the 20) is kept, as before.
 
-**Under 30 minutes.** GitHub stops a run at 30 minutes, so no Workday site (your entries or the
-company sites) is started once the run is 20 minutes old, whatever `workday_minutes_per_run`
-says; the sites left wait for the next run. A site started just before that takes a minute or
-two at most.
+**The rest of each run.** Runs come every 30 minutes and everything else takes 5-10 minutes, so
+Workday gets the rest: no Workday site (your entries or the company sites) is started once the
+run is 24 minutes old, whatever `workday_minutes_per_run` says; the sites left wait for the next
+run. A site started just before that takes a minute or two at most, so a run ends after about
+25-30 minutes (the workflow's own limit, `timeout-minutes`, is 40, only as a safety net).
 
 **Your entries on Workday** (NVIDIA, Salesforce, Circle and Intel in `targets/big_tech.json`) are
 read this way whatever their `mode`, with the filters in their link (the part after `?`), after
 every other entry, and every run (the time limit below is for the company sites) unless the run is
-already 20 minutes old. A posting keeps a link it was already recorded with (with or without the
+already 24 minutes old. A posting keeps a link it was already recorded with (with or without the
 filters after `?`), so a posting isn't emailed twice because its link changed form. A posting a
 new-grad list already brought you isn't emailed again by your entry (same Workday job number),
 nor the other way round, nor one your entry emailed before and Workday now shows under a new
@@ -281,12 +282,12 @@ link (an edited title or location).
 **Company sites** (every Workday site the lists link to, added like other boards):
 
 - read after everything else, one request at a time, `workday_seconds_between_requests` (2)
-  apart, for at most `workday_minutes_per_run` (6) minutes per run (`targets/startups.json`; 0
+  apart, for at most `workday_minutes_per_run` (24: the rest of the run) minutes per run (`targets/startups.json`; 0
   pauses them; at most 20, and never past the run's 20th minute, see above). A site takes about
-  4 seconds, so about 80 are read per run;
+  4 seconds, so about 240 are read per run (15-20 minutes);
 - in turns: sites never tried first (those a list linked most recently first), then the ones tried
-  longest ago. With about 1,340 sites, about 80 a run and a run every 30 minutes, each comes
-  round about every 8 hours rather than hourly, still ahead of the lists (they're a day or two
+  longest ago. With about 1,410 sites, about 240 a run and a run every 30 minutes, each comes
+  round about every 3 hours rather than hourly, still ahead of the lists (they're a day or two
   late). A site that couldn't be read at its last 2 tries waits at the back, and isn't tried
   again until a day after its last try. When it comes round again, skipping it doesn't count
   toward the "3 in a row" that stops Workday: such sites were all tried in the same run, so they
@@ -321,7 +322,8 @@ The log and `boards.md` say how many sites each run read, couldn't read, and lef
 run (and `boards.md`, how many runs a round of all sites takes at that pace). `boards.md` also
 marks each site not read yet ("waiting for its turn", or "couldn't be read at its last try" when
 it was tried) and each read before that couldn't be read at its last tries.
-Runs take about 6 minutes longer than before (around 15 minutes; 30 is GitHub's limit).
+Runs now take about 25-30 minutes: Workday uses what's left of each half hour (the workflow's
+safety limit is 40 minutes).
 
 ### Job-board APIs and US-only
 

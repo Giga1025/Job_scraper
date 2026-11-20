@@ -9,13 +9,13 @@ Jobright aren't needed.
 - [x] **Workday**: about 37% of the lists' postings (about 1,340 company sites: about 640 from the
       new-grad lists, about 700 more from the internship list). Read through the headless browser
       when Workday refuses plain requests from GitHub's machines (since Nov 16), a few minutes per
-      run, in turns (each site about every 8 hours); your NVIDIA, Salesforce, Circle and Intel
+      run, in turns (the rest of each run: about 240 sites, each about every 3 hours); your NVIDIA, Salesforce, Circle and Intel
       entries too.
 - [ ] **Workday, after the first days**: check in the run logs and `boards.md` that sites are read
       on GitHub (not skipped as bot checks), how often each comes round, and how much `state.json`
       grows (about 21 MB expected, to about 38 MB; GitHub warns about a file over 50 MB); adjust
-      `workday_minutes_per_run` to match, keeping runs well under GitHub's 30 minutes (whatever it
-      says, no Workday site is started after a run's 20th minute).
+      `workday_minutes_per_run` to match (whatever it says, no Workday site is started after a
+      run's 24th minute, so runs end before the next one is due; the workflow's limit is 40).
 
 ## More companies
 - [ ] **Boards gone (404)**: 56 Greenhouse, Ashby and Lever boards no longer exist (Nov 19: 20, 19

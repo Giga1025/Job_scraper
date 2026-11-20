@@ -40,9 +40,10 @@ sites every day. A bot check still counts, whatever the site's history: it says 
 refusing the monitor, so if that lasts for weeks (until every site has failed its last tries),
 each run still stops after MAX_SKIPPED_IN_A_ROW of them.
 
-How long: GitHub stops a run at 30 minutes, so no Workday site (your entries or the company
-sites) is started once the run is RUN_MINUTES old (a Reader is made at the start of the run).
-A site started just before that takes a minute or two at most.
+How long: the workflow stops a run at JOB_MINUTES (its timeout-minutes), and runs come every 30
+minutes, so no Workday site (your entries or the company sites) is started once the run is
+RUN_MINUTES old (a Reader is made at the start of the run): Workday gets what's left of each
+run's half hour. A site started just before that takes a minute or two at most.
 
 Which postings are new (job_monitor.check_target, with "_new_within_days"): a posting seen for the
 first time is new only if Workday dates it within NEW_WITHIN_DAYS, so an older one that moves up
@@ -67,10 +68,10 @@ after "?"), whatever their "mode". Their links keep the form already recorded fo
 The company sites in the registry (read_sites) come after every other target and after your
 entries: one at a time for at most minutes_per_run per run (and never past RUN_MINUTES into the
 run), sites never tried first (those a list linked most recently first), then those tried longest
-ago. So each comes round every several hours: about every 8 with the ~1,340 sites the lists link
-today (~640 from the new-grad lists, ~700 more from the internship list), about 80 read a run and
-a run every 30 minutes. How many were read, skipped and left for the next run is logged and shown
-on boards.md.
+ago. So each comes round every few hours: about every 3 with the ~1,410 sites the lists link
+today (~640 from the new-grad lists, ~700 more from the internship list), about 240 read a run
+(15-20 minutes at about 4 seconds a site) and a run every 30 minutes. How many were read, skipped
+and left for the next run is logged and shown on boards.md.
 """
 import logging
 import re
@@ -91,8 +92,9 @@ NEW_WITHIN_DAYS = 7             # a posting seen for the first time but older th
 RETENTION = 100                 # postings not emailed remembered per company site (at most 60 are read a visit)
 REPORTED_RETENTION = 100        # and, besides those, the latest postings it emailed you
 SECONDS_BETWEEN_REQUESTS = 2.0  # "workday_seconds_between_requests" on the boards entry
-MINUTES_PER_RUN = 6.0           # "workday_minutes_per_run" on the boards entry (company sites only)
-RUN_MINUTES = 20                # no Workday site is started once the run is this old (GitHub stops it at 30)
+RUN_MINUTES = 24                # no Workday site is started once the run is this old (runs come every 30 minutes)
+JOB_MINUTES = 40                # the workflow stops a run at this (timeout-minutes in .github/workflows/job-monitor.yml)
+MINUTES_PER_RUN = float(RUN_MINUTES)  # "workday_minutes_per_run" on the boards entry (company sites only): all the run allows
 MAX_SKIPPED_IN_A_ROW = 3        # then Workday reading stops until the next run
 FAILED_TRIES_TO_WAIT = 2        # a company site that couldn't be read this many tries in a row waits a day
 PLACES_PER_SITE = 20            # postings whose place is asked (place()) per site read, at most
@@ -329,7 +331,7 @@ class Reader:
         Workday the place of (see located()), of those not seen before and posted in the last
         NEW_WITHIN_DAYS days."""
         if not self.stopped and self.clock() - self.started >= self.run_minutes * 60:
-            self.stopped = f"the run is {self.run_minutes:g} minutes old, and GitHub stops a run at 30"
+            self.stopped = f"the run is {self.run_minutes:g} minutes old, and runs come every 30 minutes"
             log.info(f"  [workday] No more Workday sites this run: {self.stopped}.")
         if self.stopped:
             return "stopped", None
