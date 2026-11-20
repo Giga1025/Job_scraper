@@ -209,7 +209,14 @@
       "territory",
       "account manager",
       "account management",
-      "sales executive"
+      "sales executive",
+      "ai training",
+      "attorney",
+      "attorneys",
+      "clinician",
+      "clinicians",
+      "teleoperator",
+      "teleoperators"
     ],
     "non_tech_ok_if": [
       "software engineer",
@@ -468,7 +475,9 @@
       "property adjuster",
       "customer experience associate",
       "client experience associate",
-      "applecare"
+      "applecare",
+      "economist",
+      "economists"
     ],
     "exclude_other_disciplines": [
       "mechanical",
