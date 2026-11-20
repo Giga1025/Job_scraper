@@ -4939,6 +4939,21 @@ class ForgetClosedPostingsTests(MonitorTestCase):
         jm.check_target(self.board_target(url, [job(1), job(2)]), state, [], None)
         self.assertEqual(sorted(r["url"][-1] for r in state[url]), ["1", "2"])
 
+    def test_a_posting_emailed_to_you_is_never_forgotten(self):
+        # Closed for a season and reopened with the same link: it was emailed once, so it must not be again.
+        url = "https://boards-api.greenhouse.io/v1/boards/acme/jobs"
+        posting = {"title": "Software Engineer, New Grad", "url": "https://boards.greenhouse.io/acme/jobs/4001234"}
+        state = {url: [{"url": posting["url"], jm.REPORTED_MARK: jm.SHOWN_AS_MATCH},
+                       {"url": "https://boards.greenhouse.io/acme/jobs/5", jm.EARLIER_COMPANY_MARK: True,
+                        jm.REPORTED_MARK: jm.SHOWN_AS_MATCH}]}
+        self.on("2026-11-20")
+        jm.check_target(self.board_target(url, []), state, [], None)
+        self.on("2027-08-15")
+        jm.check_target(self.board_target(url, []), state, [], None)
+        self.assertEqual(len(state[url]), 2)
+        new, _ = jm.check_target(self.board_target(url, [posting]), state, [], None)
+        self.assertEqual(new, [])
+
     def test_without_forget_days_nothing_is_marked_or_forgotten(self):
         old = [{"url": "https://x.example/1"}, {"url": "https://x.example/2"}]
         self.on("2030-01-01")

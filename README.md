@@ -336,8 +336,13 @@ link (an edited title or location).
   bytes) every posting it lists now, and a posting it no longer lists (closed) for 60 days
   (`FORGET_GONE_DAYS`): the day a posting is first missing it gets a `"gone"` date, and it is
   forgotten once it has been missing 60 days; one that comes back loses the date and isn't
-  emailed again. Before this (Nov 2026) every posting a board ever listed stayed, so the file grew
-  every day with the roles companies posted, not only with new companies;
+  emailed again. A posting that was emailed to you is never forgotten (about 1% of them), so one
+  reopened months later with the same link isn't emailed twice. Before this (Nov 2026) every
+  posting a board ever listed stayed, so the file grew every day with the roles companies posted,
+  not only with new companies. Postings already closed when this started all got that first
+  day's date, so the first are forgotten around Jan 19, 2027: until then the boards grow as
+  before (about 0.13 MB a day), then level off at their open postings plus 60 days of closed ones
+  (about 13-16 MB, against 9.3 MB in Nov 2026);
 - SmartRecruiters boards keep the latest 1,000 (their newest postings are read, not the whole
   list, so a posting missing from them may still be open), Workday sites as above, your own
   entries the latest 1,000, the new-grad lists their last 90 or 120 days, the left-out list 7 days;

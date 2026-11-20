@@ -43,9 +43,13 @@ Jobright aren't needed.
       Now a Greenhouse, Ashby, Lever or Workable board keeps the postings it lists now plus those
       that closed in the last 60 days: a closed one gets a "gone" date and is deleted after 60
       days missing (one that comes back loses the date). Postings still listed are never deleted.
-      The file is also written without indentation (22.6 MB -> 18.5 MB, same content), and each
-      run logs its size ("Saved state.json: ... MB") so growth can be watched.
-- [ ] **Watch the size for a few weeks**; if it still heads for 50 MB, in this order:
+      A posting that was emailed to you is never forgotten (about 1%), so a reopened one isn't
+      emailed twice. The file is also written without indentation (22.6 MB -> 18.5 MB, same
+      content), and each run logs its size ("Saved state.json: ... MB") so growth can be watched.
+- [ ] **Check the size after late January 2027**: nothing is forgotten before about Jan 19 (the
+      postings already closed all got the first day's date), so until then the boards still grow
+      about 0.13 MB a day; then they should level off at about 13-16 MB. If the whole file still
+      heads for 50 MB, in this order:
       1. Workday sites: each keeps up to 100 postings not emailed plus 100 emailed, about 140
          bytes each (long links): 49 MB if all ~1,770 sites filled both (about 25 MB likelier).
          Store a short key (tenant + job number) instead of the whole link, or keep fewer.

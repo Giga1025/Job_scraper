@@ -2266,7 +2266,9 @@ def merge_jobs_new_first(old_jobs: list[dict], current_jobs: list[dict], max_job
     max_reported of those marked shown (REPORTED_MARK), the latest, are kept besides.
     With forget_days (company boards read whole, FORGET_GONE_PLATFORMS), a known posting that
     isn't listed now gets GONE_KEY (today) and is forgotten once it has been missing that many
-    days; one listed again loses its GONE_KEY."""
+    days; one listed again loses its GONE_KEY. A posting emailed to you (REPORTED_MARK, or kept
+    for a Workable account's earlier company) is never forgotten: if the company reopened the
+    same posting months later, it would be emailed again (about 1% of the records)."""
     today = _today() if forget_days else None
     old_ids = {compute_job_id(j) for j in old_jobs}
     current_ids = {compute_job_id(j) for j in current_jobs}
@@ -2295,7 +2297,7 @@ def merge_jobs_new_first(old_jobs: list[dict], current_jobs: list[dict], max_job
         jid = compute_job_id(job)
         if jid not in merged_ids:
             merged_ids.add(jid)
-            if today:
+            if today and not job.get(REPORTED_MARK) and not job.get(EARLIER_COMPANY_MARK):
                 gone = job.get(GONE_KEY)
                 try:
                     if (datetime.fromisoformat(today) - datetime.fromisoformat(str(gone))).days >= forget_days:
