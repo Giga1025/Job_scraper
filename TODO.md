@@ -23,8 +23,10 @@ Jobright aren't needed.
 - [ ] **All of Workable**: its hourly file (already read in full) has every Workable company, about
       5,300. Watch them all, with a block list of staffing and gig companies (about 2 real extra
       roles a day, about 10 junk ones before the block list).
-- [ ] **Other job sites the lists link**: Oracle (about 66 companies), TikTok/ByteDance, Rippling,
-      Jobvite, BambooHR.
+- [x] **Oracle Recruiting Cloud** (Nov 2026): every Oracle company site the lists link (about 180:
+      American Express, Fortinet, Oracle, Texas Instruments, Cummins...) is a company board now,
+      read each hour (its newest 100 postings) with the reader the JPMorgan entry uses.
+- [ ] **Other job sites the lists link**: TikTok/ByteDance, Rippling, Jobvite, BambooHR.
 - [ ] **Beyond the four lists**: find more sources of companies (other new-grad lists, startup
       directories) so the registry grows past what the lists link.
 
