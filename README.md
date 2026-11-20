@@ -144,7 +144,7 @@ company ("Clay (via SimplifyJobs New Grad)"). `config_all.json` uses three:
 
 | Feed | `format` | What's read |
 |---|---|---|
-| [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions) | `simplify` | its `listings.json`: rows in the given `categories` |
+| [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions) | `simplify` | its `listings.json`: rows in the given `categories` (Software, AI/ML/Data and Quant; not Hardware or Product) |
 | [speedyapply 2027 SWE](https://github.com/speedyapply/2027-SWE-College-Jobs) and [AI](https://github.com/speedyapply/2027-AI-College-Jobs) | `speedyapply` | the tables in `NEW_GRAD_USA.md` |
 
 They live in `targets/new_grad_lists.json`. Each feed remembers every posting it has listed in the last `max_age_days` (90 for Simplify,
@@ -170,9 +170,13 @@ in a registry that only grows:
   postings); it ships with about 50 well-known startups,
 - every company the new-grad lists link to on one of those sites, added the first time it
   shows up,
-- every company the lists under `find_companies_in` link to (SimplifyJobs' internship list:
-  companies that hire interns usually hire new grads too). These lists are only used to find
-  companies; their postings aren't emailed.
+- every company the lists under `find_companies_in` link to: SimplifyJobs' internship list
+  (companies that hire interns usually hire new grads too) and SimplifyJobs' whole new-grad
+  list, every row since it started and every category (the new-grad feed itself only emails
+  tech rows from the last 90 days, so a company that last hired new grads in the spring, or is
+  listed under Hardware or Product, would otherwise never be checked: about 1,075 more boards,
+  400 of them Workday sites, in Nov 2026). These lists are only used to find companies; their
+  postings aren't emailed from here.
 
 Companies on **Workable** join the same registry (as their Workable account); the code is in
 `boards/workable.py`. Workable refuses quick reading of each company's page ("429 Too Many

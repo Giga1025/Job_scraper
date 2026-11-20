@@ -13,7 +13,8 @@
       "workday_minutes_per_run": 24,
       "workday_seconds_between_requests": 2,
       "find_companies_in": [
-        {"name": "SimplifyJobs Internships", "url": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json"}
+        {"name": "SimplifyJobs Internships", "url": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json"},
+        {"name": "SimplifyJobs New Grad (whole list)", "url": "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json"}
       ],
       "skip_companies": ["Prolific", "Innodata", "Mindrift", "Weekday AI"],
       "skip_titles": ["trainer", "trainers", "tutor", "tutors", "annotator", "annotators", "rater", "raters", "labeler", "labelers", "participant", "participants", "fluent", "fluency", "speakers", "expert", "experts", "contractor", "freelance", "part time"],

@@ -1046,6 +1046,9 @@ MUST_KEEP = [
     # Wrongly dropped by a first version of the "not tech" list (found by auditing every title it dropped):
     "Assistant Data Solutions Engineer", "Sales, Marketing, and Distribution Technology - Marketing and Distribution Technology",
     "Data Analyst - Shift D Wednesday-Saturday 5:00pm-3:30am",
+    # Simplify's Quant category (read since Nov 2026): quant researchers, developers and traders stay.
+    "Quantitative Trader", "Graduate Quantitative Researcher", "Quantitative Developer Grad", "ETF Quantitative Developer",
+    "Trading System Engineer New Grad", "Quantitative Investment Analyst", "Quantitative Researcher - Trading Team",
 ]
 MUST_LEAVE_OUT = [
     "Senior Software Engineer", "Sr. Software Engineer", "Staff ML Engineer", "Principal Engineer",
@@ -1075,6 +1078,9 @@ MUST_LEAVE_OUT = [
     "Forklift Operator", "Investment Banking Analyst", "AI Tutor - Software Engineering",
     "Legal Research Attorney - AI Training", "Economists - Economic Analysis for AI Training",
     "Res Life Embedded Clinician", "Project Dorado | Robotics Teleoperator",
+    # ... but not its trading and investment analysts, or its misfiled jobs.
+    "Trading Analyst", "Trading Associate", "Trading Graduate Program - Trading", "Investment Analyst - Parametric",
+    "Food Services Worker - Student Worker",
 ]
 
 
@@ -4194,6 +4200,16 @@ class WorkdayBoardTests(WorkdayTestCase):
         rows = json.loads(self.pages[SIMPLIFY_URL])
         self.pages[SIMPLIFY_URL] = json.dumps(rows + [simplify_row("Acme", "Software Engineer, Data", url=wd_link(9, "Software Engineer, Data") + "?utm_source=Simplify")])
         self.assertEqual(self.run_wd(), {})
+
+    def test_the_shipped_config_finds_companies_in_both_whole_simplify_lists(self):
+        # The new-grad feed only keeps tech rows from the last 90 days; its whole list (and the internship
+        # list) are read for companies, so one that last hired in the spring, or under Hardware, is checked too.
+        config = jm.load_config(REPO_DIR / "config_all.json")
+        [entry] = [t for t in config["targets"] if t.get("mode") == "boards"]
+        [feed] = [t for t in config["targets"] if t.get("format") == "simplify"]
+        self.assertIn(INTERNSHIPS_URL, [i["url"] for i in entry["find_companies_in"]])
+        self.assertIn(feed["url"], [i["url"] for i in entry["find_companies_in"]])
+        self.assertIn("Quant", feed["categories"])
 
     def test_the_shipped_boards_entry_reads_workday_sites(self):
         config = jm.load_config(REPO_DIR / "config_all.json")

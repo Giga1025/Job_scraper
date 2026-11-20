@@ -1,5 +1,5 @@
 {
-  "_help": "New-grad lists that people maintain on GitHub. Their postings are emailed like any other (once each), and the companies they link to on Greenhouse, Ashby, Lever, Workable or SmartRecruiters are added to the startup boards (targets/startups.json).",
+  "_help": "New-grad lists that people maintain on GitHub. Their postings are emailed like any other (once each), and the companies they link to on Greenhouse, Ashby, Lever, Workable or SmartRecruiters are added to the startup boards (targets/startups.json). Simplify's rows are read from the given categories (its Hardware and Product categories are left out; the companies there are still checked, through startups.json's find_companies_in).",
   "targets": [
     {
       "_section": "New-grad lists maintained on GitHub by others (many startups and mid-size companies). A posting already found by a company's own entry above, or by another list, isn't emailed again."
@@ -9,7 +9,7 @@
       "url": "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
       "mode": "feed",
       "format": "simplify",
-      "categories": ["Software", "Software Engineering", "AI/ML/Data", "Data Science, AI & Machine Learning"],
+      "categories": ["Software", "Software Engineering", "AI/ML/Data", "Data Science, AI & Machine Learning", "Quant"],
       "max_age_days": 90
     },
     {
