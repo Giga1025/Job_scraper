@@ -1073,6 +1073,8 @@ MUST_LEAVE_OUT = [
     "Data Center Technician, Hardware Operations", "Critical Facility Engineer", "Research Scientist - Antibody Discovery",
     "Clinical Research Coordinator I", "AppleCare Strategy & Solutions Analyst", "Car Wash Attendant", "Claims Adjuster",
     "Forklift Operator", "Investment Banking Analyst", "AI Tutor - Software Engineering",
+    "Legal Research Attorney - AI Training", "Economists - Economic Analysis for AI Training",
+    "Res Life Embedded Clinician", "Project Dorado | Robotics Teleoperator",
 ]
 
 
