@@ -23,7 +23,7 @@ to check split into three files it lists under `target_files`:
 |---|---|
 | `targets/big_tech.json` | Big tech and other companies with a hand-made entry each (finance, crypto, AI labs, data and infrastructure; about 60) |
 | `targets/new_grad_lists.json` | New-grad lists maintained on GitHub by others |
-| `targets/startups.json` | Startups, unicorns and mid-size companies on Greenhouse, Ashby, Lever, Workable or SmartRecruiters (see [Startup and mid-size company job boards](#startup-and-mid-size-company-job-boards)) |
+| `targets/startups.json` | Startups, unicorns and mid-size companies on Greenhouse, Ashby, Lever, Workable or SmartRecruiters, and companies of any size on Workday (see [Startup and mid-size company job boards](#startup-and-mid-size-company-job-boards) and [Workday](#workday)) |
 
 Each file holds a list of entries (under `"targets"`); a config can also have its own
 `"targets"` list, checked first. Which config is used:
@@ -198,6 +198,8 @@ read it anyway, gently). One request per company per check for its 100 newest US
 the monitor's own name; the first "too many requests" or refusal ends SmartRecruiters reading
 until the next check. A company that left SmartRecruiters just answers with an empty list.
 
+Companies on **Workday** join it too; see [Workday](#workday) below.
+
 A company, once in, stays even when the lists drop it. `boards.md` (on the `monitor-state`
 branch, next to `left_out.md`) lists every board checked, when it was added and where it was
 found (and Workable accounts not matched yet, marked as such). Boards the config already has an entry for aren't checked twice.
@@ -225,6 +227,101 @@ isn't emailed again from the board (or the other way round), and a Greenhouse jo
 posts on two of its boards (say its main and campus boards) is emailed once. The same role on
 two Ashby or Lever boards, or a new-grad list linking the other board's copy, can still come
 twice.
+
+### Workday
+
+About 37% of the postings the new-grad lists link to are on Workday (`<company>.wdN.myworkdayjobs.com`
+or `wdN.myworkdaysite.com`): defense, banks, chips, enterprise software. That is about 640 company
+sites in the new-grad lists today, and the internship list under `find_companies_in` (about half
+of its postings are on Workday) adds about 700 more: about 1,340 in all. The code is in
+`boards/workday.py` (and `boards/browser.py` for the browser).
+
+**Why a browser.** Since about Nov 16, 2026, Workday puts a bot check (Cloudflare) in front of its
+sites. Plain requests from GitHub's machines are answered "429" (with a `Cf-Mitigated:
+challenge` header), while a browser opening the same search page loads it as usual. So each run
+asks Workday plainly once; if that is refused, the rest of the run reads Workday through one
+headless Chromium (Playwright's, the one installed for "browser" entries): it opens each site's
+search page and takes the job list the page itself fetches, and asks for more pages from inside
+the page, the way the page does. It doesn't try to get past the check: no stealth add-ons, no
+proxies, no solving anything, no retries. A site whose page shows a bot check or a server error,
+or whose job list doesn't arrive in full within 15 seconds, is skipped for that run, and after 3
+such sites in a row Workday is left until the next run (a site that already couldn't be read at
+its last 2 tries doesn't count unless it shows a bot check, see below). Asking a page for more
+postings waits 20 seconds at most, and a watchdog stops the browser if a page's stuck script
+holds it 15 seconds past those limits (that site is skipped, the next one gets a fresh browser),
+so one bad site can't hold up the run.
+Where plain requests work (from your own computer, for instance), the browser is started only for
+a site whose plain request fails (a server error or no answer, say); if it can't start there, that
+site is skipped and the others are still read with plain requests.
+
+**Outside the US.** Workday's job list gives each posting's place as text, and for many only
+"2 Locations" or nothing at all (Accenture's), so the US filter can't tell a posting in Germany
+or India from one in Virginia. For a new posting the email would list (a title your filters want,
+posted in the last 7 days) whose place the text doesn't settle, the monitor asks Workday for
+that posting's own page while the site is open (one request each, at most 20 a site a visit):
+it names the country of the posting's first place and its other places. The posting is left
+out unless that country is the US or one of its other places is clearly in the US ("McLean,
+VA"); the email shows its places instead of "2 Locations". A posting whose page can't be had
+(or past the 20) is kept, as before.
+
+**Under 30 minutes.** GitHub stops a run at 30 minutes, so no Workday site (your entries or the
+company sites) is started once the run is 20 minutes old, whatever `workday_minutes_per_run`
+says; the sites left wait for the next run. A site started just before that takes a minute or
+two at most.
+
+**Your entries on Workday** (NVIDIA, Salesforce, Circle and Intel in `targets/big_tech.json`) are
+read this way whatever their `mode`, with the filters in their link (the part after `?`), after
+every other entry, and every run (the time limit below is for the company sites) unless the run is
+already 20 minutes old. A posting keeps a link it was already recorded with (with or without the
+filters after `?`), so a posting isn't emailed twice because its link changed form. A posting a
+new-grad list already brought you isn't emailed again by your entry (same Workday job number),
+nor the other way round, nor one your entry emailed before and Workday now shows under a new
+link (an edited title or location).
+
+**Company sites** (every Workday site the lists link to, added like other boards):
+
+- read after everything else, one request at a time, `workday_seconds_between_requests` (2)
+  apart, for at most `workday_minutes_per_run` (6) minutes per run (`targets/startups.json`; 0
+  pauses them; at most 20, and never past the run's 20th minute, see above). A site takes about
+  4 seconds, so about 80 are read per run;
+- in turns: sites never tried first (those a list linked most recently first), then the ones tried
+  longest ago. With about 1,340 sites, about 80 a run and a run every 30 minutes, each comes
+  round about every 8 hours rather than hourly, still ahead of the lists (they're a day or two
+  late). A site that couldn't be read at its last 2 tries waits at the back, and isn't tried
+  again until a day after its last try. When it comes round again, skipping it doesn't count
+  toward the "3 in a row" that stops Workday: such sites were all tried in the same run, so they
+  come round together, and without this a few sites that fail every time would stop the company
+  sites every day. A bot check still counts, whatever the site's history, so if Workday keeps
+  refusing the monitor for weeks, each run still stops after 3 of them;
+- a site that no longer exists answers "404" when its company is still on Workday; it is then
+  tried again daily, like other boards. A company name Workday doesn't have at all (after an
+  acquisition, say) gets a server error instead, which leads to Workday's "Workday is currently
+  unavailable" page: the same page Workday shows while it is down for maintenance. The monitor
+  can't tell those apart, so it doesn't count such a site as gone. It skips it at once (no
+  15-second wait), like any site that couldn't be read, and after 2 such tries the site waits at
+  the back for a day;
+- only the newest postings (20 per page, newest first): down to postings already seen (one page,
+  most of the time), at most 3 pages. A posting seen for the first time counts as new only if
+  Workday says it went up in the last 7 days, so an older one that moves up the list isn't
+  emailed. A site's first read emails only what went up in the last `catch_up_days` days;
+- a Workday site one of your entries already searches (like NVIDIA's) isn't read twice, nor a
+  site the lists link under both forms of its address (`chewy.wd5.myworkdayjobs.com/External`
+  and `wd5.myworkdaysite.com/recruiting/chewy/External`);
+- a company's Workday site isn't read when one of your other entries (paused or not) has the
+  company's name: your PayPal entry reads PayPal's Eightfold page, which lists the same jobs as
+  `paypal.wd1.myworkdayjobs.com` under other numbers, so each new role would be emailed twice;
+- each site remembers (the link only) its 100 latest postings that weren't emailed to you, and
+  besides those its 100 latest that were, so a busy site (Walmart, CVS) never forgets one it
+  emailed and a list linking it later doesn't email it again. That is about 21 MB of
+  `state.json` for the 1,340 sites (about 155 bytes a posting, plus the few emailed), reached over
+  weeks as sites fill up: `state.json`, about 17 MB today, grows to about 38 MB. GitHub warns
+  about a file over 50 MB and refuses one over 100 MB.
+
+The log and `boards.md` say how many sites each run read, couldn't read, and left for the next
+run (and `boards.md`, how many runs a round of all sites takes at that pace). `boards.md` also
+marks each site not read yet ("waiting for its turn", or "couldn't be read at its last try" when
+it was tried) and each read before that couldn't be read at its last tries.
+Runs take about 6 minutes longer than before (around 15 minutes; 30 is GitHub's limit).
 
 ### Job-board APIs and US-only
 
@@ -534,7 +631,8 @@ What to do:
 - **Refused (429/403):** the site blocks automated visitors from GitHub's machines. That can't
   be fixed by the monitor without getting around the site's protection, which it doesn't do.
   Pause the entry with `"enabled": false` (the warning then stops); its roles usually still
-  reach you through the new-grad lists, a day or two later.
+  reach you through the new-grad lists, a day or two later. (Workday entries are already read
+  through the browser when plain requests are refused; see [Workday](#workday).)
 
 ### Changing things
 
@@ -573,7 +671,8 @@ run that uses the `monitor-state` branch; after that it isn't used or updated.
 | File | Purpose |
 |---|---|
 | `job_monitor.py` | The monitor: reads the config, checks every entry, emails what's new |
-| `boards/` | Readers for company job sites, one file each (e.g. `boards/workable.py`); `job_monitor.py` needs this folder next to it |
+| `TODO.md` | What's planned next, and the goal: as many companies as possible, from their own job boards |
+| `boards/` | Readers for company job sites, one file each (`boards/workable.py`, `boards/workday.py`), and `boards/browser.py`, the headless browser Workday is read through; `job_monitor.py` needs this folder next to it |
 | `config_all.json` | Shipped settings; used by default (see step 2) |
 | `targets/*.json` | The companies and lists `config_all.json` checks (big tech, new-grad lists, startups) |
 | `config.json` | Your own settings; use it with `--config config.json` if `config_all.json` exists |
