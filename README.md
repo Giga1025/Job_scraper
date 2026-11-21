@@ -137,15 +137,17 @@ hours, carrying everything found since the last one; `0` emails after every run 
 something.
 
 An email with 10 or more roles starts with **top picks**: up to 15 roles whose title says new
-grad, university, early career or entry level, then roles from the new-grad lists, then
-level-one titles (Software Engineer I, Junior); they're listed under their companies too.
-`"top_picks"` in the config changes the phrases, the limit and when it shows (`false`: never).
+grad, university grad, early career or entry level, then level-one titles (Software Engineer I,
+Junior), then roles from the new-grad lists (not ones titled II or senior); software titles first
+within each. They're listed under their companies too. `"top_picks"` in the config changes the
+phrases, the limit and when it shows (`false`: never).
 
 A **big email goes in parts** ("part 1 of 3"...), each kept under about 80 KB: Gmail cuts off an
 email past about 100 KB, hiding the rest behind "[Message clipped]". That happens after a gap
 (an email that failed) or when a new kind of company board is checked for the first time. The
 warnings and top picks are in part 1, the left-out list in the last part, and a company too long
-for one part is continued in the next.
+for one part is continued in the next. If sending stops partway, the parts that went out aren't
+sent again: the rest go at the next run.
 
 ### New-grad lists maintained by others (startups and mid-size companies)
 
@@ -725,16 +727,19 @@ A company board that can't be read now and then is normal, but a whole source go
 look just like "no new jobs". So every email starts with a warning while one of these lasts
 (`sources.py`):
 
-- **Workday** read no site in 3 runs in a row (Workday refusing the browser, or the runs running
-  out of time before Workday's turn; not while you've paused it with `workday_minutes_per_run`);
+- **Workday** read no site in 3 runs in a row, with the reason: Workday refusing the browser,
+  every site answering "not found", the runs running out of time before Workday's turn, or why
+  its reading stopped (not while you've paused it with `workday_minutes_per_run`);
 - **a job-board platform** (Greenhouse, Ashby, Lever, Workable, SmartRecruiters, Oracle): half or
-  more of its boards (10 or more) couldn't be read in 3 hourly checks in a row;
-- **the company boards** weren't checked for 6 hours (they're checked every hour);
+  more of its boards (10 or more) couldn't be read, or answered "not found" (an API that moved),
+  in 3 checks in a row;
+- **the company boards** weren't checked for 6 hours, or 3 times their `every_hours`;
 - **a new-grad list** added no posting for 3 days (it may have stopped updating, or moved), or a
   list used to find companies couldn't be read for 3 days.
 
-A run can't report that the runs stopped altogether, so once a day (`"daily_check_hour_utc":
-14` in `config_all.json`: 14:00 UTC, 8 AM US Central) a short **Daily check** email says the
+A run can't report that the runs stopped altogether, so once a UTC day (`"daily_check_hour_utc":
+14` in `config_all.json`: from 14:00 UTC, 8 AM US Central; at once if the last one is over 30 hours
+old) a short **Daily check** email says the
 monitor is still running: how many runs there were in the last 24 hours (about 48 expected),
 how many company boards, Workday sites and entries were checked, how many roles were found and
 emailed, and the same warnings. **If a day passes without one, the runs have stopped**: look at

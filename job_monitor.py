@@ -88,10 +88,12 @@ EMAIL_MAX_HTML_BYTES = 80_000
 TOP_PICKS_HEADING = "Top picks"
 # An email's top picks section (pick_top): "top_picks" in the config replaces these (false: no section).
 TOP_PICKS = {
-    "titles": ["new grad", "new grads", "new graduate", "new graduates", "new college grad", "recent graduate",
-               "recent grad", "university grad", "university graduate", "university", "college grad", "campus",
-               "early career", "early in career", "entry level", "graduate program", "graduate engineer",
-               "graduate software", "class of 2026", "class of 2027", "2026 start", "2027 start"],
+    "titles": ["new grad", "new grads", "new graduate", "new graduates", "new college grad", "new college graduate",
+               "recent graduate", "recent grad", "university grad", "university graduate", "university hire",
+               "university program", "college grad", "college graduate", "grad", "grads", "undergrad", "undergraduate",
+               "campus", "early career", "early in career", "entry level", "graduate program", "graduate engineer",
+               "graduate software", "graduate developer", "graduate hire", "class of 2026", "class of 2027",
+               "2026 start", "2027 start"],
     "level_one_titles": ["software engineer i", "software engineer 1", "engineer i", "engineer 1", "developer i",
                          "developer 1", "swe i", "swe 1", "sde i", "sde 1", "sde1", "swe1", "level 1", "l1",
                          "junior", "jr", "associate software engineer", "associate engineer", "associate developer"],
@@ -2623,43 +2625,66 @@ def _left_out_header(left_out: dict[str, list[dict]], summary: dict | None) -> t
     return header, note + summary["link"]
 
 
-def pick_top(alerts: list[dict], settings, feed_urls=frozenset()) -> list[dict]:
-    """The roles for an email's top picks section (TOP_PICKS: settings, "top_picks" in the config,
-    false for none): a title that says new grad, university, early career or entry level first,
-    then a role from one of the new-grad lists, then a level-one title (Software Engineer I,
-    Junior), each in the email's order; up to "limit", and only in an email with at least
-    "when_at_least" roles."""
-    if settings is False or not alerts:
+def pick_top(alerts: list[dict], settings, feed_urls=frozenset(), patterns: dict | None = None) -> list[dict]:
+    """The roles for an email's top picks section (TOP_PICKS: settings, "top_picks" in the config;
+    false, null, 0 or "off": none): a title that says new grad, university grad, early career or
+    entry level first, then a level-one title (Software Engineer I, Junior), then a role from one
+    of the new-grad lists (not one titled level II or more); within each, software titles first,
+    then other engineering ones (role_filter patterns), then the email's order. Up to
+    "limit", and only in an email with at least "when_at_least" roles."""
+    if settings is True:
+        settings = TOP_PICKS
+    if not alerts or not settings or (isinstance(settings, str) and settings.strip().lower() in ("false", "off", "no", "none", "0")):
         return []
     settings = settings if isinstance(settings, dict) else TOP_PICKS
-    try:
-        limit = max(0, int(settings.get("limit", TOP_PICKS["limit"])))
-        least = max(1, int(settings.get("when_at_least", TOP_PICKS["when_at_least"])))
-    except (TypeError, ValueError):
-        limit, least = TOP_PICKS["limit"], TOP_PICKS["when_at_least"]
+
+    def number(key: str) -> int:
+        try:
+            return max(0, int(settings.get(key, TOP_PICKS[key])))
+        except (TypeError, ValueError):
+            log.warning(f"top_picks: {key} is {settings.get(key)!r}, not a number; using {TOP_PICKS[key]}.")
+            return TOP_PICKS[key]
+
+    def phrases(key: str):
+        value = settings.get(key, TOP_PICKS[key])
+        return _phrase_pattern([str(p) for p in value] if isinstance(value, list) else TOP_PICKS[key])
+
+    limit, least = number("limit"), max(1, number("when_at_least"))
     if len(alerts) < least or not limit:
         return []
-    early = _phrase_pattern(settings.get("titles", TOP_PICKS["titles"]))
-    level_one = _phrase_pattern(settings.get("level_one_titles", TOP_PICKS["level_one_titles"]))
+    early, level_one = phrases("titles"), phrases("level_one_titles")
+    software, engineering = (patterns.get(k) if patterns else None for k in ("software_signals", "engineering_signals"))
 
     def tier(job: dict) -> int | None:
         title = _title_core(str(job.get("title", "")))
         if early and early.search(title):
             return 0
-        if job.get("source") in feed_urls:
-            return 1
         if level_one and level_one.search(title):
+            return 1
+        if job.get("source") in feed_urls and not _ABOVE_LEVEL_ONE.search(title):
             return 2
         return None
 
-    ranked = sorted(((t, i, job) for i, job in enumerate(alerts) if (t := tier(job)) is not None), key=lambda x: (x[0], x[1]))
+    def kind(job: dict) -> int:
+        """0: a software title (software_signals), 1: another engineering one, 2: the rest (no patterns: all 0)."""
+        title = _title_core(str(job.get("title", "")))
+        if not (software or engineering) or (software and software.search(title)):
+            return 0
+        return 1 if engineering and engineering.search(title) else 2
+
+    ranked = sorted(((t, kind(job), i, job) for i, job in enumerate(alerts) if (t := tier(job)) is not None),
+                    key=lambda x: x[:3])
     picks, titles = [], set()
-    for _, _, job in ranked:
+    for *_, job in ranked:
         key = (_group_label(job), _title_key(job.get("title")))
         if key not in titles and len(picks) < limit:
             titles.add(key)
             picks.append(job)
     return picks
+
+
+# A level above the first in a title (Software Engineer II, Senior, Staff...): such a role from a new-grad list isn't a top pick.
+_ABOVE_LEVEL_ONE = re.compile(r"(?<!\w)(?:ii|iii|iv|v|2|3|4|senior|sr|staff|lead|principal|manager)(?!\w)", re.IGNORECASE)
 
 
 def _group_label(job: dict) -> str:
@@ -2866,6 +2891,22 @@ def email_parts(all_new: dict[str, list[dict]], left_out=None, left_out_summary=
             for i, group in enumerate(groups)]
 
 
+class SendResult:
+    """What send_email did: true if every part went out (or email is off). parts: the email's parts
+    (email_parts); sent: how many of them went out, in order (when some did and then sending
+    failed, those roles mustn't be emailed again)."""
+
+    def __init__(self, parts: list[dict], sent: int):
+        self.parts, self.sent = parts, sent
+
+    def __bool__(self):
+        return self.sent >= len(self.parts)
+
+    def delivered(self) -> list[dict]:
+        """The roles in the parts that went out."""
+        return [j for p in self.parts[:self.sent] for jobs in p["all_new"].values() for j in jobs]
+
+
 def send_email(
     config: dict,
     all_new: dict[str, list[dict]],
@@ -2874,9 +2915,9 @@ def send_email(
     problems: list[dict] | None = None,
     alarms: list[dict] | None = None,
     top: list[dict] | None = None,
-) -> bool:
-    """Email the report, in parts if it's big (email_parts). Returns False if email is enabled but
-    sending failed."""
+) -> SendResult:
+    """Email the report, in parts if it's big (email_parts). False (a SendResult) if email is
+    enabled but sending failed, maybe after some parts went out."""
     total = sum(len(v) for v in all_new.values())
     left_out_total = left_out_summary["total"] if left_out_summary else sum(len(v) for v in (left_out or {}).values())
     if total:
@@ -2890,21 +2931,21 @@ def send_email(
         log.info(f"The email is big: it goes in {len(parts)} parts, so Gmail shows all of it.")
     messages = [(subject + (f" (part {p['part'][0]} of {p['part'][1]})" if len(parts) > 1 else ""),
                  format_plain_report(**p), format_html_report(**p)) for p in parts]
-    return send_messages(config, messages)
+    return SendResult(parts, send_messages(config, messages))
 
 
-def send_messages(config: dict, messages: list[tuple[str, str, str]]) -> bool:
-    """Send these (subject, plain text, HTML) emails, in one connection. Returns False if email is
-    enabled but sending failed (some may have been sent: the log says how many)."""
+def send_messages(config: dict, messages: list[tuple[str, str, str]]) -> int:
+    """Send these (subject, plain text, HTML) emails, in order, in one connection. Returns how
+    many went out: all of them if email is off or in a dry run, fewer if sending failed."""
     sent = 0
     try:
         email_cfg = config.get("email") or {}
         if not email_cfg.get("enabled"):
             log.info("Email disabled — printing report to console only.")
-            return True
+            return len(messages)
         if os.environ.get("JOB_MONITOR_NO_EMAIL", "").strip():
             log.info("Dry run (JOB_MONITOR_NO_EMAIL is set): printing the report instead of emailing it.")
-            return True
+            return len(messages)
 
         sender_email = email_cfg.get("sender_email") or os.environ.get("SENDER_EMAIL", "")
         sender_password = email_cfg.get("sender_password") or os.environ.get("SENDER_PASSWORD", "")
@@ -2919,7 +2960,7 @@ def send_messages(config: dict, messages: list[tuple[str, str, str]]) -> bool:
                 "Failed to send email: no recipient. Set recipient_email in the config "
                 "or the RECIPIENT_EMAIL environment variable."
             )
-            return False
+            return 0
 
         def build(subject: str, plain: str, html: str):
             msg = MIMEMultipart("alternative")
@@ -2947,10 +2988,10 @@ def send_messages(config: dict, messages: list[tuple[str, str, str]]) -> bool:
                 server.send_message(build(subject, plain, html))
                 sent += 1
         log.info("Email sent successfully." if len(messages) == 1 else f"Email sent successfully ({len(messages)} parts).")
-        return True
+        return sent
     except Exception as exc:
         log.error(f"Failed to send email: {exc}" + (f" ({sent} of {len(messages)} parts were sent)" if sent else ""))
-        return False
+        return sent
 
 
 def print_console_safe(text: str):
@@ -3438,17 +3479,29 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
     now = datetime.now()
     entries_checked = sum(1 for t in targets if not t.get("_board") and t.get("mode") != "feed"
                           and t.get("url") and t.get("enabled", True) is not False)
-    source_record = _note_sources(state, loaded_state, this_config, targets, board_entries, board_meta, loaded_board_meta,
-                                  fetched, boards_now, boards_on, new_matches, new_left_out, entries_checked, problems, now)
-    found_alarms = sources.alarms(source_record, now, board_meta.get("checked_at"), boards_on)
+    entry = board_entries[0] if board_entries else {}
+    try:
+        # (extra: a problem here mustn't stop the run or its email)
+        source_record = _note_sources(state, loaded_state, this_config, targets, board_entries, board_meta, loaded_board_meta,
+                                      fetched, boards_now, boards_on, new_matches, new_left_out, entries_checked, problems, now)
+        found_alarms = sources.alarms(
+            source_record, now, board_meta.get("checked_at"), boards_on and bool(board_entries),
+            workday_on=_setting(entry, "workday_minutes_per_run", workday.MINUTES_PER_RUN, 0, workday.RUN_MINUTES) > 0
+            and "workday" in set(entry.get("platforms") or ()),
+            every_hours=_setting(entry, "every_hours", 1, 0, 24 * 7))
+    except Exception:
+        log.exception("[sources] Could not note this run's sources")
+        source_record, found_alarms = None, []
     if found_alarms:
         log.warning(f"[sources] {len(found_alarms)} may have stopped working: "
                     + "; ".join(f"{a['name']} ({a['why']})" for a in found_alarms))
     record = dict(alerts_add=new_matches, pending_add=new_left_out, left_out_log_add=new_left_out,
                   boards=board_meta if boards_changed else None, health=health_updates,
-                  sources=(this_config, source_record))
+                  sources=(this_config, source_record) if source_record is not None else None)
 
     def daily_check(pending_now: int) -> bool:
+        if source_record is None:
+            return True
         return _send_daily_check(config, source_record, now, board_targets if boards_on else [], board_meta,
                                  entries_checked, problems, found_alarms, pending_now)
 
@@ -3475,20 +3528,32 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
     all_new = _group_by_company(alerts)
     summary = summarize_left_out(pending, role_patterns)
     left_out_report = _group_by_company(summary["listed"]) if pending else None
-    top = pick_top(alerts, config.get("top_picks", TOP_PICKS), feed_urls)
+    top = pick_top(alerts, config.get("top_picks", TOP_PICKS), feed_urls, role_patterns)
     report = format_plain_report(all_new, left_out_report, left_out_summary=summary if pending else None, problems=problems,
                                  alarms=found_alarms, top=top)
     print_console_safe("\n" + report)
-    if not send_email(config, all_new, left_out=left_out_report, left_out_summary=summary if pending else None,
-                      problems=problems, alarms=found_alarms, top=top):
+    result = send_email(config, all_new, left_out=left_out_report, left_out_summary=summary if pending else None,
+                        problems=problems, alarms=found_alarms, top=top)
+    if not result:
+        delivered = result.delivered() if isinstance(result, SendResult) else []
+        if delivered:
+            # Some parts went out before sending failed: their roles aren't emailed again; the rest (and the
+            # left-out list, in the last part) wait for the next run, which is due at once (last_email unchanged).
+            shown = {compute_job_id(j) for j in delivered}
+            _note_email_safely(source_record, now, len(delivered), 0, result.sent)
+            save_state(updates, baselines, alerts_add=[j for j in new_matches if compute_job_id(j) not in shown],
+                       alerts_shown=shown, pending_add=new_left_out, left_out_log_add=new_left_out,
+                       boards=record["boards"], health=health_updates, sources=record["sources"])
+            log.error(f"Only {result.sent} of the email's {len(result.parts)} parts were sent; the other "
+                      f"{len(alerts) - len(shown)} postings are kept and the next run will send them.")
+            return False
         # Everything stays in the pools, so the next run tries again (even if a
         # posting has left its careers page by then).
         save_state(updates, baselines, **record)
         log.error("The email wasn't sent; its postings are kept and the next run will try again.")
         return False
 
-    parts = email_parts(all_new, left_out_report, summary if pending else None, problems, found_alarms, top)
-    sources.note_email(source_record, now, roles=len(alerts), left_out=len(pending), parts=len(parts))
+    _note_email_safely(source_record, now, len(alerts), len(pending), len(result.parts) if isinstance(result, SendResult) else 1)
     daily_ok = daily_check(0)
     save_state(
         updates,
@@ -3500,9 +3565,17 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
         health=health_updates,
         # Needed to space out emails and digests; configs using neither don't record it.
         last_email=datetime.now().isoformat(timespec="seconds") if show_left_out or email_every_hours else None,
-        sources=(this_config, source_record),
+        sources=record["sources"],
     )
     return daily_ok
+
+
+def _note_email_safely(record: dict | None, now: datetime, roles: int, left_out: int, parts: int):
+    if record is not None:
+        try:
+            sources.note_email(record, now, roles=roles, left_out=left_out, parts=parts)
+        except Exception:
+            log.exception("[sources] Could not note the email")
 
 
 def _note_sources(state: dict, loaded_state: dict, config_id: str, targets: list[dict], board_entries: list[dict],
@@ -3519,7 +3592,8 @@ def _note_sources(state: dict, loaded_state: dict, config_id: str, targets: list
             continue  # (not read yet: its health says why)
         before = {compute_job_id(r) for r in loaded_state.get(feed["url"]) or [] if isinstance(r, dict) and r.get("url")}
         added = any(compute_job_id(r) not in before for r in rows if isinstance(r, dict) and r.get("url"))
-        sources.note_feed(record, feed["url"], feed.get("name") or feed["url"], added, now)
+        newest = max((str(r.get("first_seen")) for r in rows if isinstance(r, dict) and r.get("first_seen")), default=None)
+        sources.note_feed(record, feed["url"], feed.get("name") or feed["url"], added, now, newest)
     entry = board_entries[0] if board_entries else {}
     lists = [i for i in entry.get("find_companies_in") or [] if isinstance(i, dict) and i.get("url")] if boards_on else []
     for item in lists:
@@ -3527,6 +3601,12 @@ def _note_sources(state: dict, loaded_state: dict, config_id: str, targets: list
     sources.forget_gone(record, {f["url"] for f in feeds}, {i["url"] for i in lists})
     counts = sources.board_counts({u: r for u, r in fetched.items() if _board_platform(u) != "workday"}, _board_platform) \
         if boards_now and boards_on else None
+    for url in (board_meta.get("missing") or {}) if counts is not None else ():
+        # (a board that answered 404 lately isn't read for a day: still counted, as "not found", so a platform
+        # whose every board answers 404, an API that moved, is warned about)
+        if url not in fetched and _board_platform(url) != "workday":
+            platform_counts = counts.setdefault(_board_platform(url), {})
+            platform_counts["missing"] = platform_counts.get("missing", 0) + 1
     workday_ran = (board_meta.get("workday") or {}).get("at") != (loaded_board_meta.get("workday") or {}).get("at")
     paused = not entry or _setting(entry, "workday_minutes_per_run", workday.MINUTES_PER_RUN, 0, workday.RUN_MINUTES) <= 0
     sources.note_run(record, now, boards=counts, workday=board_meta.get("workday") if workday_ran and not paused else None,
@@ -3540,7 +3620,8 @@ def _send_daily_check(config: dict, record: dict, now: datetime, board_targets: 
     config: from that hour of the day, UTC on GitHub; absent or false: never). False if it couldn't
     be sent (the next run tries again)."""
     hour = config.get("daily_check_hour_utc")
-    if hour is None or hour is False or not sources.summary_due(record, now, hour):
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    if hour is None or hour is False or not sources.summary_due(record, now, hour, now_utc):
         return True
     platforms = Counter(_board_platform(b["url"]) for b in board_targets)
     day_ago = now - timedelta(hours=24)
@@ -3550,10 +3631,11 @@ def _send_daily_check(config: dict, record: dict, now: datetime, board_targets: 
     facts = {"boards": {p: n for p, n in platforms.items() if p != "workday"}, "workday_sites": platforms.get("workday", 0),
              "workday_read_day": read_day, "entries": entries, "pending": pending,
              "boards_checked_at": board_meta.get("checked_at")}
-    subject, plain, html = sources.summary(record, now, facts, found_alarms, _problem_lines(problems))
+    subject, plain, html = sources.summary(record, now, facts, found_alarms, _problem_lines(problems), now_utc)
     print_console_safe("\n" + plain)
-    if send_messages(config, [(subject, plain, html)]):
+    if send_messages(config, [(subject, plain, html)]) == 1:
         record["summary_at"] = now.isoformat(timespec="seconds")
+        record["summary_day"] = now_utc.date().isoformat()
         return True
     log.error("The daily check email wasn't sent; the next run tries again.")
     return False

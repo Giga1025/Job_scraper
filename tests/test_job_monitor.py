@@ -2624,16 +2624,35 @@ class EmailPartsTests(MonitorTestCase):
                          [f"[Job Monitor] 1040 new job postings found (+1 left out by filters) (part {i} of {count})" for i in range(1, count + 1)])
         self.assertTrue(all(len(html_of(m).encode()) <= jm.EMAIL_MAX_HTML_BYTES for _, m in sent))
 
-    def test_a_failed_part_keeps_every_posting_for_the_next_run(self):
+    def test_after_a_failed_part_only_the_parts_not_sent_go_next_run(self):
+        fails = {"left": 1}
+
         class FailSecond(FakeSMTP):
             def send_message(self, msg):
-                if self.sent:
+                if self.sent and fails["left"]:
+                    fails["left"] -= 1
                     raise smtplib.SMTPServerDisconnected("gone")
                 super().send_message(msg)
         self.patch(jm.smtplib, "SMTP", FailSecond)
+        result = jm.send_email({"email": WORKING_EMAIL}, {"Bigco": roles("Bigco", 900)})
+        self.assertFalse(result)
+        self.assertEqual((result.sent, len(result.parts)), (1, 3))
+        self.assertEqual(len(result.delivered()), sum(len(j) for j in result.parts[0]["all_new"].values()))
+        # In a run: what went out isn't emailed again; the rest goes at the next run, then the pool is empty.
+        FakeSMTP.instances.clear()
+        fails["left"] = 1
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named(*[f"Software Engineer (team {i})" for i in range(800)]))
         with self.assertLogs(jm.log, "ERROR") as logs:
-            self.assertFalse(jm.send_email({"email": WORKING_EMAIL}, {"Bigco": roles("Bigco", 900)}))
-        self.assertTrue(any("1 of" in line and "parts were sent" in line for line in logs.output))
+            ok, _ = self.run_monitor([target()], email=WORKING_EMAIL)
+        self.assertFalse(ok)
+        self.assertTrue(any("Only 1 of the email's" in line for line in logs.output))
+        ok, _ = self.run_monitor([target()], email=WORKING_EMAIL)
+        self.assertTrue(ok)
+        urls = [a["href"] for _, m in self.emails_sent() for a in jm.BeautifulSoup(html_of(m), "html.parser").select("li a")]
+        self.assertEqual(len(urls), 800)
+        self.assertEqual(len(set(urls)), 800)
+        self.assertNotIn(jm.ALERT_POOL_KEY, self.saved_state())
 
 
 class TopPicksTests(MonitorTestCase):
@@ -2646,11 +2665,29 @@ class TopPicksTests(MonitorTestCase):
                                       {"title": "University Graduate - Software Engineer", "url": "https://gamma.example/jobs/u", "group": "Gamma"}])
         picks = jm.pick_top(alerts, jm.TOP_PICKS, {SIMPLIFY_URL})
         self.assertEqual([j["title"] for j in picks], ["Software Engineer, New Grad 2026", "University Graduate - Software Engineer",
-                                                       "Backend Engineer", "Software Engineer I"])
+                                                       "Software Engineer I", "Backend Engineer"])
         self.assertIn("Zeta: Backend Engineer", jm.format_plain_report({"Acme": alerts}, top=picks))
         self.assertEqual(jm.pick_top(alerts[:9], jm.TOP_PICKS, {SIMPLIFY_URL}), [])  # (fewer than 10 roles: no section)
         self.assertEqual(jm.pick_top(alerts, False, {SIMPLIFY_URL}), [])
         self.assertEqual(len(jm.pick_top(alerts, {**jm.TOP_PICKS, "limit": 2}, {SIMPLIFY_URL})), 2)
+        for off in (None, 0, "off", "false", False):
+            self.assertEqual(jm.pick_top(alerts, off, {SIMPLIFY_URL}), [], off)
+        with self.assertLogs(jm.log, "WARNING"):
+            self.assertEqual(len(jm.pick_top(alerts, {"limit": "abc", "titles": "new grad"}, {SIMPLIFY_URL})), 4)  # (defaults)
+
+    def test_software_first_and_a_lists_senior_roles_left_out(self):
+        patterns = jm.compile_role_filter(REPO_ROLE_FILTER)
+        listed = lambda title, n: {"title": title, "url": f"https://x.example/{n}", "group": f"Co{n} (via SimplifyJobs New Grad)",
+                                   "source": SIMPLIFY_URL}
+        alerts = roles("Acme", 8) + [listed("Customer Experience Analyst", 1), listed("Software Engineer II", 2),
+                                      listed("Backend Developer", 3), listed("Senior Data Engineer", 4),
+                                      {"title": "Entry Level Associate Scientist - Biochemistry", "url": "https://b.example/1", "group": "Bio"},
+                                      {"title": "Entry Level Software Developer", "url": "https://c.example/1", "group": "Cee"}]
+        picks = [j["title"] for j in jm.pick_top(alerts, jm.TOP_PICKS, {SIMPLIFY_URL}, patterns)]
+        self.assertEqual(picks, ["Entry Level Software Developer", "Entry Level Associate Scientist - Biochemistry",
+                                 "Backend Developer", "Customer Experience Analyst"])
+        for title in ("Software Engineer - New College Graduate", "2027 Grads: Software Engineer", "Undergrad Software Engineer"):
+            self.assertTrue(jm.pick_top(roles("Acme", 9) + [{"title": title, "url": "u", "group": "Z"}], jm.TOP_PICKS), title)
 
     def test_the_email_has_its_top_picks(self):
         self.mark_known(URL)
@@ -2673,7 +2710,7 @@ class SourceAlarmTests(unittest.TestCase):
     """Whole sources that look like they stopped (sources.py)."""
 
     def alarms(self, record, **kwargs):
-        return [a["name"] + ": " + a["why"] for a in jm.sources.alarms(record, datetime.now(), **kwargs)]
+        return [a["name"] + ": " + a["why"] for a in jm.sources.alarms(record, datetime.now(), **{"boards_on": True, **kwargs})]
 
     def test_workday_reading_nothing_three_runs_in_a_row(self):
         blocked = {"sites": 300, "read": 0, "skipped": 3, "missing": 0}
@@ -2684,13 +2721,23 @@ class SourceAlarmTests(unittest.TestCase):
         self.assertEqual(len(found), 1)
         self.assertIn("refusing the browser", found[0])
         self.assertIn("ran out of time", self.alarms(source_record(runs=[run_at(h, workday=late) for h in (1.5, 1, 0.5)]))[0])
-        # (runs that didn't read Workday, as when you pause it, don't count)
+        # (runs that didn't read Workday, as when you pause it, don't count; nor the runs before you paused it)
         self.assertEqual(self.alarms(source_record(runs=[run_at(2, workday=fine)] + [run_at(h) for h in (1.5, 1, 0.5)])), [])
+        self.assertEqual(self.alarms(source_record(runs=[run_at(h, workday=blocked) for h in (1.5, 1, 0.5)]), workday_on=False), [])
+        # The reason Workday reading stopped, when it says one; every site answering "not found".
+        stopped = {**late, "why": "3 Workday sites in a row couldn't be read (last: the browser didn't start)"}
+        self.assertIn("the browser didn't start", self.alarms(source_record(runs=[run_at(h, workday=stopped) for h in (1.5, 1, 0.5)]))[0])
+        gone = {**late, "missing": 40}
+        self.assertIn("answered \"not found\"", self.alarms(source_record(runs=[run_at(h, workday=gone) for h in (1.5, 1, 0.5)]))[0])
 
     def test_a_platform_whose_boards_mostly_fail_in_three_checks(self):
         bad = {"lever": {"ok": 20, "unchanged": 30, "missing": 1, "failed": 150}, "greenhouse": {"ok": 900, "unchanged": 0, "missing": 0, "failed": 3}}
         found = self.alarms(source_record(runs=[run_at(h, boards=bad) for h in (3, 2, 1)]))
-        self.assertEqual(found, ["Lever: 150 of its 200 company boards couldn't be read, and as many in each of the last 3 checks"])
+        self.assertEqual(found, ["Lever: 151 of its 201 company boards couldn't be read or answered \"not found\", and as many in each of the last 3 checks"])
+        self.assertEqual(self.alarms(source_record(runs=[run_at(h, boards=bad) for h in (3, 2, 1)]), boards_on=False), [])
+        # A platform whose every board answers 404 (its API moved).
+        moved = {"lever": {"ok": 0, "unchanged": 0, "missing": 345, "failed": 0}}
+        self.assertEqual(len(self.alarms(source_record(runs=[run_at(h, boards=moved) for h in (3, 2, 1)]))), 1)
         self.assertEqual(self.alarms(source_record(runs=[run_at(h, boards=bad) for h in (2, 1)])), [])
         few = {"ashby": {"ok": 1, "unchanged": 0, "missing": 0, "failed": 5}}
         self.assertEqual(self.alarms(source_record(runs=[run_at(h, boards=few) for h in (3, 2, 1)])), [])
@@ -2703,24 +2750,63 @@ class SourceAlarmTests(unittest.TestCase):
                                lists={INTERNSHIPS_URL: {"name": "SimplifyJobs Internships", "read": old}})
         found = self.alarms(record, boards_checked_at=(datetime.now() - timedelta(hours=7)).isoformat(), boards_on=True)
         self.assertEqual([f.split(":")[0] for f in found], ["Company job boards", "SimplifyJobs New Grad", "SimplifyJobs Internships"])
+        # Boards checked every 8 hours: 7 hours is normal.
+        self.assertEqual(len(self.alarms(record, boards_checked_at=(datetime.now() - timedelta(hours=7)).isoformat(), every_hours=8)), 2)
         self.assertEqual(len(self.alarms(record, boards_checked_at=recent, boards_on=True)), 2)
         self.assertEqual(len(self.alarms(record, boards_checked_at=None, boards_on=True)), 2)  # (never checked yet)
 
     def test_odd_saved_records_are_repaired_and_old_runs_dropped(self):
         record = jm.sources.record_of({"runs": [{"at": "x"}, run_at(60), run_at(1)], "feeds": [], "lists": {"a": "b"}, "summary_at": 5})
         self.assertEqual((len(record["runs"]), record["feeds"], record["lists"], record["summary_at"]), (2, {}, {}, None))
+        odd = jm.sources.record_of({"runs": [{**run_at(1), "matches": "7", "at": "2026-11-21T10:00:00Z",
+                                              "workday": {"sites": "x", "read": None}, "boards": {"lever": {"failed": "2"}}}]})
+        self.assertEqual(odd["runs"][0]["matches"], 7)
+        self.assertEqual(jm.sources.alarms(odd, datetime(2026, 11, 21, 12), boards_on=True), [])  # (no crash)
         jm.sources.note_run(record, datetime.now())
         self.assertEqual(len(record["runs"]), 2)  # (the one 60 hours old is dropped)
 
-    def test_the_daily_check_is_due_once_a_day_from_its_hour(self):
+    def test_the_daily_check_is_due_once_a_utc_day_from_its_hour(self):
         due = jm.sources.summary_due
-        at = lambda h, m=0: datetime(2026, 11, 21, h, m)
-        self.assertFalse(due(source_record(), at(13, 30), 14))
-        self.assertTrue(due(source_record(), at(14, 5), 14))
-        self.assertFalse(due(source_record(summary_at=at(14, 5).isoformat()), at(23), 14))
-        self.assertTrue(due(source_record(summary_at=at(14, 5).isoformat()), datetime(2026, 11, 22, 14, 2), 14))
-        self.assertFalse(due(source_record(summary_at=at(14, 5).isoformat()), datetime(2026, 11, 22, 9), 14))
-        self.assertTrue(due(source_record(summary_at=at(2).isoformat()), datetime(2026, 11, 22, 9), 14))  # (31 hours: at once)
+        at = lambda d, h, m=0: datetime(2026, 11, d, h, m)
+        sent = lambda d, h: source_record(summary_at=at(d, h).isoformat(), summary_day=at(d, h).date().isoformat())
+        self.assertFalse(due(source_record(), at(21, 13, 30), 14))
+        self.assertTrue(due(source_record(), at(21, 14, 5), 14))
+        self.assertFalse(due(sent(21, 14), at(21, 23), 14))
+        self.assertTrue(due(sent(21, 14), at(22, 14, 2), 14))
+        self.assertFalse(due(sent(21, 14), at(22, 9), 14))
+        # (the hour is UTC whatever the machine's clock: here local time is 5 hours behind)
+        self.assertTrue(due(sent(21, 14), at(22, 9, 5), 14, now_utc=at(22, 14, 5)))
+        # Hour 0 doesn't creep earlier day by day: once per UTC day.
+        self.assertFalse(due(sent(21, 0), at(21, 20), 0))
+        self.assertTrue(due(sent(21, 0), at(22, 0, 3), 0))
+        # The runs stopped from before 14:00 to the next morning: at once, then not again that day.
+        self.assertTrue(due(sent(20, 14), at(21, 22), 14))
+        self.assertFalse(due(sent(21, 22), at(22, 9), 14))
+
+    def test_a_run_is_noted_with_boards_waiting_after_a_404_and_lists_another_config_read(self):
+        lever = "https://api.lever.co/v0/postings/acme"
+        gone = {f"https://api.lever.co/v0/postings/co{i}": "2026-11-21T01:00:00" for i in range(30)}
+        meta = {"missing": gone, "workday": {}, "list_read": {}}
+        today = datetime.now().date().isoformat()
+        feed = {"name": "SimplifyJobs New Grad", "url": SIMPLIFY_URL, "mode": "feed"}
+        state = {SIMPLIFY_URL: [{"url": "https://a.example/1", "first_seen": today}]}
+        record = jm._note_sources(state, dict(state), "cfg", [feed], [{"mode": "boards"}], meta, {"workday": {}},
+                                  {lever: ("ok", [], None)}, True, True, [], [], 0, [], datetime.now())
+        # (30 Lever boards in their day's wait after a 404 are counted as not found, so a moved API is noticed)
+        self.assertEqual(record["runs"][-1]["boards"]["lever"], {"ok": 1, "unchanged": 0, "missing": 30, "failed": 0})
+        # The list added nothing this run (another config sharing state.json recorded it), but its newest
+        # posting was first seen today: not quiet.
+        record["feeds"][SIMPLIFY_URL]["last_new"] = (datetime.now() - timedelta(days=5)).isoformat(timespec="seconds")
+        jm.sources.note_feed(record, SIMPLIFY_URL, "SimplifyJobs New Grad", False, datetime.now(), today)
+        self.assertEqual(jm.sources.alarms(record, datetime.now()), [])
+
+    def test_the_first_day_counts_runs_since_the_first_one_noted(self):
+        record = source_record(runs=[run_at(h / 2) for h in range(18, -1, -1)])
+        _, plain, _ = jm.sources.summary(record, datetime.now(), {}, [], [])
+        self.assertIn("Runs since the first run noted", plain)
+        self.assertIn(": 19 (about 19 expected, one every 30 minutes)", plain)
+        _, plain, _ = jm.sources.summary(source_record(runs=[run_at(h / 2) for h in range(60, -1, -1)]), datetime.now(), {}, [], [])
+        self.assertIn("Runs in the last 24 hours: 48 (about 48 expected", plain)
 
 
 class DailyCheckTests(MonitorTestCase):
@@ -2761,7 +2847,8 @@ class DailyCheckTests(MonitorTestCase):
         state = self.saved_state()
         config_id, record = next(iter(state[jm.SOURCES_KEY].items()))
         record["feeds"][SIMPLIFY_URL]["last_new"] = (datetime.now() - timedelta(days=4)).isoformat(timespec="seconds")
-        jm.save_state({}, sources=(config_id, record))
+        old_day = (datetime.now() - timedelta(days=4)).date().isoformat()
+        jm.save_state({SIMPLIFY_URL: [{**r, "first_seen": old_day} for r in state[SIMPLIFY_URL]]}, sources=(config_id, record))
         self.pages[URL] = page(*jobs_named("Software Engineer"))
         self.mark_known(URL)
         with self.assertLogs(jm.log, "WARNING") as logs:

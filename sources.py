@@ -7,15 +7,17 @@ module watches is a whole source going quiet, which would otherwise look just li
 - Workday: no site read in WORKDAY_BAD_RUNS runs in a row that tried (Workday blocking the
   browser, say, or the runs running out of time before Workday's turn; not while you've paused it);
 - a job-board platform (Greenhouse, Ashby, Lever...): at least BOARD_BAD_SHARE of its boards
-  (BOARD_MIN or more) couldn't be read in BOARD_BAD_CHECKS hourly checks in a row;
-- the company boards not checked at all for BOARDS_LATE_HOURS;
+  (BOARD_MIN or more) couldn't be read, or answered "not found" (an API that moved), in
+  BOARD_BAD_CHECKS checks in a row;
+- the company boards not checked at all for BOARDS_LATE_HOURS (or 3 times their every_hours);
 - a new-grad list (a feed) with no new posting for FEED_QUIET_HOURS, or a list read only to find
   companies (find_companies_in) that couldn't be read for LIST_QUIET_HOURS.
 
-Those warnings (alarms()) go at the top of every email while they last. A run can't report that
-runs stopped altogether, so once a day (summary_due) a short email says the monitor is still
-running: the runs, what was checked and what was sent in the last day, and the same warnings.
-If it doesn't come, something broke.
+Those warnings (alarms()) go at the top of every email while they last (not for a source you've
+paused). A run can't report that runs stopped altogether, so once a day (summary_due: once per UTC
+day, from a set hour) a short email says the monitor is still running: the runs, what was
+checked and what was sent in the last day, and the same warnings. If it doesn't come, something
+broke.
 
 What it needs is kept per config in state.json (job_monitor.SOURCES_KEY): the last
 RUNS_KEPT_HOURS of runs (a few numbers each), the emails sent, when each feed last added a
@@ -32,19 +34,28 @@ BOARD_MIN = 10
 BOARDS_LATE_HOURS = 6
 FEED_QUIET_HOURS = 72
 LIST_QUIET_HOURS = 72
-RUNS_EXPECTED_PER_DAY = 48  # (one every 30 minutes)
-SUMMARY_DUE_HOURS = 20      # the daily email waits at least this long after the last one...
-DEFAULT_SUMMARY_HOUR = 14   # ...and for this hour of the day (UTC: 8 AM US Central, 6 AM Pacific)
+RUNS_EVERY_MINUTES = 30
+SUMMARY_LATE_HOURS = 30     # the daily email goes at once if the last one is this old (runs that stopped, then resumed)...
+DEFAULT_SUMMARY_HOUR = 14   # ...else once a UTC day, from this hour (8 AM US Central, 6 AM Pacific)
 
 PLATFORM_NAMES = {"greenhouse": "Greenhouse", "ashby": "Ashby", "lever": "Lever", "workable": "Workable",
                   "smartrecruiters": "SmartRecruiters", "oracle": "Oracle", "workday": "Workday"}
 
 
 def _when(stamp) -> datetime | None:
+    """A saved local time (naive, as the monitor writes them); None for anything else."""
     try:
-        return datetime.fromisoformat(str(stamp))
+        when = datetime.fromisoformat(str(stamp))
     except (TypeError, ValueError):
         return None
+    return when.replace(tzinfo=None) if when.tzinfo else when
+
+
+def _count(value) -> int:
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return 0
 
 
 def _day(stamp) -> str:
@@ -59,11 +70,28 @@ def record_of(saved) -> dict:
     def part(key, kind):
         return saved.get(key) if isinstance(saved.get(key), kind) else kind()
 
-    return {"runs": [r for r in part("runs", list) if isinstance(r, dict) and _when(r.get("at"))],
-            "emails": [e for e in part("emails", list) if isinstance(e, dict) and _when(e.get("at"))],
-            "feeds": {u: f for u, f in part("feeds", dict).items() if isinstance(f, dict)},
-            "lists": {u: f for u, f in part("lists", dict).items() if isinstance(f, dict)},
-            "summary_at": saved.get("summary_at") if _when(saved.get("summary_at")) else None}
+    def run_of(r: dict) -> dict:
+        run = {"at": _when(r["at"]).isoformat(timespec="seconds"),
+               **{k: _count(r.get(k)) for k in ("matches", "left_out", "entries", "failing")}}
+        if isinstance(r.get("boards"), dict):
+            run["boards"] = {str(p): {k: _count(c.get(k)) for k in ("ok", "unchanged", "missing", "failed")}
+                             for p, c in r["boards"].items() if isinstance(c, dict)}
+        if isinstance(r.get("workday"), dict):
+            run["workday"] = {**{k: _count(r["workday"].get(k)) for k in ("sites", "read", "skipped", "missing")},
+                              "why": str(r["workday"].get("why") or "")[:300]}
+        return run
+
+    return {"runs": [run_of(r) for r in part("runs", list) if isinstance(r, dict) and _when(r.get("at"))],
+            "emails": [{"at": _when(e["at"]).isoformat(timespec="seconds"), **{k: _count(e.get(k)) for k in ("roles", "left_out", "parts")}}
+                       for e in part("emails", list) if isinstance(e, dict) and _when(e.get("at"))],
+            "feeds": {str(u): {"name": str(f.get("name") or u), **({"last_new": _when(f["last_new"]).isoformat(timespec="seconds")}
+                                                                  if _when(f.get("last_new")) else {})}
+                      for u, f in part("feeds", dict).items() if isinstance(f, dict)},
+            "lists": {str(u): {"name": str(f.get("name") or u), **({"read": _when(f["read"]).isoformat(timespec="seconds")}
+                                                                  if _when(f.get("read")) else {})}
+                      for u, f in part("lists", dict).items() if isinstance(f, dict)},
+            "summary_at": _when(saved["summary_at"]).isoformat(timespec="seconds") if _when(saved.get("summary_at")) else None,
+            "summary_day": str(saved.get("summary_day")) if saved.get("summary_day") else None}
 
 
 def _prune(items: list[dict], now: datetime) -> list[dict]:
@@ -82,16 +110,21 @@ def note_run(record: dict, now: datetime, boards: dict | None = None, workday: d
     if boards is not None:
         run["boards"] = {p: {k: int(c.get(k, 0)) for k in ("ok", "unchanged", "missing", "failed")} for p, c in boards.items()}
     if workday:
-        run["workday"] = {k: int(workday.get(k) or 0) for k in ("sites", "read", "skipped", "missing")}
+        run["workday"] = {**{k: _count(workday.get(k)) for k in ("sites", "read", "skipped", "missing")},
+                          "why": str(workday.get("why") or "")[:300]}  # (why its reading stopped, if it did)
     record["runs"] = _prune(record["runs"] + [run], now)
 
 
-def note_feed(record: dict, url: str, name: str, added: bool, now: datetime):
-    """A new-grad list (feed) was read this run; added: it had postings not seen before."""
+def note_feed(record: dict, url: str, name: str, added: bool, now: datetime, newest_seen=None):
+    """A new-grad list (feed) was read this run; added: it had postings not seen before;
+    newest_seen: the newest first_seen of its saved postings (another config sharing state.json
+    may have recorded them first)."""
     feed = record["feeds"].setdefault(url, {})
     feed["name"] = name
     if added or not _when(feed.get("last_new")):
         feed["last_new"] = now.isoformat(timespec="seconds")
+    elif _when(newest_seen) and _when(newest_seen) > _when(feed["last_new"]):
+        feed["last_new"] = _when(newest_seen).isoformat(timespec="seconds")
 
 
 def note_list(record: dict, url: str, name: str, read_at):
@@ -113,35 +146,48 @@ def forget_gone(record: dict, feed_urls, list_urls):
     record["lists"] = {u: f for u, f in record["lists"].items() if u in list_urls}
 
 
-def alarms(record: dict, now: datetime, boards_checked_at=None, boards_on: bool = False) -> list[dict]:
-    """The sources that look like they stopped: [{"name", "why", "since"}]."""
+def alarms(record: dict, now: datetime, boards_checked_at=None, boards_on: bool = False, workday_on: bool = True,
+           every_hours: float = 1) -> list[dict]:
+    """The sources that look like they stopped: [{"name", "why", "since"}]. boards_on, workday_on:
+    whether the company boards and their Workday sites are on now (a paused one isn't warned
+    about); every_hours: how often the boards are checked."""
     out = []
     tried = [r for r in record["runs"] if isinstance(r.get("workday"), dict) and r["workday"].get("sites")]
     last = tried[-WORKDAY_BAD_RUNS:]
-    if len(last) == WORKDAY_BAD_RUNS and all(not r["workday"].get("read") for r in last):
+    if boards_on and workday_on and len(last) == WORKDAY_BAD_RUNS and all(not r["workday"].get("read") for r in last):
+        stop = str(last[-1]["workday"].get("why") or "")
+        since = f"in the last {WORKDAY_BAD_RUNS} runs, since {_day(last[0]['at'])}"
         if any(r["workday"].get("skipped") for r in last):
-            why = (f"no company Workday site could be read in the last {WORKDAY_BAD_RUNS} runs, since "
-                   f"{_day(last[0]['at'])} (Workday may be refusing the browser)")
+            why = f"no company Workday site could be read {since} (Workday may be refusing the browser)"
+        elif all(r["workday"].get("missing") for r in last):
+            why = f"every company Workday site tried answered \"not found\" {since} (Workday may have changed its addresses)"
+        elif not stop or stop.startswith(("the run is", "time's up")):
+            why = f"no company Workday site was read {since}: the runs ran out of time before Workday's turn"
         else:
-            why = (f"no company Workday site was read in the last {WORKDAY_BAD_RUNS} runs, since {_day(last[0]['at'])}: "
-                   f"the runs ran out of time before Workday's turn")
+            why = f"no company Workday site was read {since}: {stop}"
         out.append({"name": "Workday", "since": last[0]["at"], "why": why})
     checks = [r for r in record["runs"] if isinstance(r.get("boards"), dict)]
-    for platform in sorted({p for r in checks for p in r["boards"]}):
+    for platform in sorted({p for r in checks for p in r["boards"]}) if boards_on else []:
         counts = [r["boards"].get(platform) for r in checks if isinstance(r["boards"].get(platform), dict)]
         last = counts[-BOARD_BAD_CHECKS:]
         if len(last) < BOARD_BAD_CHECKS:
             continue
-        totals = [c.get("ok", 0) + c.get("unchanged", 0) + c.get("failed", 0) for c in last]
-        if all(t >= BOARD_MIN and c.get("failed", 0) >= BOARD_BAD_SHARE * t for c, t in zip(last, totals)):
+        totals = [sum(c.get(k, 0) for k in ("ok", "unchanged", "missing", "failed")) for c in last]
+        bad = [c.get("failed", 0) + c.get("missing", 0) for c in last]
+        if all(t >= BOARD_MIN and b >= BOARD_BAD_SHARE * t for b, t in zip(bad, totals)):
             name = PLATFORM_NAMES.get(platform, platform)
             out.append({"name": name, "since": None,
-                        "why": f"{last[-1].get('failed', 0)} of its {totals[-1]} company boards couldn't be read, "
+                        "why": f"{bad[-1]} of its {totals[-1]} company boards couldn't be read or answered \"not found\", "
                                f"and as many in each of the last {BOARD_BAD_CHECKS} checks"})
     checked = _when(boards_checked_at)
-    if boards_on and checked is not None and now - checked >= timedelta(hours=BOARDS_LATE_HOURS):
+    try:
+        every = max(float(every_hours), 0)
+    except (TypeError, ValueError):
+        every = 1.0
+    late = max(BOARDS_LATE_HOURS, 3 * every)
+    if boards_on and checked is not None and now - checked >= timedelta(hours=late):
         out.append({"name": "Company job boards", "since": boards_checked_at,
-                    "why": f"not checked since {_day(boards_checked_at)} (they're checked every hour)"})
+                    "why": f"not checked since {_day(boards_checked_at)} (they're checked every {every:g} hour{'s' if every != 1 else ''})"})
     for url, feed in sorted(record["feeds"].items(), key=lambda kv: str(kv[1].get("name"))):
         since = _when(feed.get("last_new"))
         if since and now - since >= timedelta(hours=FEED_QUIET_HOURS):
@@ -156,24 +202,29 @@ def alarms(record: dict, now: datetime, boards_checked_at=None, boards_on: bool 
     return out
 
 
-def summary_due(record: dict, now: datetime, hour) -> bool:
-    """Whether the daily email is due: at least SUMMARY_DUE_HOURS after the last one, and from
-    `hour` (UTC, 0-23) on."""
+def summary_due(record: dict, now: datetime, hour, now_utc: datetime | None = None) -> bool:
+    """Whether the daily email is due: once per UTC day (record["summary_day"]), from `hour` (UTC,
+    0-23) on; or at once if the last one is SUMMARY_LATE_HOURS old (the runs stopped meanwhile).
+    now: local time (as the record's times); now_utc: the UTC time (default: now)."""
+    now_utc = now_utc or now
     last = _when(record.get("summary_at"))
     try:
         hour = int(hour) % 24
     except (TypeError, ValueError):
         hour = DEFAULT_SUMMARY_HOUR
-    if last is not None and now - last < timedelta(hours=SUMMARY_DUE_HOURS):
+    if last is not None and now - last >= timedelta(hours=SUMMARY_LATE_HOURS):
+        return True
+    if record.get("summary_day") == now_utc.date().isoformat():
         return False
-    # (from that hour on; or at once if a whole day and more went by, the runs having stopped meanwhile)
-    return now.hour >= hour or (last is not None and now - last >= timedelta(hours=30))
+    return now_utc.hour >= hour
 
 
-def summary(record: dict, now: datetime, facts: dict, found_alarms: list[dict], problems: list[str]) -> tuple[str, str, str]:
+def summary(record: dict, now: datetime, facts: dict, found_alarms: list[dict], problems: list[str],
+            now_utc: datetime | None = None) -> tuple[str, str, str]:
     """The daily email: (subject, plain text, HTML). facts: {"boards": {platform: count checked},
     "workday_sites", "workday_read_day", "entries", "pending", "boards_checked_at"}; problems: lines about
     your entries that aren't working."""
+    now_utc = now_utc or now
     day = now - timedelta(hours=24)
     runs = [r for r in record["runs"] if (_when(r["at"]) or now) >= day]
     times = sorted(_when(r["at"]) for r in runs)
@@ -182,7 +233,14 @@ def summary(record: dict, now: datetime, facts: dict, found_alarms: list[dict], 
     sent = sum(e.get("roles", 0) for e in emails)
     found = sum(r.get("matches", 0) for r in runs)
     boards = facts.get("boards") or {}
-    lines = [f"Runs in the last 24 hours: {len(runs)} (about {RUNS_EXPECTED_PER_DAY} expected, one every 30 minutes)"
+    first = min((_when(r["at"]) for r in record["runs"]), default=None)
+    if first is not None and first > day + timedelta(minutes=RUNS_EVERY_MINUTES):
+        # (the record is younger than a day: since the monitor started noting runs)
+        span = f"since the first run noted ({_day(first.isoformat())})"
+        expected = int((now - first) / timedelta(minutes=RUNS_EVERY_MINUTES)) + 1
+    else:
+        span, expected = "in the last 24 hours", 24 * 60 // RUNS_EVERY_MINUTES
+    lines = [f"Runs {span}: {len(runs)} (about {expected} expected, one every {RUNS_EVERY_MINUTES} minutes)"
              + (f"; the longest gap between two was {gap.seconds // 3600 + gap.days * 24} h {gap.seconds % 3600 // 60} min"
                 if gap >= timedelta(minutes=90) else "") + "."]
     if boards:
@@ -194,7 +252,7 @@ def summary(record: dict, now: datetime, facts: dict, found_alarms: list[dict], 
                      f"in the last 24 hours.")
     lines.append(f"Your own entries: {facts.get('entries', 0)} checked each run"
                  + (f", {len(problems)} not working (below)." if problems else ", all working."))
-    lines.append(f"New matching roles found in the last 24 hours: {found}; emailed: {sent} in {len(emails)} email(s)"
+    lines.append(f"New matching roles found {span}: {found}; emailed: {sent} in {len(emails)} email(s)"
                  + (f"; waiting for the next email: {facts['pending']}" if facts.get("pending") else "") + ".")
     if found_alarms:
         status = f"{len(found_alarms)} source(s) may have stopped working"
@@ -204,7 +262,7 @@ def summary(record: dict, now: datetime, facts: dict, found_alarms: list[dict], 
         status = "running fine"
     subject = f"[Job Monitor] Daily check: {status} ({sent} role{'s' if sent != 1 else ''} emailed in the last day)"
     warn = [f"{a['name']}: {a['why']}" for a in found_alarms]
-    plain = "\n".join(["=" * 60, f"  JOB MONITOR DAILY CHECK — {now.strftime('%Y-%m-%d %H:%M')}", "=" * 60, ""]
+    plain = "\n".join(["=" * 60, f"  JOB MONITOR DAILY CHECK — {now_utc.strftime('%Y-%m-%d %H:%M')} UTC", "=" * 60, ""]
                       + [f"- {line}" for line in lines] + [""]
                       + ([f"⚠ Sources that may have stopped working:"] + [f"    ! {w}" for w in warn] + [""] if warn
                          else ["All sources look normal.", ""])
@@ -220,7 +278,7 @@ def summary(record: dict, now: datetime, facts: dict, found_alarms: list[dict], 
     body += box("Your entries that aren't working", problems) if problems else ""
     html = (f'<div style="font-family:system-ui,sans-serif;max-width:600px;margin:auto;padding:20px">'
             f'<h2 style="border-bottom:2px solid #1a73e8;padding-bottom:8px">Daily check: {esc(status)}</h2>'
-            f'<p style="color:#555">{esc(now.strftime("%B %d, %Y at %I:%M %p"))} (UTC)</p>{body}'
+            f'<p style="color:#555">{esc(now_utc.strftime("%B %d, %Y at %I:%M %p"))} UTC</p>{body}'
             f'<p style="color:#999;font-size:12px;margin-top:32px">This email comes once a day while the monitor runs. '
             f'If a day passes without one, the runs have stopped: see "When a whole source stops" in the README.</p>'
             f'<p style="color:#999;font-size:12px">Sent by job_monitor.py</p></div>')
