@@ -56,7 +56,7 @@ except ImportError:
     sys.exit(1)
 
 # Job-board readers live in the boards/ package, one module per job site.
-from boards import oracle, workable, workday
+from boards import greenhouse, oracle, workable, workday
 from boards.common import HEADERS, MONITOR_USER_AGENT, hours_since as _hours_since, posted_at as _posted_at
 
 # ---------------------------------------------------------------------------
@@ -1375,6 +1375,10 @@ def job_keys(url: str) -> set[tuple]:
             keys.add(("wd", workday.tenant_in(url) or host, token))
     elif not keys:
         keys |= {(host, n) for n in re.findall(r"(?<!\d)\d{7,}(?!\d)", parsed.path)}
+    elif not host.endswith("greenhouse.io"):
+        # A company site's link with its Greenhouse job id (block.xyz/careers/jobs/N?gh_jid=N, as the lists and the
+        # company's Greenhouse board give it) is also the same page's link without it (as an entry reading the site records it).
+        keys |= {(host, n) for n in re.findall(r"(?<!\d)\d{7,}(?!\d)", parsed.path) if ("gh", n) in keys}
     return keys
 
 
@@ -1656,20 +1660,25 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
 
     The registry grows from the feeds' saved postings (every run), the boards the entry
     lists under "companies", and, when the boards are due, the lists under
-    "find_companies_in" (read only if they changed).
+    "find_companies_in" (read only if they changed) and the Greenhouse boards behind the
+    postings on companies' own sites that those link to (boards/greenhouse.py).
 
     With "catch_up_days", a board not yet caught up (its registry entry has no "caught_up"
     date: new, or first checked before catching up existed) gets "_catch_up_since", so the
     roles it lists that went up in those last days are emailed once (see check_target)."""
     today = datetime.now().date().isoformat()
     known = meta["known"]
+    site_links: list[tuple] = []  # postings on companies' own sites with a Greenhouse job id (lists' first: newest first)
     for target in targets:
         rows = state.get(target.get("url")) if target.get("mode") == "feed" else None
         if isinstance(rows, list):
-            grow_board_registry(known, ((r.get("url"), r.get("company")) for r in rows if isinstance(r, dict)),
-                                target.get("name") or "a feed", today)
+            pairs = [(r.get("url"), r.get("company")) for r in rows if isinstance(r, dict)]
+            grow_board_registry(known, pairs, target.get("name") or "a feed", today)
+            site_links += [p for p in pairs if greenhouse.job_id(p[0])]
     extra = [b for b in entry.get("companies") or [] if isinstance(b, dict)]
     grow_board_registry(known, ((b.get("link"), b.get("name")) for b in extra), "your list", today)
+    site_links += [(b.get("link"), b.get("name")) for b in extra if greenhouse.job_id(b.get("link"))]
+    platforms = set(entry.get("platforms") or ("greenhouse", "ashby", "lever"))
     if due:
         for item in entry.get("find_companies_in") or []:
             if isinstance(item, dict) and item.get("url"):
@@ -1677,8 +1686,15 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
                 if links:
                     added = grow_board_registry(known, links, item.get("name") or item["url"], today)
                     log.info(f"  [boards] {item.get('name') or item['url']}: {added} new company board(s)")
-
-    platforms = set(entry.get("platforms") or ("greenhouse", "ashby", "lever"))
+                    site_links = [p for p in links if greenhouse.job_id(p[0])] + site_links
+        if "greenhouse" in platforms and site_links:
+            try:
+                found = greenhouse.find_boards(site_links, meta["greenhouse_sites"], today, _listed_on_boards(state))
+                added = grow_board_registry(known, found, "companies' own sites", today)
+                log.info(f"  [boards] Companies' own sites: {added} new Greenhouse board(s)")
+            except Exception:
+                # (extra: a problem here mustn't stop the boards already known)
+                log.exception("  [boards] Could not work out the Greenhouse boards behind companies' own sites")
     skip = {_url_key(t.get("url")) for t in targets if t.get("url")}
     # (and a Workday site one of your entries searches, like NVIDIA's new-grad search, or an Oracle site one reads, like JPMorgan's)
     skip |= {workday.site_key(t["url"]) for t in targets if _is_workday_entry(t)}
@@ -1691,6 +1707,7 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
     # Oracle site's can be matched with, like your Goldman Sachs and Uber entries: see oracle.FRONT_ENDS)
     yours_unmatched = {_entry_key(t.get("name")) for t in targets
                        if t.get("url") and t.get("mode") != "feed" and not oracle.knows_links_of(t["url"])} - {""}
+    skip |= _greenhouse_boards_yours_cover(targets, state, meta)
     skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
     tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
     skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
@@ -1726,6 +1743,42 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
             and _entry_key(info.get("name")) not in skip_companies
             and not (_board_platform(info["url"]) == "workday" and _entry_key(info.get("name")) in yours)
             and not (_board_platform(info["url"]) == "oracle" and _entry_key(info.get("name")) in yours_unmatched)]
+
+
+def _greenhouse_boards_yours_cover(targets: list[dict], state: dict, meta: dict) -> set[str]:
+    """The registry keys of the Greenhouse boards found through a company's own site
+    (boards/greenhouse.py) that one of your entries already reads on that site's domain, unless the
+    two can be matched both ways: the entry has the board's name (so each skips what the other
+    emailed) and the links it recorded carry the Greenhouse job id. Otherwise a role the board
+    emailed first (say while the entry's page was down) would be emailed again by the entry, like
+    your "Square / Block" entry (block.xyz/careers/jobs/N) and Block's board."""
+    by_domain = greenhouse.boards_by_domain(meta.get("greenhouse_sites"))
+    skip = set()
+    for t in targets:
+        site = greenhouse.site_of(t.get("url"))
+        if not site or site.endswith("greenhouse.io") or t.get("mode") in ("feed", "boards") or t.get("_board"):
+            continue
+        rows = state.get(t["url"]) if isinstance(state.get(t["url"]), list) else []
+        with_ids = any(isinstance(r, dict) and greenhouse.job_id(r.get("url")) for r in rows)
+        for name in by_domain.get(greenhouse.domain_of(site), ()):
+            key = _url_key(f"https://boards-api.greenhouse.io/v1/boards/{name}/jobs")
+            board_name = (meta["known"].get(key) or {}).get("name")
+            if not with_ids or _entry_key(board_name) != _entry_key(t.get("name")):
+                skip.add(key)
+    return skip
+
+
+def _listed_on_boards(state: dict):
+    """listed(site) for greenhouse.find_boards: the Greenhouse job ids the boards found for a site
+    have recorded (those needn't be asked about)."""
+    def listed(site_boards) -> set:
+        ids = set()
+        for name in site_boards:
+            for row in state.get(f"https://boards-api.greenhouse.io/v1/boards/{name}/jobs") or []:
+                if isinstance(row, dict):
+                    ids |= {key[1] for key in job_keys(row.get("url")) if key[0] == "gh"}
+        return ids
+    return listed
 
 
 def _is_workday_entry(target: dict) -> bool:
@@ -3352,7 +3405,7 @@ def _board_meta(state: dict) -> dict:
         return copy.deepcopy(meta[key]) if isinstance(meta.get(key), dict) else {}
     return {"checked_at": meta.get("checked_at"), "known": part("known"), "etags": part("etags"),
             "list_etags": part("list_etags"), "missing": part("missing"), "workable": part("workable"),
-            "workday": part("workday")}
+            "workday": part("workday"), "greenhouse_sites": part("greenhouse_sites")}
 
 
 def _finish_board_check(meta: dict, fetched: dict, board_urls: set, full: bool):
