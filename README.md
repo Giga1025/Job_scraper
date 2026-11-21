@@ -192,22 +192,28 @@ Three more platforms are read the same way (Nov 2026):
   Johns Hopkins APL, Schneider Electric, Peraton: about 130 sites in the lists, on
   `<name>.jibeapply.com` or the company's own domain, linked like `careers.amd.com/jobs/85806?icims=1`).
   Every such site serves one public JSON API at its root; the newest 100 postings are read each
-  hour, and the next 100 too while they're from the last 3 days (a site posting a hundred a day),
-  with every place's country and the posting date; `boards/jibe.py`. Since only the newest are
-  read, a posting seen for the first time is new only if it went up in the last 7 days (an older
-  one moves up into the newest when newer ones close). A site is one iCIMS customer: the same job
-  is on its classic iCIMS portals (`careers-amd.icims.com`) under the same number, and on any
-  other domain the site links it on (Schneider Electric's on `careers.se.com`); one company's two
-  addresses (`careers.ice.com`, `ice.jibeapply.com`) are read once (the other one if the first's
-  last read failed or it isn't found). Your AMD entry reads AMD's site under the same name, so a
+  hour, and the next 100 too while they're from the last 3 days (a site posting a hundred a day)
+  or, after an outage, from before the site's last good read, with every place's country (by its
+  name: some codes are wrong) and the posting date; `boards/jibe.py`. A site whose API can't list
+  newest first (AVI-SPL refuses the sort, Bowman ignores it) is read in its own order, up to 500
+  postings. Since only the newest are read, a posting seen for the first time is new only if it
+  went up in the last 7 days, or since the site's last good read (an older one moves up into the
+  newest when newer ones close); when it went up is the later of its posting date and the day it
+  reached the site. The link emailed is always the site's own: some sites name another domain for
+  their postings where they aren't found (H-E-B's name careers.hrblock.com). A site is one iCIMS
+  customer: the same job is on its classic iCIMS portals (`careers-amd.icims.com`) under the same
+  number, and on any other domain the site names for it (Schneider Electric's `careers.se.com`);
+  one company's two addresses (`careers.ice.com`, `ice.jibeapply.com`) are read once (the other
+  one if the first's last read failed or it isn't found). Your AMD entry reads AMD's site under the same name, so a
   job on both is emailed once; a site isn't read while one of your entries has its name but reads
   somewhere else, or reads the site under another name. To add one under `companies`, link its
   search page or a posting with `?icims=1` added (a company's own domain can't otherwise be told
   from any other site). iCIMS's classic portals (`*.icims.com`, about 340 in the lists) aren't
   read yet (see `TODO.md`).
 - **Rippling** (`ats.rippling.com/<board>/jobs`: about 180 boards in the lists, like Boom
-  Supersonic and Foundation Robotics), read whole each hour; `boards/rippling.py`. Rippling gives
-  no posting dates, so a board's first check only records what it lists. A read missing a page
+  Supersonic and Foundation Robotics), read whole each hour; `boards/rippling.py`. Rippling's
+  list gives no posting dates, so at a board's first check the jobs its filters keep get their
+  date from their own page, and the ones from the last 3 days are emailed. A read missing a page
   counts as failed (a job missing from it would be forgotten, then emailed again).
 - **Gem** (`jobs.gem.com/<board>`: Nuvo, Casap, 43North's portfolio companies), read whole each
   hour, with the posting dates; `boards/gem.py`.

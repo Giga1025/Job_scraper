@@ -2,14 +2,18 @@
 Rippling, Boom Supersonic, D-Wave, Root Insurance, Foundation Robotics, Riot Platforms...).
 
 A board is read whole through the public JSON API its page uses (api_url), one row per job with
-every place and its country (groupJobsByLocation). It gives no posting date, so a board's first
-check only records what it lists (nothing is emailed as new), and from then on a job not seen
-before is new. The board name is case-sensitive, kept as written."""
+every place and its country (groupJobsByLocation). The list gives no posting dates, so at a board's
+first check the jobs its filters would keep (at most MAX_DATED) get their date from their own page
+(detail_url: when the job was created), and the catch-up emails the recent ones; from then on a job
+not seen before is new. The board name is case-sensitive, kept as written."""
 import re
 from urllib.parse import urlparse
 
+from .common import posted_at
+
 PAGE_SIZE = 1000  # the API's most
 MAX_PAGES = 10    # a board with more isn't read (it couldn't be read whole: see job_monitor.fetch_rippling_jobs)
+MAX_DATED = 100   # jobs given their date at a board's first check
 
 _LINK = re.compile(r"^/(?:[a-z]{2}(?:-[A-Za-z0-9]{2,3})?/)?(?:embed/)?([A-Za-z0-9_-]+)/jobs(?:/[0-9a-f-]{36})?(?:/apply)?/?$")
 _API = re.compile(r"^/api/v2/board/([A-Za-z0-9_-]+)/jobs/?$")
@@ -45,6 +49,16 @@ def is_api_url(url) -> bool:
 
 def page_url(url) -> str:
     return f"https://{HOST}/{board_of(url)}/jobs"
+
+
+def detail_url(board: str, job_url: str) -> str:
+    """A job's own page in Rippling's API (it has the job's creation time), from its link."""
+    return f"https://api.rippling.com/platform/api/ats/v1/board/{board}/jobs/{str(job_url).rstrip('/').rsplit('/', 1)[-1]}"
+
+
+def created_on(data) -> str | None:
+    """When a job was created, from its page (detail_url)."""
+    return posted_at(data.get("createdOn")) if isinstance(data, dict) else None
 
 
 def jobs_from(data) -> tuple[list[dict], int]:

@@ -1072,25 +1072,21 @@ def fetch_oracle_hcm_jobs(url: str, get_json=None) -> list[dict] | None:
 
 
 def fetch_jibe_jobs(url: str, get_json=None) -> list[dict] | None:
-    """https://<host>/api/jobs?...sortBy=posted_date... : an iCIMS Jibe site's newest postings (boards/jibe.py)."""
+    """https://<host>/api/jobs?...sortBy=posted_date... : an iCIMS Jibe site's newest postings (boards/jibe.py:
+    the next pages too for a busy site, or after an outage; a site that can't list newest first in its own order)."""
     get_json = get_json or (lambda u, params=None: _get_json(u, params))
-    data = get_json(url)
-    if not isinstance(data, dict) or not isinstance(data.get("jobs"), list):
-        return None
-    host = urlparse(url).netloc.lower()
-    jobs = jibe.jobs_from(data, host)
-    page = 1
-    while page < jibe.MAX_PAGES and jibe.read_further(jobs, len(data["jobs"])):
-        page += 1  # (a busy site: the next newest too, so a run or two missed loses nothing)
-        data = get_json(jibe.api_url(host, page))
-        if not isinstance(data, dict) or not isinstance(data.get("jobs"), list):
-            break  # (what was read stands: a Jibe site's postings aren't forgotten for missing from a read)
-        jobs += jibe.jobs_from(data, host)
-    return _dedupe_jobs(jobs)
+    jobs = jibe.read_site(urlparse(url).netloc.lower(), get_json)
+    return None if jobs is None else _dedupe_jobs(jobs)
+
+
+# Rippling boards being caught up this run (their first check): url -> which titles need a date (set by run())
+_RIPPLING_DATING: dict = {}
 
 
 def fetch_rippling_jobs(url: str, get_json=None) -> list[dict] | None:
-    """https://ats.rippling.com/api/v2/board/<board>/jobs?... : a Rippling board, whole (boards/rippling.py)."""
+    """https://ats.rippling.com/api/v2/board/<board>/jobs?... : a Rippling board, whole (boards/rippling.py).
+    The list gives no dates: at a board's first check (_RIPPLING_DATING), each posting the board's
+    filters would keep gets its own date from its page, so the catch-up can email the recent ones."""
     get_json = get_json or (lambda u, params=None: _get_json(u, params))
     board = rippling.board_of(url)
     data = get_json(url) if board else None
@@ -1105,6 +1101,11 @@ def fetch_rippling_jobs(url: str, get_json=None) -> list[dict] | None:
         if not isinstance(more, dict):
             return None  # (not the whole board: a job missing from a part read would be forgotten, then emailed again)
         jobs += rippling.jobs_from(more)[0]
+    wanted = _RIPPLING_DATING.get(url)
+    for job in [j for j in jobs if wanted and wanted(j)][:rippling.MAX_DATED]:
+        posted = rippling.created_on(get_json(rippling.detail_url(board, job["url"])))
+        if posted:
+            job["posted"] = posted
     return _dedupe_jobs(jobs)
 
 
@@ -1662,11 +1663,13 @@ def _board_get_json(etag: str | None, outcome: dict, user_agent: str | None = No
     def get(url, params=None, timeout=30):
         first = "status" not in outcome
         headers = {**base, "If-None-Match": etag} if etag and first else base
+        get.last_status = None  # (this request's status, for a reader that needs it: boards/jibe.py)
         try:
             resp = requests.get(url, params=params, headers=headers, timeout=timeout)
         except Exception as exc:
             outcome.setdefault("status", f"error ({exc.__class__.__name__})")
             return None
+        get.last_status = resp.status_code
         outcome.setdefault("status", resp.status_code)
         if resp.status_code in (403, 429):
             outcome["throttled"] = True
@@ -1821,7 +1824,8 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
                        if t.get("url") and t.get("mode") != "feed" and not oracle.knows_links_of(t["url"])} - {""}
     skip |= _greenhouse_boards_yours_cover(targets, state, meta)
     skip |= _jibe_sites_yours_cover(targets, known)
-    skip |= jibe.same_client(known, skip, set(meta.get("missing") or {}))  # (one company's two Jibe addresses: read once)
+    twins = jibe.same_client(known, skip, set(meta.get("missing") or {}))  # (one company's two Jibe addresses: read once)
+    skip |= twins
     skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
     tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
     skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
@@ -1847,13 +1851,22 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
 
     workday_rules = {"_new_within_days": workday.NEW_WITHIN_DAYS, "_retention": workday.RETENTION,
                      "_retention_reported": workday.REPORTED_RETENTION}
-    jibe_rules = {"_new_within_days": jibe.NEW_WITHIN_DAYS, "_retention": jibe.RETENTION,  # (only the newest are read)
-                  "_retention_reported": jibe.REPORTED_RETENTION}
+    def jibe_rules(info):
+        """Only a Jibe site's newest are read: a posting seen for the first time is new if it went up in the last
+        week, or since the day before the site's last good read (after an outage). The company's other sites
+        skipped for this one ("_twins") are its own for the queue and for _drop_repeats."""
+        days = float(jibe.NEW_WITHIN_DAYS)
+        read_at = jibe._when(info.get("read_at"))
+        if read_at:
+            days = max(days, (datetime.now(timezone.utc) - read_at).total_seconds() / 86400 + 1)
+        client = info.get("client")
+        return {"_new_within_days": days, "_retention": jibe.RETENTION, "_retention_reported": jibe.REPORTED_RETENTION,
+                "_twins": sorted(known[k]["url"] for k in twins if client and known[k].get("client") == client)}
     return [{"name": info["name"], "url": info["url"], "mode": "api", "_board": True, "_board_key": key,
              "_tech_titles": tech, "_skip_titles": skip_titles, "_level_titles": level, "_compact": True, "_quiet": True,
              "_catch_up_since": catch_up(info), "_recent_since": since,
              **(workday_rules if _board_platform(info["url"]) == "workday" else {}),
-             **(jibe_rules if _board_platform(info["url"]) == "jibe" else {}),
+             **(jibe_rules(info) if _board_platform(info["url"]) == "jibe" else {}),
              **({"_forget_gone_days": FORGET_GONE_DAYS} if _board_platform(info["url"]) in FORGET_GONE_PLATFORMS else {})}
             for key, info in sorted(known.items(), key=lambda kv: (str(kv[1].get("name")).lower(), kv[0]))
             if key not in skip and _board_platform(info["url"]) in platforms
@@ -1870,8 +1883,9 @@ def _jibe_sites_yours_cover(targets: list[dict], known: dict) -> set[str]:
     its classic iCIMS portals or another domain it links its postings on is matched with it, so
     both are read; a site not read yet is read once when an entry with its name reads a classic
     portal (which portals are its is learned from that read)."""
-    sites = {key: {urlparse(info["url"]).netloc.lower(), *jibe._strings(info.get("portals")), *jibe._strings(info.get("aliases"))}
-             for key, info in known.items() if isinstance(info, dict) and _board_platform(info.get("url", "")) == "jibe"}
+    jibes = {key: info for key, info in known.items() if isinstance(info, dict) and _board_platform(info.get("url", "")) == "jibe"}
+    site_hosts = {urlparse(info["url"]).netloc.lower() for info in jibes.values()}
+    sites = {key: jibe.addresses(info, site_hosts) for key, info in jibes.items()}
     skip = set()
     for t in targets:
         if not t.get("url") or t.get("mode") in ("feed", "boards") or t.get("_board"):
@@ -3464,6 +3478,9 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
         log.info(f"Checking {len(to_fetch)} of {sum(1 for b in board_targets if _board_platform(b['url']) != 'workday')} company job boards"
                  f"{'' if boards_now else ' (new ones, or catching up)'}...")
         catching_up = {b["url"] for b in to_fetch if b["_catch_up_since"]}
+        _RIPPLING_DATING.clear()
+        _RIPPLING_DATING.update({b["url"]: (lambda job, b=b: _title_wanted(b, job, role_patterns)) for b in to_fetch
+                                 if b["_catch_up_since"] and _board_platform(b["url"]) == "rippling"})
         fetched.update(fetch_boards(to_fetch, {u: e for u, e in board_meta["etags"].items()
                                                if u in state and u not in catching_up}))
         try:
@@ -3474,13 +3491,16 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
     # and no "browser" entry (fetch_browser) can be read while it is open (boards/browser.py).
     targets = _workday_last(targets + board_targets)
     board_urls = {b["url"] for b in board_targets}
+    # (a company's other Jibe site, skipped for the one read: what it recorded without showing you doesn't hide a
+    # posting either, and what it queued is still this config's)
+    seen_board_urls = board_urls | {u for b in board_targets for u in b.get("_twins") or ()}
     siblings = _sibling_urls(targets)
     # The postings waiting to be emailed are shared with any other config using the same
     # state.json; each config takes only those found by its own targets: the same link, or
     # (for postings this config file queued) the same name, so a posting still waiting when an
     # entry's link is edited (or one of a company's several entries is removed) is still emailed.
     this_config = _active_config_file
-    own_urls = {t.get("url") for t in targets}
+    own_urls = {t.get("url") for t in targets} | seen_board_urls
     own_names = {_entry_key(t.get("name")) for t in targets if t.get("url")} - {""}
     new_matches: list[dict] = []
     new_left_out: list[dict] = []
@@ -3549,10 +3569,10 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
             given = {u: state.get(u) for u in feed_urls | board_urls | {url}}
             new_jobs, left_out = (_drop_repeats(jobs, given, url, feed_urls, board_urls, match_titles=False) for jobs in (new_jobs, left_out))
         if is_feed:
-            new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls, board_urls) for jobs in (new_jobs, left_out))
+            new_jobs, left_out = (_drop_repeats(jobs, state, url, feed_urls, seen_board_urls) for jobs in (new_jobs, left_out))
         elif is_board:
             # A board's left-out postings aren't listed (see below), so only its matches are checked.
-            new_jobs, left_out = _drop_repeats(new_jobs, state, url, feed_urls, board_urls, match_titles=False), []
+            new_jobs, left_out = _drop_repeats(new_jobs, state, url, feed_urls, seen_board_urls, match_titles=False), []
         elif siblings.get(url):
             found = len(new_jobs) + len(left_out)
             # Another entry listing a posting as left out doesn't stop this one emailing it.

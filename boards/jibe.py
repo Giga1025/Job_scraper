@@ -2,27 +2,36 @@
 jobs.keysight.com, careers.rivian.com, careers.garmin.com, careers.jhuapl.edu, careers.viasat.com,
 careers.docusign.com...; about 130 sites in the lists, linked like careers.amd.com/jobs/85806?icims=1).
 
-Every Jibe site serves its postings through one public JSON API at its root (api_url): the newest
-LIMIT a page, newest first (sortBy=posted_date), with the title, the iCIMS job id, every place's
-country and the posting date. Only the newest are read (a big company lists thousands): the first
-page, and the next while the last posting on a page went up in the last DEEP_DAYS days (a site
-that posts a hundred a day, like Schneider Electric's), up to MAX_PAGES. So a posting missing from
-a read may still be open; it isn't forgotten for that (job_monitor.FORGET_GONE_PLATFORMS). And
-a posting seen for the first time is new only if it went up in the last NEW_WITHIN_DAYS days
-(job_monitor.check_target, "_new_within_days"), so an older one that moves up into the newest
-(when newer ones close) isn't emailed as new; a site remembers the RETENTION latest postings it
-didn't email you and, besides those, the REPORTED_RETENTION latest it did.
+Every Jibe site serves its postings through one public JSON API at its root (api_url): LIMIT a
+page, newest first (sortBy=posted_date), with the title, the iCIMS job id, every place's country
+and the posting date (read_site). Only the newest are read (a big company lists thousands): the
+first page, and the next while the last posting on a page went up in the last DEEP_DAYS days (a
+site that posts a hundred a day, like Schneider Electric's), or since a day before the site's last
+good read (after an outage), up to MAX_PAGES. A site that can't give its newest first (AVI-SPL's
+API refuses the sort; Bowman's ignores it, oldest first) is read in its own order instead, up to
+MAX_PAGES pages (all of a site with up to MAX_PAGES * LIMIT postings).
+
+So a posting missing from a read may still be open; it isn't forgotten for that
+(job_monitor.FORGET_GONE_PLATFORMS). And a posting seen for the first time is new only if it went
+up in the last NEW_WITHIN_DAYS days, or since the day before the site's last good read
+(job_monitor.check_target, "_new_within_days"), so an older one that moves up into the newest (when
+newer ones close) isn't emailed as new. When a posting went up is the later of its posting date
+and the day it reached the site (a site moving to Jibe loads its open postings with their old
+dates). A site remembers the RETENTION latest postings it didn't email you and, besides those, the
+REPORTED_RETENTION latest it did.
 
 A site is one iCIMS customer (its "client", read from the API): one company can have two sites
 (careers.ice.com and ice.jibeapply.com), and a site's postings are also on the customer's classic
-iCIMS portals (careers-amd.icims.com, global-external-amd.icims.com...), with the same job id, and
-some sites link their postings on another domain of the company's (Schneider Electric's
-se.jibeapply.com on careers.se.com). So a posting is known by (client, job id) on any of those
-addresses: learn() notes, from each read, which addresses belong to which client, and job_key()
-uses that (an address not learned yet: by its host). job_monitor reads one site per client
-(same_client: one that can be read)."""
+iCIMS portals (careers-amd.icims.com, global-external-amd.icims.com...), with the same job id. Some
+sites name another domain as their postings' address (Schneider Electric's se.jibeapply.com names
+careers.se.com; H-E-B's careers.heb.com names careers.hrblock.com, H&R Block's own site, where they
+aren't found): the link emailed is always the site's own, which opens the posting, and another
+domain is only noted (not one that is another Jibe site in the registry). So a posting is known by
+(client, job id) on any of those addresses: learn() notes, from each read, which addresses belong to
+which client, and job_key() uses that (an address not learned yet: by its host). job_monitor reads
+one site per client (same_client: one that can be read)."""
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlparse
 
 from .common import posted_at
@@ -38,12 +47,18 @@ _JOB_PATH = re.compile(r"^/(?:[^/]+/)*jobs/(\d+)/?$")
 _BOARD_PATH = re.compile(r"^/(?:[^/]+/)*jobs/?$")  # (the site's search page: careers.amd.com/careers-home/jobs)
 _API_PATH = "/api/jobs"
 _ICIMS_HOST = re.compile(r"^[a-z0-9-]+\.icims\.com$")
+# Places a posting may name as its country that are in the US for the US filter (as on Workday).
+_US_PLACES = {"united states", "united states of america", "usa", "us", "puerto rico", "guam", "american samoa",
+              "united states virgin islands", "virgin islands, u.s.", "u.s. virgin islands", "northern mariana islands"}
 
 # host -> client (or the site's host, if its client isn't known), for every address learned: Jibe
-# sites, the classic iCIMS portals behind them, and the other domains their postings are linked on
+# sites, the classic iCIMS portals behind them, and the other domains they name for their postings
 _CLIENTS: dict[str, str] = {}
 _SITES: set[str] = set()  # the hosts of the Jibe sites in the registry (their links needn't say icims=1)
-_ALIASES: set[str] = set()  # other domains a site links its postings on (keys only: not sites to read)
+_ALIASES: set[str] = set()  # other domains a site names for its postings (keys only: not sites to read)
+_UNSORTED: set[str] = set()  # sites read in their own order (their API can't give newest first)
+_READ_AT: dict[str, datetime] = {}  # host -> the site's last good read
+_FOUND_UNSORTED: set[str] = set()  # sites found this run to list oldest first (learn() notes them)
 
 
 def _parse(link):
@@ -55,6 +70,14 @@ def _parse(link):
 
 def _host(parsed) -> str:
     return parsed.netloc.lower().split("@")[-1].split(":")[0] if parsed else ""
+
+
+def _when(value) -> datetime | None:
+    try:
+        when = datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
 
 
 def site_of(link) -> str | None:
@@ -84,17 +107,58 @@ def api_url(host: str, page: int = 1) -> str:
     return f"https://{host}{_API_PATH}?page={page}&limit={LIMIT}&sortBy=posted_date&descending=true&internal=false"
 
 
-def read_further(jobs: list[dict], page_rows: int) -> bool:
+def unsorted_url(host: str, page: int = 1) -> str:
+    """A page of a site's postings in the site's own order."""
+    return f"https://{host}{_API_PATH}?page={page}&limit={LIMIT}&internal=false"
+
+
+def read_further(jobs: list[dict], page_rows: int, since: datetime | None = None) -> bool:
     """Whether to read the next page after one with page_rows rows, whose postings (in order) end
-    with jobs[-1]: when the page was full and its last posting went up in the last DEEP_DAYS days."""
-    if page_rows < LIMIT or not jobs or not jobs[-1].get("posted"):
+    with jobs[-1]: when the page was full and its last posting went up since `since` (by default
+    DEEP_DAYS days ago)."""
+    if page_rows < LIMIT or not jobs:
         return False
-    try:
-        when = datetime.fromisoformat(jobs[-1]["posted"])
-    except ValueError:
-        return False
-    when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
-    return (datetime.now(timezone.utc) - when).total_seconds() < DEEP_DAYS * 86400
+    when = _when(jobs[-1].get("listed"))
+    since = since or datetime.now(timezone.utc) - timedelta(days=DEEP_DAYS)
+    return bool(when) and when >= since
+
+
+def _usable(data) -> bool:
+    return isinstance(data, dict) and isinstance(data.get("jobs"), list)
+
+
+def _oldest_first(jobs: list[dict]) -> bool:
+    dated = [w for w in (_when(j.get("listed")) for j in jobs) if w]
+    return len(dated) >= 2 and dated[0] < dated[-1]
+
+
+def read_site(host: str, get_json) -> list[dict] | None:
+    """A site's newest postings (see the module's notes), or None if it couldn't be read (or, when
+    get_json says so with last_status 304, it hasn't changed)."""
+    unsorted = host in _UNSORTED
+    data = get_json(unsorted_url(host) if unsorted else api_url(host))
+    if data is None and getattr(get_json, "last_status", None) == 304:
+        return None
+    jobs = jobs_from(data, host) if _usable(data) else None
+    if not unsorted and (jobs is None or _oldest_first(jobs)):
+        if jobs is not None:
+            _FOUND_UNSORTED.add(host)  # (Bowman: the sort is ignored; from now on read in the site's own order)
+        unsorted = True  # (AVI-SPL: the sort is refused, every time)
+        data = get_json(unsorted_url(host))
+        jobs = jobs_from(data, host) if _usable(data) else None
+    if jobs is None:
+        return None
+    since = datetime.now(timezone.utc) - timedelta(days=DEEP_DAYS)
+    if host in _READ_AT:
+        since = min(since, _READ_AT[host] - timedelta(days=1))  # (after an outage: back to the last good read)
+    page = 1
+    while page < MAX_PAGES and len(data["jobs"]) >= LIMIT and (unsorted or read_further(jobs, len(data["jobs"]), since)):
+        page += 1
+        data = get_json((unsorted_url if unsorted else api_url)(host, page))
+        if not _usable(data):
+            break  # (what was read stands: a Jibe site's postings aren't forgotten for missing from a read)
+        jobs += jobs_from(data, host)
+    return jobs
 
 
 def is_api_url(url) -> bool:
@@ -107,8 +171,8 @@ def page_url(url) -> str:
 
 
 def job_key(link) -> tuple | None:
-    """("jibe", client or host, job id) for a posting on a Jibe site or a classic iCIMS portal
-    learned to belong to one (careers-amd.icims.com/jobs/101944/job), else None."""
+    """("jibe", client or host, job id) for a posting on a Jibe site, a classic iCIMS portal or
+    another domain learned to belong to one (careers-amd.icims.com/jobs/101944/job), else None."""
     if "/jobs/" not in str(link or ""):  # (most links: quickly)
         return None
     parsed = _parse(link)
@@ -136,41 +200,65 @@ def _strings(values) -> list[str]:
 def learn(known: dict, fetched: dict | None = None):
     """Note in the registry (known: {board key: info}), from this run's reads (fetched: {api url:
     (status, jobs, etag)}), each Jibe site's client, the classic portals its postings apply on, the
-    other domains it links them on, and whether its last read worked ("last_read", for
-    same_client); and load every address learned so far for job_key()."""
+    other domains it names for them, whether its last read worked ("last_read", for same_client)
+    and when its last good read was ("read_at"), and whether it lists oldest first ("unsorted");
+    and load all of it for job_key() and read_site()."""
+    now = datetime.now(timezone.utc)
     by_url = {info.get("url"): info for info in known.values() if isinstance(info, dict) and isinstance(info.get("url"), str)}
+    sites = [info for info in known.values() if isinstance(info, dict) and is_api_url(info.get("url"))]
+    site_hosts = {_host(_parse(info["url"])) for info in sites}
     for url, (status, jobs, _) in (fetched or {}).items():
         info = by_url.get(url)
         if info is None or not is_api_url(url):
             continue
         info["last_read"] = "ok" if status in ("ok", "unchanged") else "failed"
+        if status in ("ok", "unchanged"):
+            info["read_at"] = now.isoformat(timespec="seconds")
         if status != "ok":
             continue
         host = _host(_parse(url))
+        if host in _FOUND_UNSORTED:
+            info["unsorted"] = True
         client = client_of(url, jobs)
         if client:
             info["client"] = client
         portals = {h for j in jobs for h in j.get("apply_hosts") or ()} | set(_strings(info.get("portals")))
-        aliases = {_host(_parse(j.get("url"))) for j in jobs} - {host, ""} | set(_strings(info.get("aliases")))
+        aliases = {h for j in jobs for h in j.get("named_hosts") or ()} | set(_strings(info.get("aliases")))
+        aliases -= site_hosts  # (another site's own address is that site's: H-E-B names H&R Block's)
         if portals:
             info["portals"] = sorted(portals)[:20]
         if aliases:
             info["aliases"] = sorted(aliases)[:10]
+        else:
+            info.pop("aliases", None)
+    _FOUND_UNSORTED.clear()
     _CLIENTS.clear()
     _SITES.clear()
     _ALIASES.clear()
-    for info in known.values():
-        if isinstance(info, dict) and is_api_url(info.get("url")):
-            host = _host(_parse(info["url"]))
-            _SITES.add(host)
-            who = str(info["client"]) if info.get("client") else host
-            if info.get("client"):
-                _CLIENTS[host] = who
-            for portal in _strings(info.get("portals")):
-                _CLIENTS.setdefault(portal, who)
-            for alias in _strings(info.get("aliases")):
-                _ALIASES.add(alias)
-                _CLIENTS.setdefault(alias, who)
+    _UNSORTED.clear()
+    _READ_AT.clear()
+    _SITES.update(site_hosts)
+    for info in sites:
+        host = _host(_parse(info["url"]))
+        who = str(info["client"]) if info.get("client") else host
+        if info.get("client"):
+            _CLIENTS[host] = who
+        if info.get("unsorted") is True:
+            _UNSORTED.add(host)
+        if _when(info.get("read_at")):
+            _READ_AT[host] = _when(info["read_at"])
+        for portal in _strings(info.get("portals")):
+            _CLIENTS.setdefault(portal, who)
+        for alias in addresses(info, site_hosts) - {host} - set(_strings(info.get("portals"))):
+            _ALIASES.add(alias)
+            _CLIENTS.setdefault(alias, who)
+
+
+def addresses(info: dict, site_hosts) -> set[str]:
+    """Every address a site's postings are on: its own host, its classic portals and the other
+    domains it names (not one that is another site in the registry: site_hosts)."""
+    host = _host(_parse(info.get("url")))
+    return {host} | set(_strings(info.get("portals"))) | (set(_strings(info.get("aliases"))) - set(site_hosts))
 
 
 def same_client(known: dict, skipped=frozenset(), missing=frozenset()) -> set[str]:
@@ -203,10 +291,20 @@ def _posted(value) -> str | None:
         return None
 
 
+def _country(place: dict) -> str | None:
+    """A place's country by its name (its code can be wrong: Viasat codes US places "FM", "PR" or
+    "ZA"); a US territory counts as the US."""
+    name = str(place.get("country") or "").strip()
+    return "United States" if name.lower() in _US_PLACES else name or None
+
+
 def jobs_from(data, host: str) -> list[dict]:
     """The postings in an API answer: title, link (the site's own page), places and their
-    countries (the main one and every other), when it went up, and the site's client and the
-    classic iCIMS portals it applies on (for learn())."""
+    countries (the main one and every other: none if a place doesn't name its country, so the US
+    filter reads the places), when it went up ("posted": the later of its posting date and the day
+    it reached the site; "listed": the posting date, the API's order), and the site's client, the
+    classic iCIMS portals it applies on and any other domain it names as the posting's address
+    (for learn())."""
     items = data.get("jobs") if isinstance(data, dict) else None
     jobs = []
     for item in items if isinstance(items, list) else []:
@@ -215,21 +313,31 @@ def jobs_from(data, host: str) -> list[dict]:
             continue
         number = str(job.get("req_id") or job.get("slug") or "").strip()
         meta = job.get("meta_data") if isinstance(job.get("meta_data"), dict) else {}
-        url = str(meta.get("canonical_url") or "").strip() or (
+        canonical = str(meta.get("canonical_url") or "").strip()
+        named = _host(_parse(canonical)) if canonical else ""
+        # (the site's own link: one on another domain may not open the posting, like H-E-B's on careers.hrblock.com)
+        url = canonical if canonical and (named == host or not number.isdigit()) else (
             f"https://{host}/jobs/{number}?lang={job.get('language') or 'en-us'}" if number.isdigit() else "")
         if not url:
             continue
         others = [o for o in job.get("additional_locations") or [] if isinstance(o, dict)]
-        # (the country's name first: some codes are wrong, like Viasat's "FM" for "United States")
-        countries = [str(c).strip() for c in [job.get("country") or job.get("country_code")]
-                     + [o.get("country") or o.get("country_code") for o in others] if c and str(c).strip()]
+        countries = [_country(p) for p in [job] + others]
+        places = [str(job.get("full_location") or job.get("short_location") or "").strip()] + [
+            ", ".join(str(o[k]).strip() for k in ("city", "state", "country") if o.get(k)) or str(o.get("location_name") or "").strip()
+            for o in others]
         apply_host = _host(_parse(job.get("apply_url")))
+        named_path = (_parse(canonical).path.rstrip("/") or "/") if named else ""
         out = {"title": str(job["title"]).strip()[:200], "url": url,
-               "location": str(job.get("full_location") or job.get("short_location") or "").strip()[:300],
-               "countries": list(dict.fromkeys(countries)),
+               "location": "; ".join(dict.fromkeys(p for p in places if p))[:300],
+               "countries": [] if None in countries else list(dict.fromkeys(countries)),
                "client": str(job.get("client_code") or meta.get("client_code") or "").strip() or None,
-               "apply_hosts": [apply_host] if _ICIMS_HOST.match(apply_host) else []}
-        if _posted(job.get("posted_date")):
-            out["posted"] = _posted(job.get("posted_date"))
+               "apply_hosts": [apply_host] if _ICIMS_HOST.match(apply_host) else [],
+               "named_hosts": [named] if named and named != host and _JOB_PATH.match(named_path) else []}
+        listed = _posted(job.get("posted_date"))
+        shown = [w for w in (_when(listed), _when(posted_at(job.get("create_date")))) if w]
+        if listed:
+            out["listed"] = listed
+        if shown:
+            out["posted"] = max(shown).isoformat()
         jobs.append(out)
     return jobs

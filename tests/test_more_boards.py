@@ -10,13 +10,16 @@ sys.path.insert(0, str(REPO_DIR))
 
 from boards import gem, jibe, rippling  # noqa: E402
 
+COUNTRY_NAMES = {"US": "United States", "IN": "India", "CA": "Canada", "GB": "United Kingdom", "MY": "Malaysia"}
+
 
 def jibe_item(number, title="Software Engineer", posted="2026-11-20T21:14:00+0000", country="US", others=(),
-              client="acme", canonical=None, apply_host="careers-acme.icims.com", country_name=None):
-    """One posting as a Jibe site's API gives it."""
-    return {"data": {"title": title, "req_id": str(number), "slug": str(number), "posted_date": posted,
-                     "country_code": country, "country": country_name,
-                     "additional_locations": [{"country_code": c} for c in others] or None,
+              client="acme", canonical=None, apply_host="careers-acme.icims.com", country_name="", created=None):
+    """One posting as a Jibe site's API gives it (a country's name from its code unless given; None: no name)."""
+    return {"data": {"title": title, "req_id": str(number), "slug": str(number), "posted_date": posted, "create_date": created,
+                     "country_code": country, "country": COUNTRY_NAMES.get(country) if country_name == "" else country_name,
+                     "additional_locations": [{"country_code": c, "country": COUNTRY_NAMES.get(c), "city": f"City {c}"}
+                                              for c in others] or None,
                      "full_location": f"Somewhere, {country}", "apply_url": f"https://{apply_host}/jobs/{number}/login",
                      "client_code": client, "language": "en-us", "meta_data": {"canonical_url": canonical}}}
 
@@ -81,14 +84,33 @@ class JibeTests(unittest.TestCase):
         known = {"se": {"url": api, "name": "Schneider Electric"}}
         jobs = jibe.jobs_from({"jobs": [jibe_item(5, client="se", canonical="https://careers.se.com/jobs/5?lang=en-us")]},
                               "se.jibeapply.com")
-        self.assertEqual(jobs[0]["url"], "https://careers.se.com/jobs/5?lang=en-us")
-        self.assertIsNone(jibe.job_key(jobs[0]["url"]))  # (not learned yet)
+        self.assertEqual(jobs[0]["url"], "https://se.jibeapply.com/jobs/5?lang=en-us")  # (the site's own link: it opens the posting)
+        self.assertEqual(jobs[0]["named_hosts"], ["careers.se.com"])
+        self.assertIsNone(jibe.job_key("https://careers.se.com/jobs/5?lang=en-us"))  # (not learned yet)
         jibe.learn(known, {api: ("ok", jobs, None)})
         self.assertEqual(known["se"]["aliases"], ["careers.se.com"])
-        for link in (jobs[0]["url"], "https://se.jibeapply.com/jobs/5", "https://careers.se.com/careers-home/jobs/5"):
+        self.assertEqual(jibe.addresses(known["se"], {"se.jibeapply.com"}), {"se.jibeapply.com", "careers.se.com", "careers-acme.icims.com"})
+        for link in (jobs[0]["url"], "https://careers.se.com/jobs/5?lang=en-us", "https://careers.se.com/careers-home/jobs/5"):
             self.assertEqual(jibe.job_key(link), ("jibe", "se", "5"), link)
         self.assertIsNone(jibe.site_of("https://careers.se.com/jobs/6"))  # (a domain for keys, not a site to read)
         self.assertIsNone(jibe.job_key("https://careers.se.com/about"))
+
+    def test_a_domain_that_is_another_sites_isnt_learned_as_this_ones(self):
+        # H-E-B's careers.heb.com names careers.hrblock.com (H&R Block's own site) for its postings, where they aren't found.
+        heb, hrb = jibe.api_url("careers.heb.com"), jibe.api_url("careers.hrblock.com")
+        known = {"heb": {"url": heb, "name": "H-E-B", "aliases": ["careers.hrblock.com"]}, "hrb": {"url": hrb, "name": "H&R Block"}}
+        jobs = jibe.jobs_from({"jobs": [jibe_item(254650, client="heb", canonical="https://careers.hrblock.com/jobs/254650?lang=en-us",
+                                                  apply_host="jobs-heb.icims.com")]}, "careers.heb.com")
+        self.assertEqual(jobs[0]["url"], "https://careers.heb.com/jobs/254650?lang=en-us")  # (the link that opens it)
+        jibe.learn(known, {heb: ("ok", jobs, None), hrb: ("ok", jibe.jobs_from({"jobs": [jibe_item(76987, client="hrblock")]},
+                                                                                 "careers.hrblock.com"), None)})
+        self.assertNotIn("aliases", known["heb"])  # (the one saved earlier is dropped too)
+        self.assertEqual(jibe.job_key("https://careers.heb.com/jobs/254650?icims=1"), ("jibe", "heb", "254650"))
+        self.assertEqual(jibe.job_key("https://careers.hrblock.com/jobs/254650"), ("jibe", "hrblock", "254650"))
+        self.assertEqual(jibe.addresses(known["heb"], {"careers.heb.com", "careers.hrblock.com"}), {"careers.heb.com", "jobs-heb.icims.com"})
+        # A canonical link that isn't a posting's page isn't a domain for its postings either.
+        odd = jibe.jobs_from({"jobs": [jibe_item(5, canonical="https://elsewhere.com/careers-home")]}, "careers.acme.com")
+        self.assertEqual((odd[0]["url"], odd[0]["named_hosts"]), ("https://careers.acme.com/jobs/5?lang=en-us", []))
 
     def test_one_site_per_customer_one_that_can_be_read(self):
         sites = {k: jibe.api_url(h) for k, h in (("a", "acme.jibeapply.com"), ("b", "careers.acme.com"), ("c", "jobs.acme.com"))}
@@ -125,31 +147,94 @@ class JibeTests(unittest.TestCase):
     def test_postings_are_read_with_every_country_and_their_date(self):
         data = {"jobs": [jibe_item(1, "Software Engineer I", country="IN", others=("US",)),
                          jibe_item(6, "Embedded Software Engineer", country="FM", country_name="United States"),  # (Viasat's)
+                         jibe_item(7, "Policy Counsel", country="ZA", country_name=None),  # (Viasat's "Remote - Virginia": no name)
+                         jibe_item(10, "Firmware Engineer", country="IN", others=("ZZ",)),  # (one of its places names no country)
+                         jibe_item(8, "Network Engineer", country="PR", country_name="Puerto Rico"),
+                         jibe_item(9, "Bulk-loaded Engineer", posted="2026-09-01T10:00:00+0000", created="2026-11-19T08:00:00Z"),
                          jibe_item(2, "Data Engineer", posted="November 20, 2026", canonical="https://careers.acme.com/jobs/2?lang=fr-fr"),
                          jibe_item(3, " "), {"data": None}, "junk",
                          jibe_item("", "No id"), jibe_item(4, "Late", posted="soon", apply_host="apply.example.com")],
                 "totalCount": 9}
         jobs = jibe.jobs_from(data, "careers.acme.com")
         self.assertEqual([(j["title"], j["url"], j["countries"], j.get("posted")) for j in jobs], [
-            ("Software Engineer I", "https://careers.acme.com/jobs/1?lang=en-us", ["IN", "US"], "2026-11-20T21:14:00+00:00"),
+            ("Software Engineer I", "https://careers.acme.com/jobs/1?lang=en-us", ["India", "United States"], "2026-11-20T21:14:00+00:00"),
             ("Embedded Software Engineer", "https://careers.acme.com/jobs/6?lang=en-us", ["United States"], "2026-11-20T21:14:00+00:00"),
-            ("Data Engineer", "https://careers.acme.com/jobs/2?lang=fr-fr", ["US"], "2026-11-20T00:00:00+00:00"),
-            ("Late", "https://careers.acme.com/jobs/4?lang=en-us", ["US"], None)])
-        self.assertEqual([j["apply_hosts"] for j in jobs], [["careers-acme.icims.com"]] * 3 + [[]])
+            ("Policy Counsel", "https://careers.acme.com/jobs/7?lang=en-us", [], "2026-11-20T21:14:00+00:00"),
+            ("Firmware Engineer", "https://careers.acme.com/jobs/10?lang=en-us", [], "2026-11-20T21:14:00+00:00"),
+            ("Network Engineer", "https://careers.acme.com/jobs/8?lang=en-us", ["United States"], "2026-11-20T21:14:00+00:00"),
+            # (it reached the site long after its posting date: it went up then; the API's order is by the posting date)
+            ("Bulk-loaded Engineer", "https://careers.acme.com/jobs/9?lang=en-us", ["United States"], "2026-11-19T08:00:00+00:00"),
+            ("Data Engineer", "https://careers.acme.com/jobs/2?lang=fr-fr", ["United States"], "2026-11-20T00:00:00+00:00"),
+            ("Late", "https://careers.acme.com/jobs/4?lang=en-us", ["United States"], None)])
+        self.assertEqual(jobs[5]["listed"], "2026-09-01T10:00:00+00:00")
+        self.assertEqual(jobs[0]["location"], "Somewhere, IN; City US, United States")
+        self.assertEqual(jobs[3]["location"], "Somewhere, IN; City ZZ")
+        self.assertEqual([j["apply_hosts"] for j in jobs], [["careers-acme.icims.com"]] * 7 + [[]])
         self.assertEqual(jobs[0]["client"], "acme")
         self.assertEqual(jibe.jobs_from({"jobs": None}, "x"), [])
         self.assertEqual(jibe.jobs_from(None, "x"), [])
 
     def test_the_next_page_is_read_only_for_a_busy_site(self):
         now = datetime.now(timezone.utc)
-        full = [{"posted": (now - timedelta(hours=1)).isoformat()}] * jibe.LIMIT
+        full = [{"listed": (now - timedelta(hours=1)).isoformat()}] * jibe.LIMIT
+        old = full[:-1] + [{"listed": (now - timedelta(days=jibe.DEEP_DAYS + 1)).isoformat()}]
         self.assertTrue(jibe.read_further(full, jibe.LIMIT))
         self.assertFalse(jibe.read_further(full, jibe.LIMIT - 1))  # (the last page)
-        self.assertFalse(jibe.read_further(full[:-1] + [{"posted": (now - timedelta(days=jibe.DEEP_DAYS + 1)).isoformat()}], jibe.LIMIT))
+        self.assertFalse(jibe.read_further(old, jibe.LIMIT))
+        self.assertTrue(jibe.read_further(old, jibe.LIMIT, since=now - timedelta(days=jibe.DEEP_DAYS + 2)))  # (after an outage)
         self.assertFalse(jibe.read_further(full[:-1] + [{}], jibe.LIMIT))
-        self.assertFalse(jibe.read_further(full[:-1] + [{"posted": "soon"}], jibe.LIMIT))
+        self.assertFalse(jibe.read_further(full[:-1] + [{"listed": "soon"}], jibe.LIMIT))
         self.assertFalse(jibe.read_further([], jibe.LIMIT))
-        self.assertTrue(jibe.read_further(full[:-1] + [{"posted": now.replace(tzinfo=None).isoformat()}], jibe.LIMIT))
+        self.assertTrue(jibe.read_further(full[:-1] + [{"listed": now.replace(tzinfo=None).isoformat()}], jibe.LIMIT))
+
+    def test_a_site_that_cant_list_newest_first_is_read_in_its_own_order(self):
+        def page(numbers, posted):
+            return {"jobs": [jibe_item(n, posted=p) for n, p in zip(numbers, posted)], "totalCount": 250}
+        day = lambda d: (datetime.now(timezone.utc) - timedelta(days=d)).strftime("%Y-%m-%dT%H:%M:00+0000")
+        # Bowman: the sort is ignored (oldest first); its own order is newest first.
+        oldest = page(range(100), [day(300 - n) for n in range(100)])
+        own = {1: page(range(1000, 1100), [day(n / 50) for n in range(100)]), 2: page(range(2000, 2100), [day(5)] * 100),
+               3: page(range(3000, 3050), [day(9)] * 50)}
+        asked = []
+
+        def bowman(url, params=None):
+            asked.append(url)
+            n = int(url.split("page=")[1].split("&")[0])
+            return oldest if "sortBy" in url else own.get(n)
+        self.assertEqual(len(jibe.read_site("careers.bowman.com", bowman)), 250)
+        self.assertEqual(asked, [jibe.api_url("careers.bowman.com")] + [jibe.unsorted_url("careers.bowman.com", n) for n in (1, 2, 3)])
+        known = {"b": {"url": jibe.api_url("careers.bowman.com")}}
+        jibe.learn(known, {known["b"]["url"]: ("ok", [], None)})
+        self.assertIs(known["b"]["unsorted"], True)
+        asked.clear()
+        jibe.read_site("careers.bowman.com", bowman)  # (from then on in its own order at once: its ETag is that page's)
+        self.assertEqual(asked[0], jibe.unsorted_url("careers.bowman.com"))
+        # AVI-SPL: the sort is refused; read in its own order every time (it may be a passing error), up to MAX_PAGES.
+        asked.clear()
+        refused = lambda url, params=None: (asked.append(url), None if "sortBy" in url else own.get(int(url.split("page=")[1].split("&")[0])))[1]
+        self.assertEqual(len(jibe.read_site("careers.avispl.com", refused)), 250)
+        jibe.learn({"a": {"url": jibe.api_url("careers.avispl.com")}}, {jibe.api_url("careers.avispl.com"): ("ok", [], None)})
+        self.assertNotIn("careers.avispl.com", jibe._UNSORTED)
+        # Unchanged since the last read (304): nothing more is asked.
+        asked.clear()
+
+        def unchanged(url, params=None):
+            asked.append(url)
+            return None
+        unchanged.last_status = 304
+        self.assertIsNone(jibe.read_site("careers.acme.com", unchanged))
+        self.assertEqual(asked, [jibe.api_url("careers.acme.com")])
+
+    def test_after_an_outage_a_site_is_read_back_to_its_last_good_read(self):
+        day = lambda d: (datetime.now(timezone.utc) - timedelta(days=d)).strftime("%Y-%m-%dT%H:%M:00+0000")
+        pages = {n: {"jobs": [jibe_item(n * 1000 + i, posted=day(n * 2 - 1 + i / 100)) for i in range(100)]} for n in (1, 2, 3, 4)}
+        get = lambda url, params=None: pages[int(url.split("page=")[1].split("&")[0])]
+        self.assertEqual(len(jibe.read_site("careers.acme.com", get)), 200)  # (back DEEP_DAYS days)
+        known = {"a": {"url": jibe.api_url("careers.acme.com"), "read_at": (datetime.now(timezone.utc) - timedelta(days=6)).isoformat()}}
+        jibe.learn(known)
+        self.assertEqual(len(jibe.read_site("careers.acme.com", get)), 400)  # (back to a day before its last good read)
+        jibe.learn(known, {known["a"]["url"]: ("unchanged", None, None)})
+        self.assertLess(datetime.now(timezone.utc) - datetime.fromisoformat(known["a"]["read_at"]), timedelta(minutes=1))
 
 
 class RipplingTests(unittest.TestCase):
