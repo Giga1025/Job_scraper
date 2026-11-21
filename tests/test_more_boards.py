@@ -12,10 +12,11 @@ from boards import gem, jibe, rippling  # noqa: E402
 
 
 def jibe_item(number, title="Software Engineer", posted="2026-11-20T21:14:00+0000", country="US", others=(),
-              client="acme", canonical=None, apply_host="careers-acme.icims.com"):
+              client="acme", canonical=None, apply_host="careers-acme.icims.com", country_name=None):
     """One posting as a Jibe site's API gives it."""
     return {"data": {"title": title, "req_id": str(number), "slug": str(number), "posted_date": posted,
-                     "country_code": country, "additional_locations": [{"country_code": c} for c in others] or None,
+                     "country_code": country, "country": country_name,
+                     "additional_locations": [{"country_code": c} for c in others] or None,
                      "full_location": f"Somewhere, {country}", "apply_url": f"https://{apply_host}/jobs/{number}/login",
                      "client_code": client, "language": "en-us", "meta_data": {"canonical_url": canonical}}}
 
@@ -30,13 +31,19 @@ class JibeTests(unittest.TestCase):
         self.assertEqual(jibe.api_url("careers.acme.com"), api)
         self.assertIn("page=3&", jibe.api_url("careers.acme.com", 3))
         for link in ("https://careers.acme.com/jobs/85806?icims=1", "https://careers.acme.com/careers-home/jobs/85806?lang=en-us&icims=1",
-                     "https://acme.jibeapply.com/jobs/85806", "https://acme.jibeapply.com/jobs/85806/", api):
+                     "https://acme.jibeapply.com/jobs/85806", "https://acme.jibeapply.com/jobs/85806/", api,
+                     "https://careers.acme.com/jobs?icims=1", "https://careers.acme.com/careers-home/jobs?icims=1",
+                     "https://acme.jibeapply.com/jobs", "https://acme.jibeapply.com/careers-home/jobs/"):  # (and its search page)
             self.assertEqual(jibe.site_of(link), link.split("/")[2], link)
         # A company's own domain counts only with icims=1 (or once it's known as a Jibe site); never a classic portal.
         for other in ("https://careers.acme.com/jobs/85806", "https://careers.acme.com/jobs/85806?icims=0",
                       "https://careers-acme.icims.com/jobs/85806/job?icims=1", "https://careers.acme.com/api/jobs?page=1",
-                      "https://careers.acme.com/jobs/abc?icims=1", "https://careers.acme.com/jobs?icims=1", "not a link", None):
+                      "https://careers.acme.com/jobs/abc?icims=1", "https://careers.acme.com/careers-home/jobs",
+                      "https://careers.acme.com/jobs/85806/apply?icims=1", "https://acme.jibeapply.com/about", "not a link", None):
             self.assertIsNone(jibe.site_of(other), other)
+        jibe.learn({"a": {"url": api}})
+        self.assertEqual(jibe.site_of("https://careers.acme.com/careers-home/jobs"), "careers.acme.com")  # (known now)
+        self.assertIsNone(jibe.job_key("https://careers.acme.com/careers-home/jobs"))  # (a page, not a posting)
         self.assertTrue(jibe.is_api_url(api))
         self.assertFalse(jibe.is_api_url("https://careers.acme.com/api/jobs?page=1"))
         self.assertEqual(jibe.page_url(api), "https://careers.acme.com/jobs")
@@ -68,8 +75,56 @@ class JibeTests(unittest.TestCase):
         jibe.learn(known, {api: ("failed", None, None)})
         self.assertEqual(jibe.job_key("https://careers-acme.icims.com/jobs/77/job"), ("jibe", "acme", "77"))
 
+    def test_a_site_linking_its_postings_on_another_domain(self):
+        # Schneider Electric's se.jibeapply.com links its postings on careers.se.com: the same job on either.
+        api = jibe.api_url("se.jibeapply.com")
+        known = {"se": {"url": api, "name": "Schneider Electric"}}
+        jobs = jibe.jobs_from({"jobs": [jibe_item(5, client="se", canonical="https://careers.se.com/jobs/5?lang=en-us")]},
+                              "se.jibeapply.com")
+        self.assertEqual(jobs[0]["url"], "https://careers.se.com/jobs/5?lang=en-us")
+        self.assertIsNone(jibe.job_key(jobs[0]["url"]))  # (not learned yet)
+        jibe.learn(known, {api: ("ok", jobs, None)})
+        self.assertEqual(known["se"]["aliases"], ["careers.se.com"])
+        for link in (jobs[0]["url"], "https://se.jibeapply.com/jobs/5", "https://careers.se.com/careers-home/jobs/5"):
+            self.assertEqual(jibe.job_key(link), ("jibe", "se", "5"), link)
+        self.assertIsNone(jibe.site_of("https://careers.se.com/jobs/6"))  # (a domain for keys, not a site to read)
+        self.assertIsNone(jibe.job_key("https://careers.se.com/about"))
+
+    def test_one_site_per_customer_one_that_can_be_read(self):
+        sites = {k: jibe.api_url(h) for k, h in (("a", "acme.jibeapply.com"), ("b", "careers.acme.com"), ("c", "jobs.acme.com"))}
+        known = {k: {"url": u, "name": "Acme", "client": "acme", "last_read": "ok"} for k, u in sites.items()}
+        known["z"] = {"url": jibe.api_url("other.jibeapply.com"), "client": "other"}
+        self.assertEqual(jibe.same_client(known), {"b", "c"})  # (the first by key)
+        self.assertEqual(jibe.same_client(known, skipped={"a"}), {"a", "c"})  # (skipped for another reason: the next)
+        self.assertEqual(jibe.same_client(known, missing={sites["a"], sites["b"]}), {"a", "b"})  # ("not found" at its last try)
+        self.assertEqual(jibe.same_client(known, skipped={"a", "b", "c"}), set())  # (none can be read: nothing more)
+        self.assertEqual(jibe.same_client(known, missing=set(sites.values())), set())  # (all tried again)
+        # A site whose last read failed gives way to the next whose didn't.
+        api_a, api_b = sites["a"], sites["b"]
+        jibe.learn(known, {api_a: ("failed", None, None)})
+        self.assertEqual(known["a"]["last_read"], "failed")
+        self.assertEqual(jibe.same_client(known), {"a", "c"})
+        jibe.learn(known, {api_b: ("unchanged", None, None)})
+        self.assertEqual((known["b"]["last_read"], jibe.same_client(known)), ("ok", {"a", "c"}))
+        jibe.learn(known, {api_b: ("missing", None, None)})
+        self.assertEqual(jibe.same_client(known), {"a", "b"})
+        jibe.learn(known, {sites["c"]: ("failed", None, None)})
+        self.assertEqual(jibe.same_client(known), {"b", "c"})  # (all failed: the first)
+        jibe.learn(known, {api_a: ("ok", [], None)})
+        self.assertEqual((known["a"]["last_read"], jibe.same_client(known)), ("ok", {"b", "c"}))
+
+    def test_odd_registry_entries_dont_stop_it(self):
+        known = {"a": {"url": jibe.api_url("careers.acme.com"), "client": "acme", "portals": "careers-acme.icims.com",
+                       "aliases": [None, 5, "careers.acme.org"]},
+                 "b": {"url": ["not", "a", "string"]}, "c": None, "d": {"url": None}}
+        jibe.learn(known, {"https://elsewhere.com/api/jobs?sortBy=posted_date": ("ok", [], None)})
+        self.assertEqual(jibe.job_key("https://careers.acme.org/jobs/9"), ("jibe", "acme", "9"))
+        self.assertIsNone(jibe.job_key("https://careers-acme.icims.com/jobs/9/job"))  # (portals isn't a list: ignored)
+        self.assertEqual(jibe.same_client(known), set())
+
     def test_postings_are_read_with_every_country_and_their_date(self):
         data = {"jobs": [jibe_item(1, "Software Engineer I", country="IN", others=("US",)),
+                         jibe_item(6, "Embedded Software Engineer", country="FM", country_name="United States"),  # (Viasat's)
                          jibe_item(2, "Data Engineer", posted="November 20, 2026", canonical="https://careers.acme.com/jobs/2?lang=fr-fr"),
                          jibe_item(3, " "), {"data": None}, "junk",
                          jibe_item("", "No id"), jibe_item(4, "Late", posted="soon", apply_host="apply.example.com")],
@@ -77,9 +132,10 @@ class JibeTests(unittest.TestCase):
         jobs = jibe.jobs_from(data, "careers.acme.com")
         self.assertEqual([(j["title"], j["url"], j["countries"], j.get("posted")) for j in jobs], [
             ("Software Engineer I", "https://careers.acme.com/jobs/1?lang=en-us", ["IN", "US"], "2026-11-20T21:14:00+00:00"),
+            ("Embedded Software Engineer", "https://careers.acme.com/jobs/6?lang=en-us", ["United States"], "2026-11-20T21:14:00+00:00"),
             ("Data Engineer", "https://careers.acme.com/jobs/2?lang=fr-fr", ["US"], "2026-11-20T00:00:00+00:00"),
             ("Late", "https://careers.acme.com/jobs/4?lang=en-us", ["US"], None)])
-        self.assertEqual([j["apply_hosts"] for j in jobs], [["careers-acme.icims.com"]] * 2 + [[]])
+        self.assertEqual([j["apply_hosts"] for j in jobs], [["careers-acme.icims.com"]] * 3 + [[]])
         self.assertEqual(jobs[0]["client"], "acme")
         self.assertEqual(jibe.jobs_from({"jobs": None}, "x"), [])
         self.assertEqual(jibe.jobs_from(None, "x"), [])

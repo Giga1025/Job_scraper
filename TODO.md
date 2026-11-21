@@ -7,6 +7,11 @@ Jobright aren't needed.
 - [x] **iCIMS career sites built on Jibe** (Nov 2026): about 130 sites the lists link (AMD, Keysight,
       Rivian, Garmin, Viasat, ICE, Schneider Electric...) are company boards now, read each hour
       through their public API (`boards/jibe.py`).
+- [ ] **Oracle sites, older postings**: like a Jibe site, an Oracle site is read only for its newest
+      100, so an older posting can move up into them when newer ones close and be emailed as new.
+      Jibe sites count a posting seen for the first time as new only if it went up in the last 7
+      days (`_new_within_days`); check the emails for old Oracle postings, and give Oracle the
+      same rule if they show up.
 - [ ] **iCIMS classic portals** (`*.icims.com`, about 340 in the lists, like Bank OZK's): no JSON
       API; read the portal's search page (`/jobs/search?ss=1&in_iframe=1`, newest first) and the
       JSON-LD on each new posting's page, in `boards/icims.py`. A portal whose company also has a

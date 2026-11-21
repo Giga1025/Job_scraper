@@ -36,6 +36,8 @@ def board_of(link) -> str | None:
 
 def job_key(link) -> tuple | None:
     """("gem", board, posting id) for a posting's link, else None."""
+    if "gem.com/" not in str(link or "").lower():  # (most links: quickly)
+        return None
     parsed = _parse(link)
     match = _LINK.match(parsed.path) if parsed and parsed.netloc.lower() == HOST else None
     return ("gem", match.group(1).lower(), match.group(2)) if match and match.group(2) else None

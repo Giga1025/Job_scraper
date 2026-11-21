@@ -9,7 +9,7 @@ import re
 from urllib.parse import urlparse
 
 PAGE_SIZE = 1000  # the API's most
-MAX_PAGES = 5
+MAX_PAGES = 10    # a board with more isn't read (it couldn't be read whole: see job_monitor.fetch_rippling_jobs)
 
 _LINK = re.compile(r"^/(?:[a-z]{2}(?:-[A-Za-z0-9]{2,3})?/)?(?:embed/)?([A-Za-z0-9_-]+)/jobs(?:/[0-9a-f-]{36})?(?:/apply)?/?$")
 _API = re.compile(r"^/api/v2/board/([A-Za-z0-9_-]+)/jobs/?$")
