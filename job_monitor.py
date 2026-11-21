@@ -56,6 +56,7 @@ except ImportError:
     sys.exit(1)
 
 # Job-board readers live in the boards/ package, one module per job site.
+import sources
 from boards import greenhouse, oracle, workable, workday
 from boards.common import HEADERS, MONITOR_USER_AGENT, hours_since as _hours_since, posted_at as _posted_at
 
@@ -81,6 +82,27 @@ FORGET_GONE_PLATFORMS = ("greenhouse", "ashby", "lever", "workable")
 GONE_KEY = "gone"  # on such a posting: the day it was first missing from its board
 
 SMTP_TIMEOUT_SECONDS = 30
+# An email's HTML is kept under this; a bigger one goes in parts (Gmail cuts off an email past about 102 KB,
+# hiding the rest behind "[Message clipped]").
+EMAIL_MAX_HTML_BYTES = 80_000
+TOP_PICKS_HEADING = "Top picks"
+# An email's top picks section (pick_top): "top_picks" in the config replaces these (false: no section).
+TOP_PICKS = {
+    "titles": ["new grad", "new grads", "new graduate", "new graduates", "new college grad", "new college graduate",
+               "recent graduate", "recent grad", "university grad", "university graduate", "university hire",
+               "university program", "college grad", "college graduate", "grad", "grads", "undergrad", "undergraduate",
+               "campus", "early career", "early in career", "entry level", "graduate program", "graduate engineer",
+               "graduate software", "graduate developer", "graduate hire", "class of 2026", "class of 2027",
+               "2026 start", "2027 start"],
+    "level_one_titles": ["software engineer i", "software engineer 1", "engineer i", "engineer 1", "developer i",
+                         "developer 1", "swe i", "swe 1", "sde i", "sde 1", "sde1", "swe1", "level 1", "l1",
+                         "junior", "jr", "associate software engineer", "associate engineer", "associate developer"],
+    "limit": 15,
+    "when_at_least": 10,
+}
+ALARMS_HEADING = "Sources that may have stopped working"
+ALARMS_HELP = ("Their postings may not be reaching you. The run logs on the Actions tab say more; "
+               "see \"When a whole source stops\" in the README.")
 
 # Reserved state.json keys (target keys are URLs, so they never start with "_").
 PENDING_LEFT_OUT_KEY = "_left_out_pending"  # left-out postings not yet listed in an email
@@ -89,6 +111,7 @@ ALERT_POOL_KEY = "_alerts_pending"          # matching postings not yet emailed
 LEFT_OUT_LOG_KEY = "_left_out_log"          # left-out postings of the last few days (for left_out.md)
 BOARDS_KEY = "_boards"                      # company job boards found through the feeds: when checked, ETags, boards not found
 HEALTH_KEY = "_health"                      # your entries that couldn't be read or found nothing, and since when
+SOURCES_KEY = "_sources"                    # per config: whether whole sources still work, and the daily check email (sources.py)
 
 LEFT_OUT_LOG_DAYS = 7         # how far back left_out.md goes
 LEFT_OUT_EMAIL_LIMIT = 25     # left-out postings listed in an email (the rest are counted)
@@ -446,6 +469,7 @@ def save_state(
     left_out_log_add: list[dict] | None = None,
     boards: dict | None = None,
     health: dict | None = None,
+    sources: tuple[str, dict] | None = None,
 ):
     """Write these targets' entries to state.json, keeping all other targets as they are on disk.
 
@@ -487,6 +511,11 @@ def save_state(
                 else:
                     records[url] = record
             state[HEALTH_KEY] = records
+        if sources:
+            # (config id, its record: sources.py), config by config
+            records = state.get(SOURCES_KEY) if isinstance(state.get(SOURCES_KEY), dict) else {}
+            records[sources[0]] = sources[1]
+            state[SOURCES_KEY] = records
         save_json(STATE_PATH, state, compact=True)
         log.info(f"Saved {STATE_PATH.name}: {STATE_PATH.stat().st_size / 1e6:.1f} MB")
         page = left_out_page_path()
@@ -1528,12 +1557,15 @@ def grow_board_registry(known: dict, links, via: str, today: str) -> int:
     return len(urls)
 
 
-def read_company_list(item: dict, etags: dict) -> list[tuple] | None:
+def read_company_list(item: dict, etags: dict, read_at: dict | None = None) -> list[tuple] | None:
     """(link, company) pairs from a list used only to find companies (SimplifyJobs'
-    listings.json format), or None if it hasn't changed since the last read (or failed)."""
+    listings.json format), or None if it hasn't changed since the last read (or failed). read_at:
+    {url: when it last answered} (unchanged counts), for sources.py."""
     url = item.get("url")
     outcome: dict = {}
     data = _board_get_json(etags.get(url), outcome)(url, timeout=120)
+    if read_at is not None and (outcome.get("status") == 304 or isinstance(data, list)):
+        read_at[url] = datetime.now().isoformat(timespec="seconds")
     if outcome.get("status") == 304:
         return None
     if not isinstance(data, list):
@@ -1682,7 +1714,7 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
     if due:
         for item in entry.get("find_companies_in") or []:
             if isinstance(item, dict) and item.get("url"):
-                links = read_company_list(item, meta["list_etags"])
+                links = read_company_list(item, meta["list_etags"], meta.setdefault("list_read", {}))
                 if links:
                     added = grow_board_registry(known, links, item.get("name") or item["url"], today)
                     log.info(f"  [boards] {item.get('name') or item['url']}: {added} new company board(s)")
@@ -2593,11 +2625,99 @@ def _left_out_header(left_out: dict[str, list[dict]], summary: dict | None) -> t
     return header, note + summary["link"]
 
 
+def pick_top(alerts: list[dict], settings, feed_urls=frozenset(), patterns: dict | None = None) -> list[dict]:
+    """The roles for an email's top picks section (TOP_PICKS: settings, "top_picks" in the config;
+    false, null, 0 or "off": none): a title that says new grad, university grad, early career or
+    entry level first, then a level-one title (Software Engineer I, Junior), then a role from one
+    of the new-grad lists (not one titled level II or more); within each, software titles first,
+    then other engineering ones (role_filter patterns), then the email's order. Up to
+    "limit", and only in an email with at least "when_at_least" roles."""
+    if settings is True:
+        settings = TOP_PICKS
+    if not alerts or not settings or (isinstance(settings, str) and settings.strip().lower() in ("false", "off", "no", "none", "0")):
+        return []
+    settings = settings if isinstance(settings, dict) else TOP_PICKS
+
+    def number(key: str) -> int:
+        try:
+            return max(0, int(settings.get(key, TOP_PICKS[key])))
+        except (TypeError, ValueError):
+            log.warning(f"top_picks: {key} is {settings.get(key)!r}, not a number; using {TOP_PICKS[key]}.")
+            return TOP_PICKS[key]
+
+    def phrases(key: str):
+        value = settings.get(key, TOP_PICKS[key])
+        return _phrase_pattern([str(p) for p in value] if isinstance(value, list) else TOP_PICKS[key])
+
+    limit, least = number("limit"), max(1, number("when_at_least"))
+    if len(alerts) < least or not limit:
+        return []
+    early, level_one = phrases("titles"), phrases("level_one_titles")
+    software, engineering = (patterns.get(k) if patterns else None for k in ("software_signals", "engineering_signals"))
+
+    def tier(job: dict) -> int | None:
+        title = _title_core(str(job.get("title", "")))
+        if early and early.search(title):
+            return 0
+        if level_one and level_one.search(title):
+            return 1
+        if job.get("source") in feed_urls and not _ABOVE_LEVEL_ONE.search(title):
+            return 2
+        return None
+
+    def kind(job: dict) -> int:
+        """0: a software title (software_signals), 1: another engineering one, 2: the rest (no patterns: all 0)."""
+        title = _title_core(str(job.get("title", "")))
+        if not (software or engineering) or (software and software.search(title)):
+            return 0
+        return 1 if engineering and engineering.search(title) else 2
+
+    ranked = sorted(((t, kind(job), i, job) for i, job in enumerate(alerts) if (t := tier(job)) is not None),
+                    key=lambda x: x[:3])
+    picks, titles = [], set()
+    for *_, job in ranked:
+        key = (_group_label(job), _title_key(job.get("title")))
+        if key not in titles and len(picks) < limit:
+            titles.add(key)
+            picks.append(job)
+    return picks
+
+
+# A level above the first in a title (Software Engineer II, Senior, Staff...): such a role from a new-grad list isn't a top pick.
+_ABOVE_LEVEL_ONE = re.compile(r"(?<!\w)(?:ii|iii|iv|v|2|3|4|senior|sr|staff|lead|principal|manager)(?!\w)", re.IGNORECASE)
+
+
+def _group_label(job: dict) -> str:
+    """The company a posting is listed under, without " (via <list>)"."""
+    return re.sub(r" \(via [^()]*\)$", "", str(job.get("group") or job.get("company") or "Other"))
+
+
+def _part_note(part) -> str | None:
+    if not part or part[1] <= 1:
+        return None
+    return (f"Part {part[0]} of {part[1]}: this email was split so that Gmail shows all of it "
+            f"(it cuts off an email past about 100 KB).")
+
+
+def _alarm_lines(alarms: list[dict]) -> list[str]:
+    return [f"{a['name']}: {a['why']}" for a in alarms]
+
+
+def _company_lines(company: str, jobs: list[dict]) -> list[str]:
+    lines = [f"- {company}  ({len(jobs)} new)"]
+    for j in jobs:
+        lines += [f"    * {j['title']}{_location_suffix(j)}", f"      {j['url']}"]
+    return lines + [""]
+
+
 def format_plain_report(
     all_new: dict[str, list[dict]],
     left_out: dict[str, list[dict]] | None = None,
     left_out_summary: dict | None = None,
     problems: list[dict] | None = None,
+    alarms: list[dict] | None = None,
+    top: list[dict] | None = None,
+    part: tuple[int, int] | None = None,
 ) -> str:
     lines = [
         "=" * 60,
@@ -2605,16 +2725,23 @@ def format_plain_report(
         "=" * 60,
         "",
     ]
+    if _part_note(part):
+        lines += [_part_note(part), ""]
+    if alarms:
+        lines.append(f"⚠ {ALARMS_HEADING}:")
+        lines += [f"    ! {line}" for line in _alarm_lines(alarms)]
+        lines += [f"  {ALARMS_HELP}", ""]
     if problems:
         lines.append(f"⚠ {len(problems)} of your entries aren't working:")
         lines += [f"    ! {line}" for line in _problem_lines(problems)]
         lines += [f"  {PROBLEMS_HELP}", ""]
-    for company, jobs in all_new.items():
-        lines.append(f"- {company}  ({len(jobs)} new)")
-        for j in jobs:
-            lines.append(f"    * {j['title']}{_location_suffix(j)}")
-            lines.append(f"      {j['url']}")
+    if top:
+        lines.append(f"★ {TOP_PICKS_HEADING} ({len(top)}; also listed under their companies below):")
+        for j in top:
+            lines += [f"    ★ {_group_label(j)}: {j['title']}{_location_suffix(j)}", f"      {j['url']}"]
         lines.append("")
+    for company, jobs in all_new.items():
+        lines += _company_lines(company, jobs)
     if left_out or left_out_summary:
         header, note = _left_out_header(left_out or {}, left_out_summary)
         lines.append(header)
@@ -2630,54 +2757,154 @@ def format_plain_report(
     return "\n".join(lines)
 
 
-def format_html_report(
-    all_new: dict[str, list[dict]],
-    left_out: dict[str, list[dict]] | None = None,
-    left_out_summary: dict | None = None,
-    problems: list[dict] | None = None,
-) -> str:
+def _company_html(company: str, jobs: list[dict]) -> str:
     esc = html_lib.escape
-    rows = ""
-    if problems:
-        items = "".join(f'<li style="margin-bottom:4px">{esc(line)}</li>' for line in _problem_lines(problems))
-        rows += (f'<div style="background:#fff4e5;border-left:4px solid #f29900;padding:8px 12px;margin:16px 0">'
-                 f'<b>⚠ {len(problems)} of your entries aren\'t working</b><ul style="margin:6px 0">{items}</ul>'
-                 f'<span style="color:#777;font-size:12px">{esc(PROBLEMS_HELP)}</span></div>')
-    for company, jobs in all_new.items():
-        rows += f'<h3 style="color:#1a73e8;margin-top:24px">{esc(company)} ({len(jobs)} new)</h3><ul>'
+    rows = f'<h3 style="color:#1a73e8;margin-top:24px">{esc(company)} ({len(jobs)} new)</h3><ul>'
+    for j in jobs:
+        rows += (
+            f'<li style="margin-bottom:8px">'
+            f'<a href="{esc(j["url"])}" style="color:#1a73e8;text-decoration:none;font-weight:600">'
+            f'{esc(j["title"])}</a>{esc(_location_suffix(j))}</li>'
+        )
+    return rows + "</ul>"
+
+
+def _box_html(title: str, lines: list[str], help_text: str) -> str:
+    esc = html_lib.escape
+    items = "".join(f'<li style="margin-bottom:4px">{esc(line)}</li>' for line in lines)
+    return (f'<div style="background:#fff4e5;border-left:4px solid #f29900;padding:8px 12px;margin:16px 0">'
+            f'<b>⚠ {esc(title, quote=False)}</b><ul style="margin:6px 0">{items}</ul>'
+            f'<span style="color:#777;font-size:12px">{esc(help_text)}</span></div>')
+
+
+def _top_html(top: list[dict]) -> str:
+    esc = html_lib.escape
+    items = "".join(
+        f'<li style="margin-bottom:6px">{esc(_group_label(j))}: <a href="{esc(j["url"])}" '
+        f'style="color:#1a73e8;text-decoration:none;font-weight:600">{esc(j["title"])}</a>{esc(_location_suffix(j))}</li>'
+        for j in top)
+    return (f'<div style="background:#eef4ff;border-left:4px solid #1a73e8;padding:8px 12px;margin:16px 0">'
+            f'<b>★ {esc(TOP_PICKS_HEADING)} ({len(top)})</b> '
+            f'<span style="color:#777;font-size:12px">also listed under their companies below</span>'
+            f'<ul style="margin:6px 0">{items}</ul></div>')
+
+
+def _left_out_html(left_out: dict[str, list[dict]] | None, left_out_summary: dict | None) -> str:
+    esc = html_lib.escape
+    if not (left_out or left_out_summary):
+        return ""
+    header, note = _left_out_header(left_out or {}, left_out_summary)
+    rows = f'<h4 style="color:#777;margin-top:32px;margin-bottom:4px">{esc(header)}</h4>'
+    if note and left_out_summary:
+        link = left_out_summary["link"]
+        text = esc(note[: -len(link)])
+        href = f'<a href="{esc(link)}" style="color:#777">{esc(link)}</a>' if link.startswith("http") else esc(link)
+        rows += f'<p style="color:#999;font-size:12px;margin-top:0">{text}{href}</p>'
+    for company, jobs in (left_out or {}).items():
+        rows += f'<p style="color:#777;font-size:13px;margin:12px 0 4px">{esc(company)}</p><ul style="margin-top:0">'
         for j in jobs:
             rows += (
-                f'<li style="margin-bottom:8px">'
-                f'<a href="{esc(j["url"])}" style="color:#1a73e8;text-decoration:none;font-weight:600">'
-                f'{esc(j["title"])}</a>{esc(_location_suffix(j))}</li>'
+                f'<li style="font-size:13px;color:#777"><a href="{esc(j["url"])}" style="color:#777">'
+                f'{esc(j["title"])}</a>{esc(_location_suffix(j))} <span style="color:#aaa">[{esc(j["reason"])}]</span></li>'
             )
         rows += "</ul>"
-    if left_out or left_out_summary:
-        header, note = _left_out_header(left_out or {}, left_out_summary)
-        rows += f'<h4 style="color:#777;margin-top:32px;margin-bottom:4px">{esc(header)}</h4>'
-        if note and left_out_summary:
-            link = left_out_summary["link"]
-            text = esc(note[: -len(link)])
-            href = f'<a href="{esc(link)}" style="color:#777">{esc(link)}</a>' if link.startswith("http") else esc(link)
-            rows += f'<p style="color:#999;font-size:12px;margin-top:0">{text}{href}</p>'
-        for company, jobs in (left_out or {}).items():
-            rows += f'<p style="color:#777;font-size:13px;margin:12px 0 4px">{esc(company)}</p><ul style="margin-top:0">'
-            for j in jobs:
-                rows += (
-                    f'<li style="font-size:13px;color:#777"><a href="{esc(j["url"])}" style="color:#777">'
-                    f'{esc(j["title"])}</a>{esc(_location_suffix(j))} <span style="color:#aaa">[{esc(j["reason"])}]</span></li>'
-                )
-            rows += "</ul>"
-    heading = "New Job Postings Found" if all_new else "Postings left out by your filters"
+    return rows
 
+
+def _html_page(heading: str, rows: str) -> str:
     return f"""
     <div style="font-family:system-ui,sans-serif;max-width:600px;margin:auto;padding:20px">
-      <h2 style="border-bottom:2px solid #1a73e8;padding-bottom:8px">{heading}</h2>
+      <h2 style="border-bottom:2px solid #1a73e8;padding-bottom:8px">{html_lib.escape(heading)}</h2>
       <p style="color:#555">Detected on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
       {rows}
       <p style="color:#999;font-size:12px;margin-top:32px">Sent by job_monitor.py</p>
     </div>
     """
+
+
+def format_html_report(
+    all_new: dict[str, list[dict]],
+    left_out: dict[str, list[dict]] | None = None,
+    left_out_summary: dict | None = None,
+    problems: list[dict] | None = None,
+    alarms: list[dict] | None = None,
+    top: list[dict] | None = None,
+    part: tuple[int, int] | None = None,
+) -> str:
+    rows = _email_head_html(problems, alarms, top, part)
+    rows += "".join(_company_html(company, jobs) for company, jobs in all_new.items())
+    rows += _left_out_html(left_out, left_out_summary)
+    return _html_page("New Job Postings Found" if all_new else "Postings left out by your filters", rows)
+
+
+def _email_head_html(problems, alarms, top, part) -> str:
+    rows = ""
+    if _part_note(part):
+        rows += f'<p style="color:#777;font-size:13px">{html_lib.escape(_part_note(part))}</p>'
+    if alarms:
+        rows += _box_html(ALARMS_HEADING, _alarm_lines(alarms), ALARMS_HELP)
+    if problems:
+        rows += _box_html(f"{len(problems)} of your entries aren't working", _problem_lines(problems), PROBLEMS_HELP)
+    if top:
+        rows += _top_html(top)
+    return rows
+
+
+def email_parts(all_new: dict[str, list[dict]], left_out=None, left_out_summary=None, problems=None, alarms=None,
+                top=None, max_bytes: int | None = None) -> list[dict]:
+    """The email as parts, each one's HTML under max_bytes (EMAIL_MAX_HTML_BYTES), so Gmail shows
+    all of it: [{all_new, left_out, left_out_summary, problems, alarms, top, part}] for the format
+    functions. The warnings and top picks go in the first part, the left-out list in the last, and
+    companies in order between (a company too long for one part is continued in the next); one
+    part if it all fits."""
+    budget = max_bytes or EMAIL_MAX_HTML_BYTES
+    page = len(_html_page("New Job Postings Found", "").encode())
+    first = page + len(_email_head_html(problems, alarms, top, (1, 2)).encode())
+    later = page + len(_email_head_html(None, None, None, (2, 2)).encode())
+    tail = len(_left_out_html(left_out, left_out_summary).encode())
+    groups: list[dict] = [{}]
+    size = first
+    for company, jobs in all_new.items():
+        chunk: list[dict] = []
+        name = company
+        for job in jobs:
+            grown = len(_company_html(name, chunk + [job]).encode())
+            if chunk and size + grown > budget:
+                groups[-1][name] = chunk
+                groups.append({})
+                size, chunk, name = later, [], f"{company} (continued)"
+                grown = len(_company_html(name, [job]).encode())
+            elif not chunk and groups[-1] and size + grown > budget:
+                groups.append({})
+                size = later
+            chunk.append(job)
+        if chunk:
+            groups[-1][name] = chunk
+            size += len(_company_html(name, chunk).encode())
+    if tail and groups[-1] and size + tail > budget:
+        groups.append({})
+    count = len(groups)
+    return [{"all_new": group, "left_out": left_out if i == count - 1 else None,
+             "left_out_summary": left_out_summary if i == count - 1 else None,
+             "problems": problems if i == 0 else None, "alarms": alarms if i == 0 else None,
+             "top": top if i == 0 else None, "part": (i + 1, count)}
+            for i, group in enumerate(groups)]
+
+
+class SendResult:
+    """What send_email did: true if every part went out (or email is off). parts: the email's parts
+    (email_parts); sent: how many of them went out, in order (when some did and then sending
+    failed, those roles mustn't be emailed again)."""
+
+    def __init__(self, parts: list[dict], sent: int):
+        self.parts, self.sent = parts, sent
+
+    def __bool__(self):
+        return self.sent >= len(self.parts)
+
+    def delivered(self) -> list[dict]:
+        """The roles in the parts that went out."""
+        return [j for p in self.parts[:self.sent] for jobs in p["all_new"].values() for j in jobs]
 
 
 def send_email(
@@ -2686,16 +2913,39 @@ def send_email(
     left_out: dict[str, list[dict]] | None = None,
     left_out_summary: dict | None = None,
     problems: list[dict] | None = None,
-) -> bool:
-    """Email the report. Returns False if email is enabled but sending failed."""
+    alarms: list[dict] | None = None,
+    top: list[dict] | None = None,
+) -> SendResult:
+    """Email the report, in parts if it's big (email_parts). False (a SendResult) if email is
+    enabled but sending failed, maybe after some parts went out."""
+    total = sum(len(v) for v in all_new.values())
+    left_out_total = left_out_summary["total"] if left_out_summary else sum(len(v) for v in (left_out or {}).values())
+    if total:
+        subject = f"[Job Monitor] {total} new job posting{'s' if total != 1 else ''} found"
+        if left_out_total:
+            subject += f" (+{left_out_total} left out by filters)"
+    else:
+        subject = f"[Job Monitor] Digest: {left_out_total} posting{'s' if left_out_total != 1 else ''} left out by your filters"
+    parts = email_parts(all_new, left_out, left_out_summary, problems, alarms, top)
+    if len(parts) > 1:
+        log.info(f"The email is big: it goes in {len(parts)} parts, so Gmail shows all of it.")
+    messages = [(subject + (f" (part {p['part'][0]} of {p['part'][1]})" if len(parts) > 1 else ""),
+                 format_plain_report(**p), format_html_report(**p)) for p in parts]
+    return SendResult(parts, send_messages(config, messages))
+
+
+def send_messages(config: dict, messages: list[tuple[str, str, str]]) -> int:
+    """Send these (subject, plain text, HTML) emails, in order, in one connection. Returns how
+    many went out: all of them if email is off or in a dry run, fewer if sending failed."""
+    sent = 0
     try:
         email_cfg = config.get("email") or {}
         if not email_cfg.get("enabled"):
             log.info("Email disabled — printing report to console only.")
-            return True
+            return len(messages)
         if os.environ.get("JOB_MONITOR_NO_EMAIL", "").strip():
             log.info("Dry run (JOB_MONITOR_NO_EMAIL is set): printing the report instead of emailing it.")
-            return True
+            return len(messages)
 
         sender_email = email_cfg.get("sender_email") or os.environ.get("SENDER_EMAIL", "")
         sender_password = email_cfg.get("sender_password") or os.environ.get("SENDER_PASSWORD", "")
@@ -2710,45 +2960,38 @@ def send_email(
                 "Failed to send email: no recipient. Set recipient_email in the config "
                 "or the RECIPIENT_EMAIL environment variable."
             )
-            return False
+            return 0
 
-        total = sum(len(v) for v in all_new.values())
-        left_out_total = left_out_summary["total"] if left_out_summary else sum(len(v) for v in (left_out or {}).values())
-        if total:
-            subject = f"[Job Monitor] {total} new job posting{'s' if total != 1 else ''} found"
-            if left_out_total:
-                subject += f" (+{left_out_total} left out by filters)"
-        else:
-            subject = f"[Job Monitor] Digest: {left_out_total} posting{'s' if left_out_total != 1 else ''} left out by your filters"
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = sender_email
-        msg["To"] = recipients
-
-        # utf-8 makes MIMEText encode the parts, so long lines are wrapped safely in transit.
-        msg.attach(MIMEText(format_plain_report(all_new, left_out, left_out_summary, problems), "plain", "utf-8"))
-        msg.attach(MIMEText(format_html_report(all_new, left_out, left_out_summary, problems), "html", "utf-8"))
+        def build(subject: str, plain: str, html: str):
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = sender_email
+            msg["To"] = recipients
+            # utf-8 makes MIMEText encode the parts, so long lines are wrapped safely in transit.
+            msg.attach(MIMEText(plain, "plain", "utf-8"))
+            msg.attach(MIMEText(html, "html", "utf-8"))
+            return msg
 
         # Verify the server's certificate so the password can't be sent to an impostor.
         context = ssl.create_default_context()
         port = int(email_cfg["smtp_port"])
         if port == 465:
-            with smtplib.SMTP_SSL(
-                email_cfg["smtp_server"], port, context=context, timeout=SMTP_TIMEOUT_SECONDS
-            ) as server:
-                server.login(sender_email, sender_password)
-                server.send_message(msg)
+            server_cm = smtplib.SMTP_SSL(email_cfg["smtp_server"], port, context=context, timeout=SMTP_TIMEOUT_SECONDS)
         else:
-            with smtplib.SMTP(email_cfg["smtp_server"], port, timeout=SMTP_TIMEOUT_SECONDS) as server:
+            server_cm = smtplib.SMTP(email_cfg["smtp_server"], port, timeout=SMTP_TIMEOUT_SECONDS)
+        with server_cm as server:
+            if port != 465:
                 server.ehlo()
                 server.starttls(context=context)
-                server.login(sender_email, sender_password)
-                server.send_message(msg)
-        log.info("Email sent successfully.")
-        return True
+            server.login(sender_email, sender_password)
+            for subject, plain, html in messages:
+                server.send_message(build(subject, plain, html))
+                sent += 1
+        log.info("Email sent successfully." if len(messages) == 1 else f"Email sent successfully ({len(messages)} parts).")
+        return sent
     except Exception as exc:
-        log.error(f"Failed to send email: {exc}")
-        return False
+        log.error(f"Failed to send email: {exc}" + (f" ({sent} of {len(messages)} parts were sent)" if sent else ""))
+        return sent
 
 
 def print_console_safe(text: str):
@@ -3233,8 +3476,34 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
     if problems:
         log.warning(f"[health] {len(problems)} of your entries aren't working: "
                     + "; ".join(f"{p['name']} ({p['why']})" for p in problems))
+    now = datetime.now()
+    entries_checked = sum(1 for t in targets if not t.get("_board") and t.get("mode") != "feed"
+                          and t.get("url") and t.get("enabled", True) is not False)
+    entry = board_entries[0] if board_entries else {}
+    try:
+        # (extra: a problem here mustn't stop the run or its email)
+        source_record = _note_sources(state, loaded_state, this_config, targets, board_entries, board_meta, loaded_board_meta,
+                                      fetched, boards_now, boards_on, new_matches, new_left_out, entries_checked, problems, now)
+        found_alarms = sources.alarms(
+            source_record, now, board_meta.get("checked_at"), boards_on and bool(board_entries),
+            workday_on=_setting(entry, "workday_minutes_per_run", workday.MINUTES_PER_RUN, 0, workday.RUN_MINUTES) > 0
+            and "workday" in set(entry.get("platforms") or ()),
+            every_hours=_setting(entry, "every_hours", 1, 0, 24 * 7))
+    except Exception:
+        log.exception("[sources] Could not note this run's sources")
+        source_record, found_alarms = None, []
+    if found_alarms:
+        log.warning(f"[sources] {len(found_alarms)} may have stopped working: "
+                    + "; ".join(f"{a['name']} ({a['why']})" for a in found_alarms))
     record = dict(alerts_add=new_matches, pending_add=new_left_out, left_out_log_add=new_left_out,
-                  boards=board_meta if boards_changed else None, health=health_updates)
+                  boards=board_meta if boards_changed else None, health=health_updates,
+                  sources=(this_config, source_record) if source_record is not None else None)
+
+    def daily_check(pending_now: int) -> bool:
+        if source_record is None:
+            return True
+        return _send_daily_check(config, source_record, now, board_targets if boards_on else [], board_meta,
+                                 entries_checked, problems, found_alarms, pending_now)
 
     pooled = [p for p in state.get(ALERT_POOL_KEY) or []
               if "source" not in p or p["source"] in own_urls
@@ -3245,8 +3514,6 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
     alerts_due = bool(alerts) and hours_since_email >= email_every_hours - EMAIL_DUE_TOLERANCE_MINUTES / 60
     digest_due = bool(pending) and hours_since_email >= digest_hours
     if not alerts_due and not digest_due:
-        if changed or new_matches or new_left_out or boards_changed or health_updates:
-            save_state(updates, baselines, **record)
         if alerts:
             log.info(f"{len(alerts)} matching posting(s) waiting for the next email "
                      f"(at most one email every {email_every_hours:g} hours).")
@@ -3254,21 +3521,40 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
             log.info(f"{len(pending)} posting(s) left out by the filters will be summarised in the next email.")
         if not alerts:
             log.info("No new postings found across all targets.")
-        return True
+        daily_ok = daily_check(len(alerts))
+        save_state(updates, baselines, **record)  # (always: the run itself is noted, sources.note_run)
+        return daily_ok
 
     all_new = _group_by_company(alerts)
     summary = summarize_left_out(pending, role_patterns)
     left_out_report = _group_by_company(summary["listed"]) if pending else None
-    report = format_plain_report(all_new, left_out_report, left_out_summary=summary if pending else None, problems=problems)
+    top = pick_top(alerts, config.get("top_picks", TOP_PICKS), feed_urls, role_patterns)
+    report = format_plain_report(all_new, left_out_report, left_out_summary=summary if pending else None, problems=problems,
+                                 alarms=found_alarms, top=top)
     print_console_safe("\n" + report)
-    if not send_email(config, all_new, left_out=left_out_report, left_out_summary=summary if pending else None,
-                      problems=problems):
+    result = send_email(config, all_new, left_out=left_out_report, left_out_summary=summary if pending else None,
+                        problems=problems, alarms=found_alarms, top=top)
+    if not result:
+        delivered = result.delivered() if isinstance(result, SendResult) else []
+        if delivered:
+            # Some parts went out before sending failed: their roles aren't emailed again; the rest (and the
+            # left-out list, in the last part) wait for the next run, which is due at once (last_email unchanged).
+            shown = {compute_job_id(j) for j in delivered}
+            _note_email_safely(source_record, now, len(delivered), 0, result.sent)
+            save_state(updates, baselines, alerts_add=[j for j in new_matches if compute_job_id(j) not in shown],
+                       alerts_shown=shown, pending_add=new_left_out, left_out_log_add=new_left_out,
+                       boards=record["boards"], health=health_updates, sources=record["sources"])
+            log.error(f"Only {result.sent} of the email's {len(result.parts)} parts were sent; the other "
+                      f"{len(alerts) - len(shown)} postings are kept and the next run will send them.")
+            return False
         # Everything stays in the pools, so the next run tries again (even if a
         # posting has left its careers page by then).
         save_state(updates, baselines, **record)
         log.error("The email wasn't sent; its postings are kept and the next run will try again.")
         return False
 
+    _note_email_safely(source_record, now, len(alerts), len(pending), len(result.parts) if isinstance(result, SendResult) else 1)
+    daily_ok = daily_check(0)
     save_state(
         updates,
         baselines,
@@ -3279,8 +3565,80 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
         health=health_updates,
         # Needed to space out emails and digests; configs using neither don't record it.
         last_email=datetime.now().isoformat(timespec="seconds") if show_left_out or email_every_hours else None,
+        sources=record["sources"],
     )
-    return True
+    return daily_ok
+
+
+def _note_email_safely(record: dict | None, now: datetime, roles: int, left_out: int, parts: int):
+    if record is not None:
+        try:
+            sources.note_email(record, now, roles=roles, left_out=left_out, parts=parts)
+        except Exception:
+            log.exception("[sources] Could not note the email")
+
+
+def _note_sources(state: dict, loaded_state: dict, config_id: str, targets: list[dict], board_entries: list[dict],
+                  board_meta: dict, loaded_board_meta: dict, fetched: dict, boards_now: bool, boards_on: bool,
+                  matches: list, left_out: list, entries: int, problems: list, now: datetime) -> dict:
+    """This config's sources record (sources.py) with this run noted: the run's numbers, which
+    new-grad lists added postings, and when the lists used to find companies were last read."""
+    saved = state.get(SOURCES_KEY) if isinstance(state.get(SOURCES_KEY), dict) else {}
+    record = sources.record_of(saved.get(config_id))
+    feeds = [t for t in targets if t.get("mode") == "feed" and t.get("url") and t.get("enabled", True) is not False]
+    for feed in feeds:
+        rows = state.get(feed["url"])
+        if not isinstance(rows, list):
+            continue  # (not read yet: its health says why)
+        before = {compute_job_id(r) for r in loaded_state.get(feed["url"]) or [] if isinstance(r, dict) and r.get("url")}
+        added = any(compute_job_id(r) not in before for r in rows if isinstance(r, dict) and r.get("url"))
+        newest = max((str(r.get("first_seen")) for r in rows if isinstance(r, dict) and r.get("first_seen")), default=None)
+        sources.note_feed(record, feed["url"], feed.get("name") or feed["url"], added, now, newest)
+    entry = board_entries[0] if board_entries else {}
+    lists = [i for i in entry.get("find_companies_in") or [] if isinstance(i, dict) and i.get("url")] if boards_on else []
+    for item in lists:
+        sources.note_list(record, item["url"], item.get("name") or item["url"], (board_meta.get("list_read") or {}).get(item["url"]))
+    sources.forget_gone(record, {f["url"] for f in feeds}, {i["url"] for i in lists})
+    counts = sources.board_counts({u: r for u, r in fetched.items() if _board_platform(u) != "workday"}, _board_platform) \
+        if boards_now and boards_on else None
+    for url in (board_meta.get("missing") or {}) if counts is not None else ():
+        # (a board that answered 404 lately isn't read for a day: still counted, as "not found", so a platform
+        # whose every board answers 404, an API that moved, is warned about)
+        if url not in fetched and _board_platform(url) != "workday":
+            platform_counts = counts.setdefault(_board_platform(url), {})
+            platform_counts["missing"] = platform_counts.get("missing", 0) + 1
+    workday_ran = (board_meta.get("workday") or {}).get("at") != (loaded_board_meta.get("workday") or {}).get("at")
+    paused = not entry or _setting(entry, "workday_minutes_per_run", workday.MINUTES_PER_RUN, 0, workday.RUN_MINUTES) <= 0
+    sources.note_run(record, now, boards=counts, workday=board_meta.get("workday") if workday_ran and not paused else None,
+                     matches=len(matches), left_out=len(left_out), entries=entries, failing=len(problems))
+    return record
+
+
+def _send_daily_check(config: dict, record: dict, now: datetime, board_targets: list[dict], board_meta: dict,
+                      entries: int, problems: list, found_alarms: list, pending: int) -> bool:
+    """The daily "still running" email (sources.summary), when due ("daily_check_hour_utc" in the
+    config: from that hour of the day, UTC on GitHub; absent or false: never). False if it couldn't
+    be sent (the next run tries again)."""
+    hour = config.get("daily_check_hour_utc")
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    if hour is None or hour is False or not sources.summary_due(record, now, hour, now_utc):
+        return True
+    platforms = Counter(_board_platform(b["url"]) for b in board_targets)
+    day_ago = now - timedelta(hours=24)
+    read_day = sum(1 for info in (board_meta.get("known") or {}).values() if isinstance(info, dict)
+                   and _board_platform(str(info.get("url"))) == "workday"
+                   and (sources._when(info.get("read_at")) or datetime.min) >= day_ago)
+    facts = {"boards": {p: n for p, n in platforms.items() if p != "workday"}, "workday_sites": platforms.get("workday", 0),
+             "workday_read_day": read_day, "entries": entries, "pending": pending,
+             "boards_checked_at": board_meta.get("checked_at")}
+    subject, plain, html = sources.summary(record, now, facts, found_alarms, _problem_lines(problems), now_utc)
+    print_console_safe("\n" + plain)
+    if send_messages(config, [(subject, plain, html)]) == 1:
+        record["summary_at"] = now.isoformat(timespec="seconds")
+        record["summary_day"] = now_utc.date().isoformat()
+        return True
+    log.error("The daily check email wasn't sent; the next run tries again.")
+    return False
 
 
 # ===================================================================
@@ -3405,7 +3763,7 @@ def _board_meta(state: dict) -> dict:
         return copy.deepcopy(meta[key]) if isinstance(meta.get(key), dict) else {}
     return {"checked_at": meta.get("checked_at"), "known": part("known"), "etags": part("etags"),
             "list_etags": part("list_etags"), "missing": part("missing"), "workable": part("workable"),
-            "workday": part("workday"), "greenhouse_sites": part("greenhouse_sites")}
+            "workday": part("workday"), "greenhouse_sites": part("greenhouse_sites"), "list_read": part("list_read")}
 
 
 def _finish_board_check(meta: dict, fetched: dict, board_urls: set, full: bool):

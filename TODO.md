@@ -69,6 +69,18 @@ Jobright aren't needed.
 - [ ] SmartRecruiters boards still keep up to 1,000 postings each (0.8 MB today): only their
       newest pages are read, so a posting missing there may still be open and isn't forgotten.
 
+## Not missing anything
+- [x] **Big emails in parts** (Nov 2026): Gmail cuts off an email past about 100 KB (about 450
+      roles); an email over 80 KB now goes as "part 1 of N", each under 80 KB.
+- [x] **Top picks** at the top of emails with 10 or more roles (new-grad titles, the lists' roles,
+      level-one titles).
+- [x] **A whole source stopping** (Nov 2026): a warning at the top of every email (Workday reading
+      nothing, a platform's boards mostly failing, boards not checked, a list gone quiet), and a
+      daily "still running" email: `sources.py`.
+- [ ] **After a couple of weeks of daily checks**: look at the warnings that came (and any that
+      should have): tune the thresholds in `sources.py` (3 runs, 3 checks, half the boards, 3
+      days); a warning that's often wrong gets ignored.
+
 ## Housekeeping
 - [ ] Delete the stale `state.json` on `main` (the state lives on the `monitor-state` branch).
 - [ ] Delete the old log of workflow run 37739926237.
