@@ -136,6 +136,17 @@ With `"email_every_hours": 2` (as in `config_all.json`) at most one email goes o
 hours, carrying everything found since the last one; `0` emails after every run that finds
 something.
 
+An email with 10 or more roles starts with **top picks**: up to 15 roles whose title says new
+grad, university, early career or entry level, then roles from the new-grad lists, then
+level-one titles (Software Engineer I, Junior); they're listed under their companies too.
+`"top_picks"` in the config changes the phrases, the limit and when it shows (`false`: never).
+
+A **big email goes in parts** ("part 1 of 3"...), each kept under about 80 KB: Gmail cuts off an
+email past about 100 KB, hiding the rest behind "[Message clipped]". That happens after a gap
+(an email that failed) or when a new kind of company board is checked for the first time. The
+warnings and top picks are in part 1, the left-out list in the last part, and a company too long
+for one part is continued in the next.
+
 ### New-grad lists maintained by others (startups and mid-size companies)
 
 A target with `"mode": "feed"` reads a list of postings that someone else keeps up to date,
@@ -708,6 +719,32 @@ What to do:
   reach you through the new-grad lists, a day or two later. (Workday entries are already read
   through the browser when plain requests are refused; see [Workday](#workday).)
 
+### When a whole source stops
+
+A company board that can't be read now and then is normal, but a whole source going quiet would
+look just like "no new jobs". So every email starts with a warning while one of these lasts
+(`sources.py`):
+
+- **Workday** read no site in 3 runs in a row (Workday refusing the browser, or the runs running
+  out of time before Workday's turn; not while you've paused it with `workday_minutes_per_run`);
+- **a job-board platform** (Greenhouse, Ashby, Lever, Workable, SmartRecruiters, Oracle): half or
+  more of its boards (10 or more) couldn't be read in 3 hourly checks in a row;
+- **the company boards** weren't checked for 6 hours (they're checked every hour);
+- **a new-grad list** added no posting for 3 days (it may have stopped updating, or moved), or a
+  list used to find companies couldn't be read for 3 days.
+
+A run can't report that the runs stopped altogether, so once a day (`"daily_check_hour_utc":
+14` in `config_all.json`: 14:00 UTC, 8 AM US Central) a short **Daily check** email says the
+monitor is still running: how many runs there were in the last 24 hours (about 48 expected),
+how many company boards, Workday sites and entries were checked, how many roles were found and
+emailed, and the same warnings. **If a day passes without one, the runs have stopped**: look at
+the Actions tab (a failed run, or none since a while: see "Reliable runs every 30 minutes"
+above). What it needs is kept in `state.json` (`_sources`, the last 2 days of runs).
+
+What to do about a warning: open the latest run's log on the Actions tab and search for the
+source's name (`[workday]`, `[boards]`, the list's name). A list that moved needs its new
+address in `targets/new_grad_lists.json`; a platform that changed its API needs a code change.
+
 ### Changing things
 
 - **How often:** change the schedule of the cron-job.org job (see above). The backup schedule
@@ -745,6 +782,7 @@ run that uses the `monitor-state` branch; after that it isn't used or updated.
 | File | Purpose |
 |---|---|
 | `job_monitor.py` | The monitor: reads the config, checks every entry, emails what's new |
+| `sources.py` | Whether whole sources still work (the warnings at the top of emails) and the daily check email; `job_monitor.py` needs it next to it |
 | `TODO.md` | What's planned next, and the goal: as many companies as possible, from their own job boards |
 | `boards/` | Readers for company job sites, one file each (`boards/workable.py`, `boards/workday.py`), and `boards/browser.py`, the headless browser Workday is read through; `job_monitor.py` needs this folder next to it |
 | `config_all.json` | Shipped settings; used by default (see step 2) |

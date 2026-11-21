@@ -6,6 +6,7 @@ Run from the repo root:
 """
 
 import copy
+import email.header
 import email.utils
 import hashlib
 import errno
@@ -185,13 +186,14 @@ class MonitorTestCase(unittest.TestCase):
         self.emails_attempted = 0
         real_send_email = jm.send_email
 
-        def spy(cfg, all_new, left_out=None, left_out_summary=None, problems=None):
+        def spy(cfg, all_new, left_out=None, left_out_summary=None, problems=None, **extra):
             self.emails_attempted += 1
             self.problems = problems
+            self.email_extra = extra  # (alarms, top picks)
             reported.update({name: [j["title"] for j in jobs] for name, jobs in all_new.items()})
             self.left_out = {name: [j["title"] for j in jobs] for name, jobs in (left_out or {}).items()}
             self.left_out_summary = left_out_summary
-            return real_send_email(cfg, all_new, left_out=left_out, left_out_summary=left_out_summary, problems=problems)
+            return real_send_email(cfg, all_new, left_out=left_out, left_out_summary=left_out_summary, problems=problems, **extra)
 
         with mock.patch.object(jm, "send_email", spy):
             result = jm.run(str(config_path))
@@ -987,7 +989,7 @@ class DetectionTests(MonitorTestCase):
         self.assertEqual(reported, {"Acme": ["Data Analyst"]})
         # (marked as reported, for any other entry for the same company: see SameCompanyTests)
         saved = self.saved_state()
-        self.assertEqual({k: v for k, v in saved.items() if k != jm.HEALTH_KEY},
+        self.assertEqual({k: v for k, v in saved.items() if k not in (jm.HEALTH_KEY, jm.SOURCES_KEY)},
                          {URL: [{"title": "Data Analyst", "url": "https://acme.example/jobs/data-analyst",
                                  jm.REPORTED_MARK: jm.SHOWN_AS_MATCH}]})
         self.assertEqual(list(saved[jm.HEALTH_KEY]), [other])  # the broken one is noted (see HealthTests)
@@ -1254,7 +1256,7 @@ class RoleFilterTests(MonitorTestCase):
         _, reported = self.run_monitor([target()], keyword_filters=["engineer"])
         self.assertEqual(reported, {"Acme": ["Software Engineer"]})
         self.assertEqual(self.left_out, {})
-        self.assertEqual(set(self.saved_state()), {URL})
+        self.assertEqual(set(self.saved_state()) - {jm.SOURCES_KEY}, {URL})
 
     def test_keyword_leftovers_listed_when_asked(self):
         self.mark_known(URL)
@@ -2565,6 +2567,229 @@ class GreenhouseSitesTests(MonitorTestCase):
         self.assertEqual(run(), {"Acme": ["Software Engineer, ML"]})
         self.assertEqual(sum(1 for u, _ in self.requests_made if u == self.EMBED.format(4000001)), 1)  # (asked once)
         self.assertIn("| Acme | [Greenhouse](https://job-boards.greenhouse.io/acme) |", jm.boards_page_path().read_text())
+
+
+def roles(company, n, title="Software Engineer", start=0):
+    return [{"title": f"{title} (team {i})", "url": f"https://{company.lower()}.example/jobs/{start + i}", "location": "New York, NY",
+             "group": company} for i in range(n)]
+
+
+def subject_of(msg) -> str:
+    return str(email.header.make_header(email.header.decode_header(msg["Subject"])))
+
+
+def html_of(msg) -> str:
+    return next(p.get_payload(decode=True).decode() for p in msg.walk() if p.get_content_type() == "text/html")
+
+
+class EmailPartsTests(MonitorTestCase):
+    """A big email goes in parts, so Gmail (which cuts off an email past about 102 KB) shows all of it."""
+
+    def test_a_small_email_is_one_part(self):
+        parts = jm.email_parts({"Acme": roles("Acme", 3)})
+        self.assertEqual([p["part"] for p in parts], [(1, 1)])
+        self.assertNotIn("Part 1 of", jm.format_html_report(**parts[0]))
+        self.assertTrue(jm.send_email({"email": WORKING_EMAIL}, {"Acme": roles("Acme", 3)}))
+        self.assertEqual([subject_of(m) for _, m in self.emails_sent()], ["[Job Monitor] 3 new job postings found"])
+
+    def test_a_big_email_goes_in_parts_each_under_the_limit_with_every_role_once(self):
+        all_new = {"Acme": roles("Acme", 40), "Bigco": roles("Bigco", 700), **{f"Co{i}": roles(f"Co{i}", 5) for i in range(60)}}
+        left_out = {"Acme": [{"title": "Senior Engineer", "url": "https://acme.example/jobs/s", "reason": "senior"}]}
+        summary = {"total": 1, "by_reason": {"senior": 1}, "listed": [], "link": "left_out.md"}
+        problems = [{"name": "Beta", "url": "u", "why": "it couldn't be read", "since": "2026-11-20T10:00:00"}]
+        alarms = [{"name": "Workday", "why": "no company Workday site could be read", "since": None}]
+        top = roles("Acme", 2, "Software Engineer, New Grad")
+        parts = jm.email_parts(all_new, left_out, summary, problems, alarms, top)
+        count = len(parts)
+        self.assertGreater(count, 2)
+        htmls = [jm.format_html_report(**p) for p in parts]
+        self.assertTrue(all(len(h.encode()) <= jm.EMAIL_MAX_HTML_BYTES for h in htmls), [len(h) for h in htmls])
+        # Every role exactly once, in order; Bigco is continued from part to part.
+        listed = [j["url"] for p in parts for jobs in p["all_new"].values() for j in jobs]
+        self.assertEqual(listed, [j["url"] for jobs in all_new.values() for j in jobs])
+        self.assertIn("Bigco (continued)", [name for p in parts for name in p["all_new"]])
+        # The warnings and top picks in the first part only; the left-out list in the last.
+        self.assertIn("Sources that may have stopped working", htmls[0])
+        self.assertIn("aren't working", htmls[0])
+        self.assertIn("Top picks", htmls[0])
+        self.assertFalse(any("Top picks" in h or "aren't working" in h for h in htmls[1:]))
+        self.assertIn("Senior Engineer", htmls[-1])
+        self.assertFalse(any("Senior Engineer" in h for h in htmls[:-1]))
+        self.assertIn(f"Part 2 of {count}", htmls[1])
+        self.assertIn(f"Part 2 of {count}", jm.format_plain_report(**parts[1]))
+        # Sent as that many emails, numbered.
+        self.assertTrue(jm.send_email({"email": WORKING_EMAIL}, all_new, left_out, summary, problems, alarms, top))
+        sent = self.emails_sent()
+        self.assertEqual([subject_of(m) for _, m in sent],
+                         [f"[Job Monitor] 1040 new job postings found (+1 left out by filters) (part {i} of {count})" for i in range(1, count + 1)])
+        self.assertTrue(all(len(html_of(m).encode()) <= jm.EMAIL_MAX_HTML_BYTES for _, m in sent))
+
+    def test_a_failed_part_keeps_every_posting_for_the_next_run(self):
+        class FailSecond(FakeSMTP):
+            def send_message(self, msg):
+                if self.sent:
+                    raise smtplib.SMTPServerDisconnected("gone")
+                super().send_message(msg)
+        self.patch(jm.smtplib, "SMTP", FailSecond)
+        with self.assertLogs(jm.log, "ERROR") as logs:
+            self.assertFalse(jm.send_email({"email": WORKING_EMAIL}, {"Bigco": roles("Bigco", 900)}))
+        self.assertTrue(any("1 of" in line and "parts were sent" in line for line in logs.output))
+
+
+class TopPicksTests(MonitorTestCase):
+    def test_new_grad_titles_first_then_the_lists_then_level_one(self):
+        alerts = (roles("Acme", 6) + [{"title": "Software Engineer II", "url": "https://acme.example/jobs/ii", "group": "Acme"},
+                                      {"title": "Software Engineer I", "url": "https://acme.example/jobs/i", "group": "Acme"},
+                                      {"title": "Backend Engineer", "url": "https://zeta.example/jobs/1",
+                                       "group": "Zeta (via SimplifyJobs New Grad)", "source": SIMPLIFY_URL},
+                                      {"title": "Software Engineer, New Grad 2026", "url": "https://beta.example/jobs/ng", "group": "Beta"},
+                                      {"title": "University Graduate - Software Engineer", "url": "https://gamma.example/jobs/u", "group": "Gamma"}])
+        picks = jm.pick_top(alerts, jm.TOP_PICKS, {SIMPLIFY_URL})
+        self.assertEqual([j["title"] for j in picks], ["Software Engineer, New Grad 2026", "University Graduate - Software Engineer",
+                                                       "Backend Engineer", "Software Engineer I"])
+        self.assertIn("Zeta: Backend Engineer", jm.format_plain_report({"Acme": alerts}, top=picks))
+        self.assertEqual(jm.pick_top(alerts[:9], jm.TOP_PICKS, {SIMPLIFY_URL}), [])  # (fewer than 10 roles: no section)
+        self.assertEqual(jm.pick_top(alerts, False, {SIMPLIFY_URL}), [])
+        self.assertEqual(len(jm.pick_top(alerts, {**jm.TOP_PICKS, "limit": 2}, {SIMPLIFY_URL})), 2)
+
+    def test_the_email_has_its_top_picks(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named(*[f"Data Engineer (team {i})" for i in range(9)], "Software Engineer - New Grad"))
+        _, reported = self.run_monitor([target()], email=WORKING_EMAIL)
+        self.assertEqual([j["title"] for j in self.email_extra["top"]], ["Software Engineer - New Grad"])
+        self.assertIn("Top picks", html_of(self.emails_sent()[0][1]))
+
+
+def source_record(**extra):
+    return {**jm.sources.record_of(None), **extra}
+
+
+def run_at(hours_ago, **extra):
+    return {"at": (datetime.now() - timedelta(hours=hours_ago)).isoformat(timespec="seconds"), "matches": 0, "left_out": 0,
+            "entries": 0, "failing": 0, **extra}
+
+
+class SourceAlarmTests(unittest.TestCase):
+    """Whole sources that look like they stopped (sources.py)."""
+
+    def alarms(self, record, **kwargs):
+        return [a["name"] + ": " + a["why"] for a in jm.sources.alarms(record, datetime.now(), **kwargs)]
+
+    def test_workday_reading_nothing_three_runs_in_a_row(self):
+        blocked = {"sites": 300, "read": 0, "skipped": 3, "missing": 0}
+        late = {"sites": 300, "read": 0, "skipped": 0, "missing": 0}
+        fine = {"sites": 300, "read": 250, "skipped": 2, "missing": 0}
+        self.assertEqual(self.alarms(source_record(runs=[run_at(2, workday=fine), run_at(1.5, workday=blocked), run_at(1, workday=blocked)])), [])
+        found = self.alarms(source_record(runs=[run_at(h, workday=blocked) for h in (1.5, 1, 0.5)]))
+        self.assertEqual(len(found), 1)
+        self.assertIn("refusing the browser", found[0])
+        self.assertIn("ran out of time", self.alarms(source_record(runs=[run_at(h, workday=late) for h in (1.5, 1, 0.5)]))[0])
+        # (runs that didn't read Workday, as when you pause it, don't count)
+        self.assertEqual(self.alarms(source_record(runs=[run_at(2, workday=fine)] + [run_at(h) for h in (1.5, 1, 0.5)])), [])
+
+    def test_a_platform_whose_boards_mostly_fail_in_three_checks(self):
+        bad = {"lever": {"ok": 20, "unchanged": 30, "missing": 1, "failed": 150}, "greenhouse": {"ok": 900, "unchanged": 0, "missing": 0, "failed": 3}}
+        found = self.alarms(source_record(runs=[run_at(h, boards=bad) for h in (3, 2, 1)]))
+        self.assertEqual(found, ["Lever: 150 of its 200 company boards couldn't be read, and as many in each of the last 3 checks"])
+        self.assertEqual(self.alarms(source_record(runs=[run_at(h, boards=bad) for h in (2, 1)])), [])
+        few = {"ashby": {"ok": 1, "unchanged": 0, "missing": 0, "failed": 5}}
+        self.assertEqual(self.alarms(source_record(runs=[run_at(h, boards=few) for h in (3, 2, 1)])), [])
+
+    def test_boards_not_checked_and_lists_gone_quiet(self):
+        old = (datetime.now() - timedelta(hours=80)).isoformat(timespec="seconds")
+        recent = (datetime.now() - timedelta(hours=5)).isoformat(timespec="seconds")
+        record = source_record(feeds={SIMPLIFY_URL: {"name": "SimplifyJobs New Grad", "last_new": old},
+                                      "https://x.example/f": {"name": "Other list", "last_new": recent}},
+                               lists={INTERNSHIPS_URL: {"name": "SimplifyJobs Internships", "read": old}})
+        found = self.alarms(record, boards_checked_at=(datetime.now() - timedelta(hours=7)).isoformat(), boards_on=True)
+        self.assertEqual([f.split(":")[0] for f in found], ["Company job boards", "SimplifyJobs New Grad", "SimplifyJobs Internships"])
+        self.assertEqual(len(self.alarms(record, boards_checked_at=recent, boards_on=True)), 2)
+        self.assertEqual(len(self.alarms(record, boards_checked_at=None, boards_on=True)), 2)  # (never checked yet)
+
+    def test_odd_saved_records_are_repaired_and_old_runs_dropped(self):
+        record = jm.sources.record_of({"runs": [{"at": "x"}, run_at(60), run_at(1)], "feeds": [], "lists": {"a": "b"}, "summary_at": 5})
+        self.assertEqual((len(record["runs"]), record["feeds"], record["lists"], record["summary_at"]), (2, {}, {}, None))
+        jm.sources.note_run(record, datetime.now())
+        self.assertEqual(len(record["runs"]), 2)  # (the one 60 hours old is dropped)
+
+    def test_the_daily_check_is_due_once_a_day_from_its_hour(self):
+        due = jm.sources.summary_due
+        at = lambda h, m=0: datetime(2026, 11, 21, h, m)
+        self.assertFalse(due(source_record(), at(13, 30), 14))
+        self.assertTrue(due(source_record(), at(14, 5), 14))
+        self.assertFalse(due(source_record(summary_at=at(14, 5).isoformat()), at(23), 14))
+        self.assertTrue(due(source_record(summary_at=at(14, 5).isoformat()), datetime(2026, 11, 22, 14, 2), 14))
+        self.assertFalse(due(source_record(summary_at=at(14, 5).isoformat()), datetime(2026, 11, 22, 9), 14))
+        self.assertTrue(due(source_record(summary_at=at(2).isoformat()), datetime(2026, 11, 22, 9), 14))  # (31 hours: at once)
+
+
+class DailyCheckTests(MonitorTestCase):
+    """The daily "still running" email, and the source warnings in the emails."""
+
+    def run_daily(self, **extra):
+        self.mark_known(URL) if not jm.STATE_PATH.exists() else None
+        self.pages[URL] = page(*jobs_named("Software Engineer"))
+        return self.run_monitor([target()], email=WORKING_EMAIL, daily_check_hour_utc=0, email_every_hours=2, **extra)
+
+    def daily_emails(self):
+        return [m for _, m in self.emails_sent() if "Daily check" in subject_of(m)]
+
+    def test_once_a_day_with_what_was_checked_and_sent(self):
+        self.run_daily()
+        daily = self.daily_emails()
+        self.assertEqual(len(daily), 1)
+        self.assertEqual(subject_of(daily[0]), "[Job Monitor] Daily check: running fine (1 role emailed in the last day)")
+        body = html_of(daily[0])
+        self.assertIn("All sources look normal", body)
+        self.assertIn("Your own entries: 1 checked each run, all working.", body)
+        record = next(iter(self.saved_state()[jm.SOURCES_KEY].values()))
+        self.assertTrue(record["summary_at"])
+        self.assertEqual([e["roles"] for e in record["emails"]], [1])
+        self.run_daily()
+        self.assertEqual(len(self.daily_emails()), 1)  # (not again the same day)
+
+    def test_off_unless_the_config_asks_for_it(self):
+        self.mark_known(URL)
+        self.pages[URL] = page(*jobs_named("Software Engineer"))
+        self.run_monitor([target()], email=WORKING_EMAIL)
+        self.assertEqual(self.daily_emails(), [])
+
+    def test_a_list_gone_quiet_is_warned_about_in_the_emails_and_the_daily_check(self):
+        feed = target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify", categories=["Software"], max_age_days=7)
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Acme", "Software Engineer")])
+        self.run_monitor([feed], email=WORKING_EMAIL)  # (first check)
+        state = self.saved_state()
+        config_id, record = next(iter(state[jm.SOURCES_KEY].items()))
+        record["feeds"][SIMPLIFY_URL]["last_new"] = (datetime.now() - timedelta(days=4)).isoformat(timespec="seconds")
+        jm.save_state({}, sources=(config_id, record))
+        self.pages[URL] = page(*jobs_named("Software Engineer"))
+        self.mark_known(URL)
+        with self.assertLogs(jm.log, "WARNING") as logs:
+            self.run_monitor([feed, target()], email=WORKING_EMAIL, daily_check_hour_utc=0)
+        self.assertTrue(any("[sources] 1 may have stopped working: SimplifyJobs New Grad" in line for line in logs.output))
+        self.assertEqual([a["name"] for a in self.email_extra["alarms"]], ["SimplifyJobs New Grad"])
+        daily = self.daily_emails()
+        self.assertEqual(subject_of(daily[0]), "[Job Monitor] Daily check: 1 source(s) may have stopped working (1 role emailed in the last day)")
+        self.assertIn("no new posting since", html_of(daily[0]))
+        # A new posting in the list: the warning goes.
+        self.pages[SIMPLIFY_URL] = json.dumps([simplify_row("Acme", "Software Engineer"), simplify_row("Beta", "Data Engineer")])
+        self.run_monitor([feed, target()], email=WORKING_EMAIL)
+        record = self.saved_state()[jm.SOURCES_KEY][config_id]
+        self.assertEqual(jm.sources.alarms(record, datetime.now()), [])
+
+    def test_a_daily_check_that_cant_be_sent_fails_the_run_and_is_tried_again(self):
+        self.mark_known(URL)
+        self.pages[URL] = page()
+        FakeSMTP.fail_with = smtplib.SMTPAuthenticationError(535, b"bad password")
+        self.addCleanup(setattr, FakeSMTP, "fail_with", None)
+        with self.assertLogs(jm.log, "ERROR"):
+            ok, _ = self.run_monitor([target()], email=WORKING_EMAIL, daily_check_hour_utc=0)
+        self.assertFalse(ok)
+        self.assertIsNone(next(iter(self.saved_state()[jm.SOURCES_KEY].values()))["summary_at"])
+        FakeSMTP.fail_with = None
+        ok, _ = self.run_monitor([target()], email=WORKING_EMAIL, daily_check_hour_utc=0)
+        self.assertTrue(ok)
+        self.assertEqual(len(self.daily_emails()), 1)
 
 
 class BoardTests(MonitorTestCase):
@@ -5630,6 +5855,7 @@ class CommandLineTests(unittest.TestCase):
         self.tmp = Path(tmp.name)
         shutil.copy(REPO_DIR / "job_monitor.py", self.tmp / "job_monitor.py")
         shutil.copytree(REPO_DIR / "boards", self.tmp / "boards", ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copy(REPO_DIR / "sources.py", self.tmp / "sources.py")
 
         self.handler = type("Page", (_CareersPage,), {})
         server = ThreadingHTTPServer(("127.0.0.1", 0), self.handler)
