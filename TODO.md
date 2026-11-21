@@ -35,6 +35,12 @@ Jobright aren't needed.
       check `greenhouse_sites` in `state.json` after a few weeks for any still missing (some may
       have left Greenhouse).
 - [ ] **Other job sites the lists link**: TikTok/ByteDance, Rippling, Jobvite, BambooHR.
+- [ ] **Companies on job sites not read yet** (Nov 2026, from a list of companies to cover): iCIMS / Jibe
+      (ICE, Rivian, Viasat, Bank OZK, CDM Smith: see iCIMS above), Gem (Casap, Nuvo, 43North's
+      companies), Rippling (Free Market Health, Pathos), JazzHR (H2O.ai, SWJ Technology), Dayforce
+      (Interactive Brokers, Ultimus), Avature (Koch / Molex), SuccessFactors / Eightfold (NetApp),
+      Recruitee (Aikido Security), Paylocity, UltiPro (Salk Institute), RippleHire (UST), and own
+      sites (TCS, Mphasis, FullStack). Gem, Rippling, JazzHR and Recruitee have public job APIs.
 - [ ] **Beyond the four lists**: find more sources of companies (other new-grad lists, startup
       directories) so the registry grows past what the lists link.
 

@@ -39,7 +39,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urljoin
-from urllib.parse import urlparse, urlunparse, parse_qs
+from urllib.parse import urlparse, urlunparse, parse_qs, quote, unquote
 
 try:
     import fcntl  # POSIX only; on Windows saves to state.json are not locked
@@ -1434,6 +1434,7 @@ SMARTRECRUITERS_MAX_PAGES = 3          # more than one page only while a full pa
 SMARTRECRUITERS_RECENT_DAYS = 3
 _GREENHOUSE_BOARD_HOST = re.compile(r"^(?:job-)?boards(?:\.[a-z]{2,3})?\.greenhouse\.io$")
 _BOARD_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+_ASHBY_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.-]*$")
 
 
 def board_api_url(job_url) -> tuple[str, str] | None:
@@ -1450,7 +1451,11 @@ def board_api_url(job_url) -> tuple[str, str] | None:
         slug = (parse_qs(parsed.query).get("for") or [""])[0] if parts[:1] == ["embed"] else (parts[:1] or [""])[0]
         platform, api, slug = "greenhouse", "https://boards-api.greenhouse.io/v1/boards/{}/jobs", slug.lower()
     elif host == "jobs.ashbyhq.com":
-        platform, api, slug = "ashby", "https://api.ashbyhq.com/posting-api/job-board/{}", (parts[:1] or [""])[0]
+        # (a board's name can have spaces: jobs.ashbyhq.com/Alpaca%20Research, Flock Safety, The Browser Company...)
+        name = unquote((parts[:1] or [""])[0]).strip()
+        if not _ASHBY_NAME.match(name):
+            return None
+        return "ashby", "https://api.ashbyhq.com/posting-api/job-board/" + quote(name, safe="")
     elif host in ("jobs.lever.co", "jobs.eu.lever.co"):
         api_host = "api.eu.lever.co" if host == "jobs.eu.lever.co" else "api.lever.co"
         platform, api, slug = "lever", f"https://{api_host}/v0/postings/{{}}", (parts[:1] or [""])[0].lower()

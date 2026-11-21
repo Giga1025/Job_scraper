@@ -3079,6 +3079,22 @@ class BoardTests(MonitorTestCase):
         _, reported = self.run_boards(email_every_hours=2)  # boards not due this run
         self.assertEqual(reported, {"Acme": ["Software Engineer"]})
 
+    def test_an_ashby_board_whose_name_has_spaces(self):
+        api = "https://api.ashbyhq.com/posting-api/job-board/Alpaca%20Research"
+        for link in ("https://jobs.ashbyhq.com/Alpaca%20Research/32ea17a8-756d-4873-bd8b-51bd65bac175",
+                     "https://jobs.ashbyhq.com/Alpaca Research", "https://jobs.ashbyhq.com/Alpaca%20Research?utm_source=x"):
+            self.assertEqual(jm.board_api_url(link), ("ashby", api), link)
+        for bad in ("https://jobs.ashbyhq.com/a%2Fb", "https://jobs.ashbyhq.com/", "https://jobs.ashbyhq.com/%3Cx%3E"):
+            self.assertIsNone(jm.board_api_url(bad), bad)
+        self.assertEqual(jm._board_page(api), "https://jobs.ashbyhq.com/Alpaca%20Research")
+        self.pages[api] = json.dumps({"jobs": [{"id": "0e7ecf76-1111-4a2b-9c3d-000000000001", "title": "Software Engineer",
+                                                "jobUrl": "https://jobs.ashbyhq.com/Alpaca%20Research/0e7ecf76-1111-4a2b-9c3d-000000000001",
+                                                "location": "Boise, ID", "isListed": True}]})
+        self.assertEqual([j["title"] for j in jm.fetch_ashby_api_jobs(api)], ["Software Engineer"])
+        known = {}
+        jm.grow_board_registry(known, [("https://jobs.ashbyhq.com/Alpaca%20Research/x", "Alpaca Research")], "a list", "2026-11-21")
+        self.assertEqual([(i["name"], i["url"]) for i in known.values()], [("Alpaca Research", api)])
+
     def test_boards_from_the_config_and_from_lists_used_only_to_find_companies(self):
         self.pages[INTERNSHIPS_URL] = json.dumps([
             {"url": "https://jobs.ashbyhq.com/zeta/0e7ecf76-1111-4a2b-9c3d-000000000001", "company_name": "Zeta"}])
