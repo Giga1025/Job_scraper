@@ -39,7 +39,8 @@ SUMMARY_LATE_HOURS = 30     # the daily email goes at once if the last one is th
 DEFAULT_SUMMARY_HOUR = 14   # ...else once a UTC day, from this hour (8 AM US Central, 6 AM Pacific)
 
 PLATFORM_NAMES = {"greenhouse": "Greenhouse", "ashby": "Ashby", "lever": "Lever", "workable": "Workable",
-                  "smartrecruiters": "SmartRecruiters", "oracle": "Oracle", "workday": "Workday"}
+                  "smartrecruiters": "SmartRecruiters", "oracle": "Oracle", "workday": "Workday",
+                  "jibe": "iCIMS (Jibe)", "rippling": "Rippling", "gem": "Gem"}
 
 
 def _when(stamp) -> datetime | None:

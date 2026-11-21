@@ -4,8 +4,13 @@
 Jobright aren't needed.
 
 ## Next
-- [ ] **iCIMS**: read companies' iCIMS career sites (about 6% of the lists' postings; research done:
-      about 376 iCIMS portals and 95 company sites linked by the lists).
+- [x] **iCIMS career sites built on Jibe** (Nov 2026): about 130 sites the lists link (AMD, Keysight,
+      Rivian, Garmin, Viasat, ICE, Schneider Electric...) are company boards now, read each hour
+      through their public API (`boards/jibe.py`).
+- [ ] **iCIMS classic portals** (`*.icims.com`, about 340 in the lists, like Bank OZK's): no JSON
+      API; read the portal's search page (`/jobs/search?ss=1&in_iframe=1`, newest first) and the
+      JSON-LD on each new posting's page, in `boards/icims.py`. A portal whose company also has a
+      Jibe site is already covered (its postings have the same numbers).
 - [x] **Workday**: about 37% of the lists' postings (about 1,340 company sites: about 640 from the
       new-grad lists, about 700 more from the internship list). Read through the headless browser
       when Workday refuses plain requests from GitHub's machines (since Nov 16), a few minutes per
@@ -34,13 +39,14 @@ Jobright aren't needed.
       SentinelOne, Skyscanner...): they're matched once the lists link one of their open postings;
       check `greenhouse_sites` in `state.json` after a few weeks for any still missing (some may
       have left Greenhouse).
-- [ ] **Other job sites the lists link**: TikTok/ByteDance, Rippling, Jobvite, BambooHR.
-- [ ] **Companies on job sites not read yet** (Nov 2026, from a list of companies to cover): iCIMS / Jibe
-      (ICE, Rivian, Viasat, Bank OZK, CDM Smith: see iCIMS above), Gem (Casap, Nuvo, 43North's
-      companies), Rippling (Free Market Health, Pathos), JazzHR (H2O.ai, SWJ Technology), Dayforce
+- [x] **Rippling and Gem** (Nov 2026): about 180 Rippling boards the lists link, and Gem boards
+      (Nuvo, Casap, 43North's companies, Albacore), read whole each hour (`boards/rippling.py`, `boards/gem.py`).
+- [ ] **Other job sites the lists link**: TikTok/ByteDance, Jobvite, BambooHR.
+- [ ] **Companies on job sites not read yet** (Nov 2026, from a list of companies to cover): iCIMS
+      classic portals (Bank OZK: see above), JazzHR (H2O.ai, SWJ Technology), Dayforce
       (Interactive Brokers, Ultimus), Avature (Koch / Molex), SuccessFactors / Eightfold (NetApp),
       Recruitee (Aikido Security), Paylocity, UltiPro (Salk Institute), RippleHire (UST), and own
-      sites (TCS, Mphasis, FullStack). Gem, Rippling, JazzHR and Recruitee have public job APIs.
+      sites (TCS, Mphasis, FullStack). JazzHR and Recruitee have public job APIs.
 - [ ] **Beyond the four lists**: find more sources of companies (other new-grad lists, startup
       directories) so the registry grows past what the lists link.
 

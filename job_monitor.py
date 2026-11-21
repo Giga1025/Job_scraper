@@ -57,7 +57,7 @@ except ImportError:
 
 # Job-board readers live in the boards/ package, one module per job site.
 import sources
-from boards import greenhouse, oracle, workable, workday
+from boards import gem, greenhouse, jibe, oracle, rippling, workable, workday
 from boards.common import HEADERS, MONITOR_USER_AGENT, hours_since as _hours_since, posted_at as _posted_at
 
 # ---------------------------------------------------------------------------
@@ -78,7 +78,7 @@ STATE_RETENTION_PER_TARGET = 1000
 # company's open roles and those closed lately rather than every role it ever had. Remembering it a
 # while keeps one that comes back, or that a list links a few days later, from being emailed again.
 FORGET_GONE_DAYS = 60
-FORGET_GONE_PLATFORMS = ("greenhouse", "ashby", "lever", "workable")
+FORGET_GONE_PLATFORMS = ("greenhouse", "ashby", "lever", "workable", "rippling", "gem")
 GONE_KEY = "gone"  # on such a posting: the day it was first missing from its board
 
 SMTP_TIMEOUT_SECONDS = 30
@@ -1071,6 +1071,49 @@ def fetch_oracle_hcm_jobs(url: str, get_json=None) -> list[dict] | None:
     return _dedupe_jobs(jobs)
 
 
+def fetch_jibe_jobs(url: str, get_json=None) -> list[dict] | None:
+    """https://<host>/api/jobs?...sortBy=posted_date... : an iCIMS Jibe site's newest postings (boards/jibe.py)."""
+    get_json = get_json or (lambda u, params=None: _get_json(u, params))
+    data = get_json(url)
+    if not isinstance(data, dict) or not isinstance(data.get("jobs"), list):
+        return None
+    host = urlparse(url).netloc.lower()
+    jobs = jibe.jobs_from(data, host)
+    page = 1
+    while page < jibe.MAX_PAGES and jibe.read_further(jobs, len(data["jobs"])):
+        page += 1  # (a busy site: the next newest too, so a run or two missed loses nothing)
+        data = get_json(jibe.api_url(host, page))
+        if not isinstance(data, dict) or not isinstance(data.get("jobs"), list):
+            break  # (what was read stands: a Jibe site's postings aren't forgotten for missing from a read)
+        jobs += jibe.jobs_from(data, host)
+    return _dedupe_jobs(jobs)
+
+
+def fetch_rippling_jobs(url: str, get_json=None) -> list[dict] | None:
+    """https://ats.rippling.com/api/v2/board/<board>/jobs?... : a Rippling board, whole (boards/rippling.py)."""
+    get_json = get_json or (lambda u, params=None: _get_json(u, params))
+    board = rippling.board_of(url)
+    data = get_json(url) if board else None
+    if not isinstance(data, dict):
+        return None
+    jobs, pages = rippling.jobs_from(data)
+    for page in range(1, min(pages, rippling.MAX_PAGES)):
+        more = get_json(rippling.api_url(board, page))
+        if not isinstance(more, dict):
+            return None  # (not the whole board: a job missing from a part read would be forgotten, then emailed again)
+        jobs += rippling.jobs_from(more)[0]
+    return _dedupe_jobs(jobs)
+
+
+def fetch_gem_jobs(url: str, get_json=None) -> list[dict] | None:
+    """https://api.gem.com/job_board/v0/<board>/job_posts/ : a Gem board, whole (boards/gem.py)."""
+    get_json = get_json or (lambda u, params=None: _get_json(u, params))
+    data = get_json(url)
+    if not isinstance(data, list):
+        return None
+    return _dedupe_jobs(gem.jobs_from(data))
+
+
 _TESLA_STATE_PATH = "/cua-api/apps/careers/state"
 _TESLA_HOSTS = ("www.tesla.com", "tesla.com", "www.tesla.cn")
 
@@ -1396,6 +1439,9 @@ def job_keys(url: str) -> set[tuple]:
         keys |= {("uuid", u) for u in _UUID_RE.findall(parsed.path)}
     if oracle.job_number(url):  # (host and requisition number, whatever the language or site in the link; GS and Uber's own links too)
         keys.add(("oracle",) + oracle.job_number(url))
+    for key in (jibe.job_key(url), gem.job_key(url)):  # (an iCIMS job by its customer, on any of its sites; a Gem post)
+        if key:
+            keys.add(key)
     if "myworkday" in host:
         token = parsed.path.rstrip("/").rsplit("_", 1)[-1]
         trimmed = re.fullmatch(r"(.*\d.*?)-\d{1,2}", token)
@@ -1439,8 +1485,8 @@ _ASHBY_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.-]*$")
 
 def board_api_url(job_url) -> tuple[str, str] | None:
     """(platform, the board's job-board API URL) for a posting link on Greenhouse, Ashby, Lever,
-    SmartRecruiters, Workable or Oracle (or the site's address, on Workday), else None (also for a
-    link that isn't a valid URL)."""
+    SmartRecruiters, Workable, Oracle, Rippling, Gem or an iCIMS Jibe site (or the site's address,
+    on Workday), else None (also for a link that isn't a valid URL)."""
     try:
         parsed = urlparse(str(job_url or "").strip())
     except ValueError:  # e.g. "https://[x": one bad row in a list mustn't stop the run
@@ -1472,6 +1518,14 @@ def board_api_url(job_url) -> tuple[str, str] | None:
     elif host.endswith(".oraclecloud.com"):
         site = oracle.site_of(job_url)  # (the company's Oracle site: host and site number; boards/oracle.py)
         return ("oracle", oracle.api_url(*site)) if site else None
+    elif host == rippling.HOST:
+        board = rippling.board_of(job_url)  # (boards/rippling.py)
+        return ("rippling", rippling.api_url(board)) if board else None
+    elif host == gem.HOST:
+        board = gem.board_of(job_url)  # (boards/gem.py)
+        return ("gem", gem.api_url(board)) if board else None
+    elif jibe.site_of(job_url):
+        return "jibe", jibe.api_url(jibe.site_of(job_url))  # (an iCIMS Jibe site, on any domain: boards/jibe.py)
     else:
         return None
     return (platform, api.format(slug)) if _BOARD_SLUG.match(slug) else None
@@ -1506,6 +1560,12 @@ def _board_page(api_url: str) -> str:
         return api_url
     if _board_platform(api_url) == "oracle":
         return oracle.page_url(api_url)
+    if _board_platform(api_url) == "jibe":
+        return jibe.page_url(api_url)
+    if _board_platform(api_url) == "rippling":
+        return rippling.page_url(api_url)
+    if _board_platform(api_url) == "gem":
+        return gem.page_url(api_url)
     if host == "api.smartrecruiters.com":
         return f"https://careers.smartrecruiters.com/{parts[-2]}"
     return f"https://{'jobs.eu.lever.co' if host == 'api.eu.lever.co' else 'jobs.lever.co'}/{parts[-1]}"
@@ -1519,6 +1579,12 @@ def _board_platform(api_url: str) -> str:
         return "workday"
     if oracle.is_api_url(api_url):
         return "oracle"
+    if jibe.is_api_url(api_url):
+        return "jibe"
+    if rippling.is_api_url(api_url):
+        return "rippling"
+    if gem.is_api_url(api_url):
+        return "gem"
     if host.endswith("greenhouse.io"):
         return "greenhouse"
     if host.endswith("ashbyhq.com"):
@@ -1555,6 +1621,8 @@ def grow_board_registry(known: dict, links, via: str, today: str) -> int:
     for key in sorted(urls):
         slug = workday.tenant_of(urls[key]) if _board_platform(urls[key]) == "workday" else \
             urlparse(urls[key]).netloc.split(".")[0] if _board_platform(urls[key]) == "oracle" else \
+            urlparse(urls[key]).netloc if _board_platform(urls[key]) == "jibe" else \
+            (rippling.board_of(urls[key]) or gem.board_of(urls[key]) or "") if _board_platform(urls[key]) in ("rippling", "gem") else \
             urls[key].rstrip("/").split("/")[-2 if "greenhouse" in key else -1]
         name = names[key].most_common(1)[0][0] if names[key] else slug
         known[key] = {"url": urls[key], "name": name, "added": today, "via": via}
@@ -1745,6 +1813,8 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
     yours_unmatched = {_entry_key(t.get("name")) for t in targets
                        if t.get("url") and t.get("mode") != "feed" and not oracle.knows_links_of(t["url"])} - {""}
     skip |= _greenhouse_boards_yours_cover(targets, state, meta)
+    skip |= jibe.same_client(known)  # (one company's two Jibe addresses: read once)
+    skip |= _jibe_sites_yours_cover(targets, known)
     skip_companies = {_entry_key(n) for n in entry.get("skip_companies") or []} - {""}
     tech = _phrase_pattern(entry.get("tech_titles")) if entry.get("tech_titles") else None
     skip_titles = _phrase_pattern(entry.get("skip_titles")) if entry.get("skip_titles") else None
@@ -1780,6 +1850,25 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
             and _entry_key(info.get("name")) not in skip_companies
             and not (_board_platform(info["url"]) == "workday" and _entry_key(info.get("name")) in yours)
             and not (_board_platform(info["url"]) == "oracle" and _entry_key(info.get("name")) in yours_unmatched)]
+
+
+def _jibe_sites_yours_cover(targets: list[dict], known: dict) -> set[str]:
+    """The registry keys of the Jibe sites (boards/jibe.py) that one of your entries, paused or
+    not, reads under another name, or whose name one of your entries has while reading another
+    site: the two couldn't skip what the other emailed, so each job would be emailed twice. An
+    entry with the site's name reading the site itself (your AMD entry, careers.amd.com) or one of
+    its classic iCIMS portals is matched with it, so both are read."""
+    sites = {key: {urlparse(info["url"]).netloc.lower(), *map(str, info.get("portals") or ())}
+             for key, info in known.items() if isinstance(info, dict) and _board_platform(info.get("url", "")) == "jibe"}
+    skip = set()
+    for t in targets:
+        if not t.get("url") or t.get("mode") in ("feed", "boards") or t.get("_board"):
+            continue
+        host, name = urlparse(str(t["url"])).netloc.lower(), _entry_key(t.get("name"))
+        for key, hosts in sites.items():
+            if (host in hosts) != bool(name and name == _entry_key(known[key].get("name"))):
+                skip.add(key)
+    return skip
 
 
 def _greenhouse_boards_yours_cover(targets: list[dict], state: dict, meta: dict) -> set[str]:
@@ -1845,6 +1934,12 @@ def boards_due(entry: dict, meta: dict) -> bool:
         _hours_since(meta.get("checked_at")) >= every - EMAIL_DUE_TOLERANCE_MINUTES / 60
 
 
+def _platform_label(api_url: str) -> str:
+    """A board's platform as boards.md names it: "Greenhouse", ..., "iCIMS (Jibe)"."""
+    platform = _board_platform(api_url)
+    return "iCIMS (Jibe)" if platform == "jibe" else platform.title()
+
+
 def format_boards_page(meta: dict, checked: list[dict]) -> str:
     """boards.md: every company job board the monitor checks."""
     counts = Counter(_board_platform(b["url"]) for b in checked)
@@ -1859,14 +1954,16 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
         "# Company job boards the monitor checks",
         "",
         "Checked about every hour for tech roles. A company is added the first time one of the lists "
-        "the monitor reads links to its Greenhouse, Ashby, Lever, Workable, SmartRecruiters, Workday or Oracle board, and stays from then on. To add "
+        "the monitor reads links to its Greenhouse, Ashby, Lever, Workable, SmartRecruiters, Workday, Oracle, iCIMS (Jibe), Rippling or Gem board, and stays from then on. To add "
         "one yourself, add it under `companies` in targets/startups.json (for a Workable company, with a link to "
         "one of its postings: it is matched in Workable's job file through its job codes or, failing that, its name).",
         "",
         f"{len(rows)} boards: {counts['greenhouse']} Greenhouse, {counts['ashby']} Ashby, {counts['lever']} Lever, "
         f"{counts['workable']} Workable" + (f" ({waiting} not matched in Workable's file yet, so not checked yet)" if waiting else "")
         + f", {counts['smartrecruiters']} SmartRecruiters" + (f", {counts['workday']} Workday" if counts["workday"] else "")
-        + (f", {counts['oracle']} Oracle." if counts["oracle"] else ".")
+        + (f", {counts['oracle']} Oracle" if counts["oracle"] else "")
+        + (f", {counts['jibe']} iCIMS (Jibe)" if counts["jibe"] else "") + (f", {counts['rippling']} Rippling" if counts["rippling"] else "")
+        + (f", {counts['gem']} Gem" if counts["gem"] else "") + "."
         + (f" {gone} weren't found at the last try (tried again daily)." if gone else ""),
         "",
         *([f"Workday sites are read after everything else, for a few minutes each run (sites not tried yet first, then "
@@ -1890,7 +1987,7 @@ def format_boards_page(meta: dict, checked: list[dict]) -> str:
             flag = " (matched by name in Workable's file)"
         elif _board_platform(info["url"]) == "workday" and not flag:
             flag = _workday_flag(info)
-        lines.append(f"| {_md_escape(info.get('name'))} | [{_board_platform(info['url']).title()}]({_board_page(info['url'])}){flag} "
+        lines.append(f"| {_md_escape(info.get('name'))} | [{_platform_label(info['url'])}]({_board_page(info['url'])}){flag} "
                      f"| {_md_escape(info.get('added'))} | {_md_escape(info.get('via'))} |")
     return "\n".join(lines) + "\n"
 
@@ -1929,6 +2026,12 @@ def job_board_api_reader(url: str):
         return "smartrecruiters", fetch_smartrecruiters_jobs
     if host.endswith(".oraclecloud.com") and "/hcmRestApi/resources/" in parsed.path:
         return "oracle", fetch_oracle_hcm_jobs
+    if jibe.is_api_url(url):
+        return "jibe", fetch_jibe_jobs
+    if rippling.is_api_url(url):
+        return "rippling", fetch_rippling_jobs
+    if gem.is_api_url(url):
+        return "gem", fetch_gem_jobs
     if parsed.path.rstrip("/").lower() == "/search-jobs/results":
         return "talentbrew", fetch_talentbrew_jobs
     return None
@@ -3309,6 +3412,7 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
     # Company job boards found through the feeds: listed every run (so postings they queued
     # stay this config's), fetched only when due.
     board_meta = _board_meta(state)
+    jibe.learn(board_meta["known"])  # (which addresses are one iCIMS customer's, for job_keys)
     loaded_board_meta = copy.deepcopy(board_meta)
     board_targets, boards_now, fetched = [], False, {}
     boards_on = bool(board_entries) and board_entries[0].get("enabled", True) is not False
@@ -3344,6 +3448,7 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
         catching_up = {b["url"] for b in to_fetch if b["_catch_up_since"]}
         fetched.update(fetch_boards(to_fetch, {u: e for u, e in board_meta["etags"].items()
                                                if u in state and u not in catching_up}))
+        jibe.learn(board_meta["known"], fetched)  # (a Jibe site read for the first time: its client and portals)
     # Everything on Workday last: once Workday's browser is started it stays open to the end of the run,
     # and no "browser" entry (fetch_browser) can be read while it is open (boards/browser.py).
     targets = _workday_last(targets + board_targets)
@@ -3887,9 +3992,9 @@ def _posting_ids(url: str) -> set[tuple]:
     named by a company-wide id, which isn't one). Other numbers job_keys finds can be shared: Apple
     uses one number for a role in several cities, and a Workday requisition can be posted twice."""
     host = urlparse(str(url or "").strip().lower()).netloc
-    ats = host.endswith(".ashbyhq.com") or host.endswith(".lever.co")
+    ats = host.endswith(".ashbyhq.com") or host.endswith(".lever.co") or host == rippling.HOST
     return {key for key in job_keys(url)
-            if key[0] in ("gh", "workable", "sr", "oracle") or (key[0] == "uuid" and ats)}
+            if key[0] in ("gh", "workable", "sr", "oracle", "jibe", "gem") or (key[0] == "uuid" and ats)}
 
 
 def _mark_reported(state: dict, url: str, jobs: list[dict], shown_as: str):
