@@ -2759,11 +2759,77 @@ class JibeRipplingGemBoardTests(MonitorTestCase):
         row = simplify_row("Acme Robotics", "Software Engineer", url=f"https://ats.rippling.com/acme/jobs/{RIPPLING_UUID.format(1)}")
         self.pages[api] = rippling_api((1, "Software Engineer", "US"), (2, "Backend Software Engineer", "US"), (3, "ML Engineer", "US"))
         self.pages[detail(1)] = FakeResponse("", 404)  # (closed since the list was read)
-        self.pages[detail(2)] = json.dumps({"name": "Backend Software Engineer"})  # (no date on its page)
+        self.pages[detail(2)] = FakeResponse("", 404)
         self.pages[detail(3)] = json.dumps({"createdOn": datetime.now(timezone.utc).isoformat()})
         self.run_lists(row)
         self.assertEqual(self.run_lists(row), {"Acme Robotics": ["ML Engineer"]})
         self.assertIn("caught_up", self.saved_state()[jm.BOARDS_KEY]["known"][jm._registry_key(api)])
+
+    def test_a_rippling_board_whose_dates_cant_be_had_is_caught_up_after_a_few_tries(self):
+        # (its pages answer without a date: Rippling may have changed them; tried again RIPPLING_DATING_TRIES times)
+        api = jm.rippling.api_url("acme")
+        row = simplify_row("Acme Robotics", "Software Engineer", url=f"https://ats.rippling.com/acme/jobs/{RIPPLING_UUID.format(1)}")
+        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (2, "Backend Software Engineer", "US"))
+        for n in (1, 2):
+            self.pages[f"https://api.rippling.com/platform/api/ats/v1/board/acme/jobs/{RIPPLING_UUID.format(n)}"] = json.dumps({"name": "x"})
+        known = lambda: self.saved_state()[jm.BOARDS_KEY]["known"][jm._registry_key(api)]
+        self.run_lists(row)
+        for tries in range(1, jm.RIPPLING_DATING_TRIES):
+            self.assertEqual(self.run_lists(row), {})
+            self.assertEqual((known().get("dating_tries"), "caught_up" in known()), (tries, False))
+        self.assertEqual(self.run_lists(row), {})
+        self.assertEqual((known().get("dating_tries"), "caught_up" in known()), (None, True))
+
+    def test_one_rippling_boards_errors_dont_stop_the_others_dates(self):
+        boards = [jm.rippling.api_url(b) for b in ("acme", "beta", "zeta")]
+        answers = {u: json.loads(rippling_api((1, "Software Engineer", "US"), board=u.split("/")[-2])) for u in boards}
+        asked = []
+        failing = {"acme"}
+
+        def get(url, params=None, timeout=None):
+            asked.append(url)
+            board = url.split("/board/")[1].split("/")[0]
+            if url in answers:
+                get.last_status = 200
+                return answers[url]
+            get.last_status = 500 if board in failing else 200
+            return None if board in failing else {"createdOn": "2026-11-20T00:00:00Z"}
+        for url in boards:
+            jm._RIPPLING_DATING[url] = lambda job: True
+        self.addCleanup(jm._RIPPLING_DATING.clear)
+        jm._RIPPLING_DATING_SPENT[0], jm._RIPPLING_DATING_OFF[0] = 0.0, False
+        jm._RIPPLING_DATING_FAILED.clear()
+        jm._RIPPLING_UNDATED.clear()
+        for url in boards:
+            jm.fetch_rippling_jobs(url, get_json=get)
+        self.assertEqual((jm._RIPPLING_UNDATED, jm._RIPPLING_DATING_OFF[0]), ({boards[0]}, False))
+        # A second board erring too: Rippling's problem, no more dates this run.
+        failing.add("beta")
+        asked.clear()
+        jm._RIPPLING_DATING_FAILED.clear()
+        jm._RIPPLING_UNDATED.clear()
+        for url in boards:
+            jm.fetch_rippling_jobs(url, get_json=get)
+        self.assertEqual((jm._RIPPLING_UNDATED, jm._RIPPLING_DATING_OFF[0]), (set(boards), True))
+        self.assertNotIn("/board/zeta/jobs/", " ".join(u for u in asked if "/platform/api/" in u))
+
+    def test_your_entry_on_a_jibe_site_counts_only_recent_postings_as_new(self):
+        # Only the newest are read: after a passing server error the site is read in its own order, older postings too.
+        api = jm.jibe.api_url(ACME_JIBE)
+        mine = target(name="Acme", url=api, mode="api")
+        self.pages[api] = jibe_api((1001, "Software Engineer", self.now, "US"))
+        self.run_monitor([mine], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)
+        self.pages[api] = FakeResponse("", 502)
+        self.pages[jm.jibe.unsorted_url(ACME_JIBE)] = jibe_api((900, "Backend Software Engineer", self.old, "US"),
+                                                              (1002, "ML Engineer", self.now, "US"), (1001, "Software Engineer", self.now, "US"))
+        with self.assertLogs(jm.log, level="WARNING") as logs:
+            reported = self.run_monitor([mine], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)[1]
+        self.assertEqual(reported, {"Acme": ["ML Engineer"]})
+        self.assertTrue(any("Failed to fetch" in m and "502" in m for m in logs.output))  # (as your entries' reads log)
+        waits = []
+        self.patch(jm.requests, "get", lambda url, params=None, headers=None, timeout=None: (waits.append(timeout), FakeResponse("", 404))[1])
+        self.assertIsNone(jm.fetch_jibe_jobs(api))
+        self.assertEqual(waits, [60])  # (as long as your entries' other reads wait)
 
     def test_rippling_dating_stops_for_the_run_when_rippling_doesnt_answer(self):
         boards = [jm.rippling.api_url(b) for b in ("acme", "zeta")]

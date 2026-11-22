@@ -1075,7 +1075,8 @@ def fetch_oracle_hcm_jobs(url: str, get_json=None) -> list[dict] | None:
 def fetch_jibe_jobs(url: str, get_json=None) -> list[dict] | None:
     """https://<host>/api/jobs?...sortBy=posted_date... : an iCIMS Jibe site's newest postings (boards/jibe.py:
     the next pages too for a busy site, or after an outage; a site that can't list newest first in its own order)."""
-    get_json = get_json or _board_get_json(None, {})  # (one that tells read_site each answer's status)
+    # (your entry's: one that tells read_site each answer's status, logs a failure, and waits 60 s as _get_json does)
+    get_json = get_json or _board_get_json(None, {}, timeout=60, log_failures=True)
     jobs = jibe.read_site(urlparse(url).netloc.lower(), get_json)
     return None if jobs is None else _dedupe_jobs(jobs)
 
@@ -1089,6 +1090,8 @@ _RIPPLING_DATING_SPENT = [0.0]
 _RIPPLING_DATING_OFF = [False]
 _RIPPLING_DATING_LOCK = threading.Lock()
 _RIPPLING_UNDATED: set = set()
+_RIPPLING_DATING_FAILED: set = set()  # boards whose job pages answered with an error (two: Rippling's problem)
+RIPPLING_DATING_TRIES = 3  # runs a board is dated at its first check before it's caught up anyway
 RIPPLING_DATING_SECONDS = 120
 RIPPLING_DETAIL_TIMEOUT = 10
 
@@ -1096,11 +1099,11 @@ RIPPLING_DETAIL_TIMEOUT = 10
 def fetch_rippling_jobs(url: str, get_json=None) -> list[dict] | None:
     """https://ats.rippling.com/api/v2/board/<board>/jobs?... : a Rippling board, whole (boards/rippling.py).
     The list gives no dates: at a board's first check (_RIPPLING_DATING), each posting the email would
-    keep gets its own date from its page, so the catch-up can email the recent ones. A page that answers
-    without one (the job closed since) leaves that job undated; if Rippling doesn't answer (or answers
-    with a server error or a throttle: then no more dates are asked this run), or the run's time for
-    dates (RIPPLING_DATING_SECONDS, of date requests) is up, the board isn't caught up yet
-    (_RIPPLING_UNDATED) and is dated again next run."""
+    keep gets its own date from its page, so the catch-up can email the recent ones. A page that isn't
+    found (the job closed since) leaves that job undated. If a page answers with an error or without a
+    date, or the run's time for dates (RIPPLING_DATING_SECONDS, of date requests) is up, the board isn't
+    caught up yet (_RIPPLING_UNDATED) and is dated again next run (RIPPLING_DATING_TRIES runs at most);
+    if Rippling doesn't answer, throttles, or errs on two boards, no more dates are asked this run."""
     get_json = get_json or (lambda u, params=None, timeout=60: _get_json(u, params, timeout))
     board = rippling.board_of(url)
     data = get_json(url) if board else None
@@ -1130,10 +1133,13 @@ def fetch_rippling_jobs(url: str, get_json=None) -> list[dict] | None:
         posted = rippling.created_on(data)
         if posted:
             job["posted"] = posted
-        elif status is None or status in (403, 429) or status >= 500:
-            _RIPPLING_DATING_OFF[0] = True  # (Rippling isn't answering: no more dates this run, for any board)
+        elif status != 404:  # (404: the job closed since the list was read; it stays undated)
+            with _RIPPLING_DATING_LOCK:
+                _RIPPLING_DATING_FAILED.add(url)
+                if status is None or status == 429 or len(_RIPPLING_DATING_FAILED) >= 2:
+                    _RIPPLING_DATING_OFF[0] = True  # (Rippling isn't answering: no more dates this run, for any board)
             _RIPPLING_UNDATED.add(url)
-            log.info(f"  [rippling] {board}: dates for {n} of {len(to_date)} roles (no answer: {status}); the rest next run")
+            log.info(f"  [rippling] {board}: dates for {n} of {len(to_date)} roles (answer: {status or 'none'}); the rest next run")
             break
     return _dedupe_jobs(jobs)
 
@@ -1682,14 +1688,17 @@ def read_company_list(item: dict, etags: dict, read_at: dict | None = None) -> l
     return [(row.get("url"), row.get("company_name")) for row in reversed(data) if isinstance(row, dict)]
 
 
-def _board_get_json(etag: str | None, outcome: dict, user_agent: str | None = None):
+def _board_get_json(etag: str | None, outcome: dict, user_agent: str | None = None, timeout: int = 30,
+                    log_failures: bool = False):
     """A _get_json for one board: sends its saved ETag with the first request (the first page's) and
     notes that request's HTTP status (a later page's "not found" isn't the board's: the reader
     decides what a page it couldn't read means), the first page's ETag, and "throttled" on 429 or
-    403 to any request."""
+    403 to any request. With log_failures (one of your entries), a request that fails is logged, as
+    _get_json does."""
     base = {**HEADERS, "User-Agent": user_agent} if user_agent else HEADERS
+    default_timeout = timeout
 
-    def get(url, params=None, timeout=30):
+    def get(url, params=None, timeout=default_timeout):
         first = "status" not in outcome
         headers = {**base, "If-None-Match": etag} if etag and first else base
         get.last_status = None  # (this request's status, for a reader that needs it: boards/jibe.py)
@@ -1697,12 +1706,16 @@ def _board_get_json(etag: str | None, outcome: dict, user_agent: str | None = No
             resp = requests.get(url, params=params, headers=headers, timeout=timeout)
         except Exception as exc:
             outcome.setdefault("status", f"error ({exc.__class__.__name__})")
+            if log_failures:
+                log.warning(f"  [api] Failed to fetch {url}: {exc}")
             return None
         get.last_status = resp.status_code
         outcome.setdefault("status", resp.status_code)
         if resp.status_code in (403, 429):
             outcome["throttled"] = True
         if resp.status_code != 200:
+            if log_failures:
+                log.warning(f"  [api] Failed to fetch {url}: HTTP {resp.status_code}")
             return None
         outcome.setdefault("etag", resp.headers.get("ETag") or resp.headers.get("etag"))
         try:
@@ -3453,6 +3466,7 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
     _LIST_WORKABLE_LINKS.clear()
     _RIPPLING_DATING.clear()
     _RIPPLING_UNDATED.clear()
+    _RIPPLING_DATING_FAILED.clear()
     state = load_state()
     loaded_state = copy.deepcopy(state)
     keywords = config.get("keyword_filters", [])
@@ -3584,6 +3598,10 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
                     place = _workday_place_wanted(target, keywords, role_patterns, us_only)
                     target = {**target, "_prefetched": workday.read_entry(reader, url, state.get(url), name, place),
                               "_new_within_days": workday.NEW_WITHIN_DAYS}
+                elif not is_board and target.get("mode") == "api" and jibe.is_api_url(url):
+                    # (your entry on a Jibe site: only its newest are read, as for a company's site, so an older
+                    # posting that moves up into them isn't new)
+                    target = {**target, "_new_within_days": jibe.NEW_WITHIN_DAYS}
                 new_jobs, left_out = check_target(target, state, keywords, role_patterns, us_only, outcome)
         except Exception as exc:
             log.exception(f"  Failed to check {name}, skipping it this run")
@@ -3601,9 +3619,15 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
                 board_meta["etags"][url] = etag
             else:
                 board_meta["etags"].pop(url, None)
-            if target.get("_catch_up_since") and target.get("_board_key") in board_meta["known"] \
-                    and url not in _RIPPLING_UNDATED:  # (a Rippling board whose dates couldn't all be had: again next run)
-                board_meta["known"][target["_board_key"]]["caught_up"] = datetime.now().date().isoformat()
+            info = board_meta["known"].get(target.get("_board_key")) if target.get("_catch_up_since") else None
+            if info is not None and url in _RIPPLING_UNDATED:
+                # (a Rippling board whose dates couldn't all be had: dated again next run, a few times at most)
+                info["dating_tries"] = int(info.get("dating_tries") or 0) + 1
+            if info is not None and (url not in _RIPPLING_UNDATED or info["dating_tries"] >= RIPPLING_DATING_TRIES):
+                if url in _RIPPLING_UNDATED:
+                    log.info(f"  [rippling] {name}: no dates at {info['dating_tries']} tries; caught up without them")
+                info.pop("dating_tries", None)
+                info["caught_up"] = datetime.now().date().isoformat()
         if workday_entry:
             # A posting a new-grad list (or a company job board), or this entry under an earlier link (Workday
             # changed its path), already gave you isn't new here either: the same Workday requisition (_drop_repeats).
