@@ -216,8 +216,9 @@ Three more platforms are read the same way (Nov 2026):
   Supersonic and Foundation Robotics), read whole each hour; `boards/rippling.py`. Rippling's
   list gives no posting dates, so at a board's first check the jobs the email would keep (a few
   per board) get their date from their own page, and the ones from the last 3 days are emailed;
-  if a page can't be read, or the run's 2 minutes for dates are up, the board is dated again next
-  run. A read missing a page
+  if Rippling doesn't answer (no more dates are asked that run), or a run's 2 minutes of date
+  requests are used up, the board is dated again next run (a job whose page has no date, closed
+  since, is left out). A read missing a page
   counts as failed (a job missing from it would be forgotten, then emailed again).
 - **Gem** (`jobs.gem.com/<board>`: Nuvo, Casap, 43North's portfolio companies), read whole each
   hour, with the posting dates; `boards/gem.py`.

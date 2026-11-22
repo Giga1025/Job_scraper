@@ -173,8 +173,10 @@ def _newest_from_the_end(host: str, get_json, first: dict, since: datetime) -> l
         if not _usable(data):
             break
         found = jobs_from(data, host)
+        if not found:
+            continue  # (empty: the count was ahead of the pages, a posting closed meanwhile)
         jobs += found
-        oldest = _when(found[0].get("listed")) if found else None
+        oldest = _when(found[0].get("listed"))
         if not oldest or oldest < since:
             break
     return jobs

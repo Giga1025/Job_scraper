@@ -211,6 +211,12 @@ class JibeTests(unittest.TestCase):
         jobs = jibe.read_site("careers.bowman.com", site(sorted_pages))
         self.assertEqual(asked, [jibe.api_url("careers.bowman.com", n) for n in (1, 4, 3)])
         self.assertEqual(len(jobs), 274)
+        # (a last page that comes back empty, a posting having closed meanwhile: the page before it is read)
+        asked.clear()
+        emptied = {**sorted_pages, 4: {"jobs": [], "totalCount": 374}}
+        self.assertEqual(len(jibe.read_site("careers.bowman.com", site(emptied))), 200)
+        self.assertEqual(asked, [jibe.api_url("careers.bowman.com", n) for n in (1, 4, 3)])
+        asked.clear()
         known = {"b": {"url": jibe.api_url("careers.bowman.com")}}
         jibe.learn(known, {known["b"]["url"]: ("ok", [], None)})
         self.assertEqual(known["b"]["order"], "oldest first")

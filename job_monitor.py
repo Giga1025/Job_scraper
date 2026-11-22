@@ -28,6 +28,7 @@ import stat
 import ssl
 import logging
 import tempfile
+import threading
 import time
 import html as html_lib
 import xml.etree.ElementTree as ET
@@ -1074,16 +1075,19 @@ def fetch_oracle_hcm_jobs(url: str, get_json=None) -> list[dict] | None:
 def fetch_jibe_jobs(url: str, get_json=None) -> list[dict] | None:
     """https://<host>/api/jobs?...sortBy=posted_date... : an iCIMS Jibe site's newest postings (boards/jibe.py:
     the next pages too for a busy site, or after an outage; a site that can't list newest first in its own order)."""
-    get_json = get_json or (lambda u, params=None: _get_json(u, params))
+    get_json = get_json or _board_get_json(None, {})  # (one that tells read_site each answer's status)
     jobs = jibe.read_site(urlparse(url).netloc.lower(), get_json)
     return None if jobs is None else _dedupe_jobs(jobs)
 
 
 # Rippling boards being caught up this run (their first check): url -> which jobs need a date (set by run()),
-# the time (time.monotonic()) after which no more dates are asked this run, and the boards whose dates
-# couldn't all be had (not caught up: dated again next run)
+# the seconds spent asking for dates this run (all boards together, at most RIPPLING_DATING_SECONDS), whether
+# Rippling stopped answering this run (no more dates asked), and the boards whose dates couldn't all be had
+# (not caught up: dated again next run)
 _RIPPLING_DATING: dict = {}
-_RIPPLING_DATING_UNTIL = [0.0]
+_RIPPLING_DATING_SPENT = [0.0]
+_RIPPLING_DATING_OFF = [False]
+_RIPPLING_DATING_LOCK = threading.Lock()
 _RIPPLING_UNDATED: set = set()
 RIPPLING_DATING_SECONDS = 120
 RIPPLING_DETAIL_TIMEOUT = 10
@@ -1092,8 +1096,10 @@ RIPPLING_DETAIL_TIMEOUT = 10
 def fetch_rippling_jobs(url: str, get_json=None) -> list[dict] | None:
     """https://ats.rippling.com/api/v2/board/<board>/jobs?... : a Rippling board, whole (boards/rippling.py).
     The list gives no dates: at a board's first check (_RIPPLING_DATING), each posting the email would
-    keep gets its own date from its page, so the catch-up can email the recent ones; if a page can't be
-    read, or the run's time for dates (RIPPLING_DATING_SECONDS) is up, the board isn't caught up yet
+    keep gets its own date from its page, so the catch-up can email the recent ones. A page that answers
+    without one (the job closed since) leaves that job undated; if Rippling doesn't answer (or answers
+    with a server error or a throttle: then no more dates are asked this run), or the run's time for
+    dates (RIPPLING_DATING_SECONDS, of date requests) is up, the board isn't caught up yet
     (_RIPPLING_UNDATED) and is dated again next run."""
     get_json = get_json or (lambda u, params=None, timeout=60: _get_json(u, params, timeout))
     board = rippling.board_of(url)
@@ -1112,14 +1118,23 @@ def fetch_rippling_jobs(url: str, get_json=None) -> list[dict] | None:
     wanted = _RIPPLING_DATING.get(url)
     to_date = [j for j in jobs if wanted and wanted(j)][:rippling.MAX_DATED]
     for n, job in enumerate(to_date):
-        posted = None
-        if time.monotonic() < _RIPPLING_DATING_UNTIL[0]:
-            posted = rippling.created_on(get_json(rippling.detail_url(board, job["url"]), timeout=RIPPLING_DETAIL_TIMEOUT))
-        if not posted:
+        if _RIPPLING_DATING_OFF[0] or _RIPPLING_DATING_SPENT[0] >= RIPPLING_DATING_SECONDS:
             _RIPPLING_UNDATED.add(url)
             log.info(f"  [rippling] {board}: dates for {n} of {len(to_date)} roles; the rest next run")
             break
-        job["posted"] = posted
+        start = time.monotonic()
+        data = get_json(rippling.detail_url(board, job["url"]), timeout=RIPPLING_DETAIL_TIMEOUT)
+        with _RIPPLING_DATING_LOCK:
+            _RIPPLING_DATING_SPENT[0] += time.monotonic() - start
+        status = getattr(get_json, "last_status", None)
+        posted = rippling.created_on(data)
+        if posted:
+            job["posted"] = posted
+        elif status is None or status in (403, 429) or status >= 500:
+            _RIPPLING_DATING_OFF[0] = True  # (Rippling isn't answering: no more dates this run, for any board)
+            _RIPPLING_UNDATED.add(url)
+            log.info(f"  [rippling] {board}: dates for {n} of {len(to_date)} roles (no answer: {status}); the rest next run")
+            break
     return _dedupe_jobs(jobs)
 
 
@@ -3497,7 +3512,7 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
                  f"{'' if boards_now else ' (new ones, or catching up)'}...")
         catching_up = {b["url"] for b in to_fetch if b["_catch_up_since"]}
         # (a new Rippling board's jobs the email would keep get their dates: fetch_rippling_jobs)
-        _RIPPLING_DATING_UNTIL[0] = time.monotonic() + RIPPLING_DATING_SECONDS
+        _RIPPLING_DATING_SPENT[0], _RIPPLING_DATING_OFF[0] = 0.0, False
         _RIPPLING_DATING.update({b["url"]: (lambda job, b=b: _title_wanted(b, job, role_patterns)
                                             and not (b.get("us_only", us_only) and is_outside_us(job))
                                             and bool(split_new_jobs([job], b.get("keyword_filters", keywords), role_patterns)[0]))
