@@ -23,7 +23,7 @@ to check split into three files it lists under `target_files`:
 |---|---|
 | `targets/big_tech.json` | Big tech and other companies with a hand-made entry each (finance, crypto, AI labs, data and infrastructure; about 60) |
 | `targets/new_grad_lists.json` | New-grad lists maintained on GitHub by others |
-| `targets/startups.json` | Startups, unicorns and mid-size companies on Greenhouse, Ashby, Lever, Workable or SmartRecruiters, and companies of any size on Workday or Oracle (see [Startup and mid-size company job boards](#startup-and-mid-size-company-job-boards) and [Workday](#workday)) |
+| `targets/startups.json` | Startups, unicorns and mid-size companies on Greenhouse, Ashby, Lever, Workable, SmartRecruiters, Rippling or Gem, and companies of any size on Workday, Oracle or iCIMS (see [Startup and mid-size company job boards](#startup-and-mid-size-company-job-boards) and [Workday](#workday)) |
 
 Each file holds a list of entries (under `"targets"`); a config can also have its own
 `"targets"` list, checked first. Which config is used:
@@ -184,7 +184,47 @@ their posting date for a company's first check; `boards/oracle.py`. Goldman Sach
 own career sites (your entries) show their Oracle sites' postings under the same numbers, so a job
 on both is emailed once; any other company's Oracle site isn't read while one of your entries has
 its name (the two would email each job twice), unless its own site is mapped the same way
-(`FRONT_ENDS` in `boards/oracle.py`). The
+(`FRONT_ENDS` in `boards/oracle.py`).
+
+Three more platforms are read the same way (Nov 2026):
+
+- **iCIMS career sites built on Jibe** (AMD, Keysight, Rivian, Garmin, Viasat, ICE, DocuSign,
+  Johns Hopkins APL, Schneider Electric, Peraton: about 130 sites in the lists, on
+  `<name>.jibeapply.com` or the company's own domain, linked like `careers.amd.com/jobs/85806?icims=1`).
+  Every such site serves one public JSON API at its root; the newest 100 postings are read each
+  hour, and the next 100 too while they're from the last 3 days (a site posting a hundred a day)
+  or, after an outage, from before the site's last good read, with every place's country (by its
+  name: some codes are wrong) and the posting date; `boards/jibe.py`. A site whose API ignores the
+  sort and lists oldest first (Bowman) has its last pages read; one whose API refuses the sort
+  (AVI-SPL) is read in its own order, up to 500 postings. A site's saved ETag (which lets an
+  unchanged site answer "not modified") is used only once it's known to list newest first. Since
+  only the newest are read, a posting seen for the first time is new only if it
+  went up in the last 7 days, or since the company's last good read (an older one moves up into the
+  newest when newer ones close); when it went up is the later of its posting date and the day it
+  reached the site. The link emailed is always the site's own: some sites name another domain for
+  their postings where they aren't found (H-E-B's name careers.hrblock.com). A site is one iCIMS
+  customer: the same job is on its classic iCIMS portals (`careers-amd.icims.com`) under the same
+  number, and on any other domain the site names for it (Schneider Electric's `careers.se.com`);
+  one company's two addresses (`careers.ice.com`, `ice.jibeapply.com`) are read once (the other
+  one if the first's last read failed or it isn't found). Your AMD entry reads AMD's site under the same name, so a
+  job on both is emailed once; a site isn't read while one of your entries has its name but reads
+  somewhere else, or reads the site under another name. To add one under `companies`, link its
+  search page or a posting with `?icims=1` added (a company's own domain can't otherwise be told
+  from any other site). iCIMS's classic portals (`*.icims.com`, about 340 in the lists) aren't
+  read yet (see `TODO.md`).
+- **Rippling** (`ats.rippling.com/<board>/jobs`: about 180 boards in the lists, like Boom
+  Supersonic and Foundation Robotics), read whole each hour; `boards/rippling.py`. Rippling's
+  list gives no posting dates, so at a board's first check the jobs the email would keep (a few
+  per board) get their date from their own page, and the ones from the last 3 days are emailed;
+  if a job's page errs or has no date, or a run's 2 minutes of date requests are used up, the
+  board is dated again next run (3 runs at most; a job whose page isn't found, closed since, is
+  left out), and if Rippling doesn't answer, throttles or errs on two boards, no more dates are
+  asked that run. A read missing a page
+  counts as failed (a job missing from it would be forgotten, then emailed again).
+- **Gem** (`jobs.gem.com/<board>`: Nuvo, Casap, 43North's portfolio companies), read whole each
+  hour, with the posting dates; `boards/gem.py`.
+
+The
 `"mode": "boards"` entry in `targets/startups.json` checks the whole board of each company
 in a registry that only grows:
 
@@ -421,6 +461,9 @@ When a target's `url` is one of these public job-board APIs, the monitor reads i
 | Ashby | `https://api.ashbyhq.com/posting-api/job-board/<board>` | `department=<name>`, `team=<name>` |
 | Lever | `https://api.lever.co/v0/postings/<company>` | `location=`, `department=`, `team=`, `commitment=` |
 | Oracle HCM | `https://<host>.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?...finder=findReqs;siteNumber=...` | the finder's own parameters |
+| iCIMS (Jibe sites) | `https://<site>/api/jobs?page=1&limit=100&sortBy=posted_date&descending=true&internal=false` | the API's own parameters |
+| Rippling | `https://ats.rippling.com/api/v2/board/<board>/jobs?page=0&pageSize=1000&groupJobsByLocation=true` | |
+| Gem | `https://api.gem.com/job_board/v0/<board>/job_posts/` | |
 | TalentBrew (e.g. jobs.intuit.com) | `https://<site>/search-jobs/results?...&SearchResultsModuleName=Search+Results&SortCriteria=1&SortDirection=1&RecordsPerPage=50` | the search page's own filters (`FacetFilters[0].ID=...`) |
 
 Eightfold sites (Microsoft, Morgan Stanley, PayPal, ...) are read through their API as before.
@@ -730,7 +773,8 @@ look just like "no new jobs". So every email starts with a warning while one of 
 - **Workday** read no site in 3 runs in a row, with the reason: Workday refusing the browser,
   every site answering "not found", the runs running out of time before Workday's turn, or why
   its reading stopped (not while you've paused it with `workday_minutes_per_run`);
-- **a job-board platform** (Greenhouse, Ashby, Lever, Workable, SmartRecruiters, Oracle): half or
+- **a job-board platform** (Greenhouse, Ashby, Lever, Workable, SmartRecruiters, Oracle, iCIMS (Jibe),
+  Rippling, Gem): half or
   more of its boards (10 or more) couldn't be read, or answered "not found" (an API that moved),
   in 3 checks in a row;
 - **the company boards** weren't checked for 6 hours, or 3 times their `every_hours`;

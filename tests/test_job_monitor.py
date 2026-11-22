@@ -2334,6 +2334,596 @@ class OracleBoardTests(MonitorTestCase):
                                      paused=True)), [])
 
 
+ACME_JIBE = "careers.acme.com"
+ACME_JIBE_API = jm.jibe.api_url(ACME_JIBE)
+RIPPLING_UUID = "84d388b6-7656-434c-8862-0312eb6b{:04d}"
+
+
+def jibe_link(number, host=ACME_JIBE):
+    """A Jibe site's posting link as the lists give it."""
+    return f"https://{host}/jobs/{number}?icims=1&utm_source=Simplify"
+
+
+JIBE_COUNTRIES = {"US": "United States", "IN": "India", "CA": "Canada", "GB": "United Kingdom"}
+
+
+def jibe_api(*postings, host=ACME_JIBE, client="acme", total=None, canonical_host=None):
+    """A Jibe site's API answer: (number, title, posted, country[, other countries]); with canonical_host,
+    the postings are linked on that domain."""
+    return json.dumps({"jobs": [{"data": {
+        "title": title, "req_id": str(number), "slug": str(number), "posted_date": posted, "country_code": country,
+        "country": JIBE_COUNTRIES[country],
+        "additional_locations": [{"country_code": c, "country": JIBE_COUNTRIES[c]} for c in (rest[0] if rest else [])] or None,
+        "full_location": f"Somewhere, {country}", "apply_url": f"https://careers-{client}.icims.com/jobs/{number}/login",
+        "client_code": client, "language": "en-us",
+        "meta_data": {"canonical_url": f"https://{canonical_host}/jobs/{number}?lang=en-us" if canonical_host else None}}}
+        for number, title, posted, country, *rest in postings], "totalCount": total or len(postings)})
+
+
+def rippling_api(*postings, board="acme", pages=1):
+    """A Rippling board's API answer: (number, title, country)."""
+    return json.dumps({"items": [{"id": RIPPLING_UUID.format(n), "name": title,
+                                  "url": f"https://ats.rippling.com/{board}/jobs/{RIPPLING_UUID.format(n)}",
+                                  "locations": [{"name": f"Somewhere, {country}", "countryCode": country}]}
+                                 for n, title, country in postings], "page": 0, "totalPages": pages})
+
+
+def gem_api(*postings, board="nuvo"):
+    """A Gem board's API answer: (id, title, first published, office)."""
+    return json.dumps([{"id": f"post{n}", "title": title, "absolute_url": f"https://jobs.gem.com/{board}/post{n}",
+                        "first_published_at": posted, "offices": [{"name": "x", "location": {"name": office}}]}
+                       for n, title, posted, office in postings])
+
+
+class JibeRipplingGemBoardTests(MonitorTestCase):
+    """iCIMS career sites built on Jibe, Rippling boards and Gem boards (boards/jibe.py, rippling.py, gem.py),
+    found through the lists (or under companies) like other boards."""
+
+    def setUp(self):
+        super().setUp()
+        jm.jibe.learn({})
+        self.addCleanup(jm.jibe.learn, {})
+        self.now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:00+0000")
+        self.old = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:00+0000")
+
+    def run_lists(self, *rows, mine=(), companies=(), next_due=True):
+        self.pages[SIMPLIFY_URL] = json.dumps(list(rows))
+        feed = target(name="SimplifyJobs New Grad", url=SIMPLIFY_URL, mode="feed", format="simplify",
+                      categories=["Software"], max_age_days=7)
+        boards = {"name": "Company job boards", "mode": "boards", "every_hours": 1, "catch_up_days": 3,
+                  "platforms": ["jibe", "rippling", "gem"], "tech_titles": ["software", "ml", "engineer"],
+                  "companies": list(companies)}
+        jm.jibe.learn({})  # (each run is a new process: what boards/jibe.py knows comes from the saved registry)
+        reported = self.run_monitor([feed, *mine, boards], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)[1]
+        if next_due:
+            meta = self.saved_state()[jm.BOARDS_KEY]
+            meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+            jm.save_state({}, boards=meta)
+        return reported
+
+    def test_links_are_recognised(self):
+        self.assertEqual(jm.board_api_url(jibe_link(85806)), ("jibe", ACME_JIBE_API))
+        self.assertEqual(jm.board_api_url("https://acme.jibeapply.com/jobs/1"), ("jibe", jm.jibe.api_url("acme.jibeapply.com")))
+        self.assertIsNone(jm.board_api_url("https://careers.acme.com/jobs/85806"))  # (any site: only icims=1 says it's Jibe)
+        rippling = jm.rippling.api_url("Acme-Careers")
+        self.assertEqual(jm.board_api_url(f"https://ats.rippling.com/Acme-Careers/jobs/{RIPPLING_UUID.format(1)}"), ("rippling", rippling))
+        self.assertEqual(jm.board_api_url("https://jobs.gem.com/nuvo/post1"), ("gem", jm.gem.api_url("nuvo")))
+        for api, platform, page in ((ACME_JIBE_API, "jibe", "https://careers.acme.com/jobs"),
+                                    (rippling, "rippling", "https://ats.rippling.com/Acme-Careers/jobs"),
+                                    (jm.gem.api_url("nuvo"), "gem", "https://jobs.gem.com/nuvo")):
+            self.assertEqual((jm._board_platform(api), jm._board_page(api)), (platform, page))
+        known = {}
+        jm.grow_board_registry(known, [(jibe_link(1), "Acme"), (jibe_link(2), "Acme"), (jibe_link(3, "acme.jibeapply.com"), None),
+                                       (f"https://ats.rippling.com/en-GB/Acme-Careers/jobs/{RIPPLING_UUID.format(1)}", "Acme Robotics"),
+                                       ("https://jobs.gem.com/nuvo", "Nuvo")], "a list", "2026-11-21")
+        self.assertEqual(sorted((i["name"], i["url"]) for i in known.values()), sorted([
+            ("Acme", ACME_JIBE_API), ("acme.jibeapply.com", jm.jibe.api_url("acme.jibeapply.com")),
+            ("Acme Robotics", rippling), ("Nuvo", jm.gem.api_url("nuvo"))]))
+        self.assertEqual(jm._posting_ids(f"https://ats.rippling.com/acme/jobs/{RIPPLING_UUID.format(1)}"),
+                         {("uuid", RIPPLING_UUID.format(1))})
+        self.assertEqual(jm._posting_ids("https://jobs.gem.com/nuvo/post1"), {("gem", "nuvo", "post1")})
+        self.assertEqual(jm._posting_ids(jibe_link(7)), {("jibe", ACME_JIBE, "7")})
+
+    def test_a_jibe_site_the_lists_link_is_read_and_its_new_us_roles_emailed(self):
+        row = simplify_row("Acme", "Software Engineer I", url=jibe_link(1001))
+        self.pages[ACME_JIBE_API] = jibe_api((1001, "Software Engineer I", self.now, "US"),
+                                             (1002, "Backend Software Engineer", self.now, "US"),
+                                             (1004, "Software Engineer II", self.now, "IN"),
+                                             (1000, "Software Engineer", self.old, "US"))
+        self.assertEqual(self.run_lists(row), {})  # (the list's first check records its row)
+        # Its first check emails only what went up in the last 3 days, in the US, and wasn't found before (the list's row).
+        self.assertEqual(self.run_lists(row), {"Acme": ["Backend Software Engineer"]})
+        known = self.saved_state()[jm.BOARDS_KEY]["known"]
+        self.assertEqual([(i["name"], i["url"], i.get("client"), i.get("portals")) for i in known.values()],
+                         [("Acme", ACME_JIBE_API, "acme", ["careers-acme.icims.com"])])
+        self.assertNotIn("_forget_gone_days", jm.plan_boards({"platforms": ["jibe"]}, [], {}, self.saved_state()[jm.BOARDS_KEY], False)[0])
+        self.pages[ACME_JIBE_API] = jibe_api((1003, "Software Engineer, New Grad", self.now, "US"),
+                                             (1005, "ML Engineer", self.now, "CA", ["US"]),
+                                             (1002, "Backend Software Engineer", self.now, "US"))
+        self.assertEqual(self.run_lists(row), {"Acme": ["Software Engineer, New Grad", "ML Engineer"]})
+        page = jm.boards_page_path().read_text()
+        self.assertIn("| Acme | [iCIMS (Jibe)](https://careers.acme.com/jobs) |", page)
+        self.assertIn("1 iCIMS (Jibe).", page)
+        # The classic portal's link to an emailed posting is the same job (the list links it there now): not again.
+        portal = simplify_row("Acme", "Software Engineer, New Grad", url="https://careers-acme.icims.com/jobs/1003/software-engineer/job")
+        self.assertEqual(self.run_lists(row, portal), {})
+
+    def test_a_busy_jibe_site_is_read_further(self):
+        pages = {page: jibe_api(*[(page * 1000 + n, f"Software Engineer {page}-{n}", self.now, "US") for n in range(100)],
+                                total=250) for page in (1, 2)}
+        pages[3] = jibe_api(*[(3000 + n, "Software Engineer", self.now, "US") for n in range(50)], total=250)
+        asked = []
+
+        def get(url, params=None):
+            asked.append(url)
+            return json.loads(pages[int(url.split("page=")[1].split("&")[0])])
+        self.assertEqual(len(jm.fetch_jibe_jobs(ACME_JIBE_API, get_json=get)), 250)
+        self.assertEqual(asked, [jm.jibe.api_url(ACME_JIBE, n) for n in (1, 2, 3)])
+        # A page that can't be read ends the read; what was read stands (a Jibe site's postings aren't forgotten).
+        asked.clear()
+        self.assertEqual(len(jm.fetch_jibe_jobs(ACME_JIBE_API, get_json=lambda u, params=None: (get(u) if "page=1&" in u else None))), 100)
+        self.assertIsNone(jm.fetch_jibe_jobs(ACME_JIBE_API, get_json=lambda u, params=None: None))
+        self.assertIsNone(jm.fetch_jibe_jobs(ACME_JIBE_API, get_json=lambda u, params=None: {"jobs": None}))
+
+    def test_one_companys_two_jibe_addresses_email_a_job_once(self):
+        other = jm.jibe.api_url("acme.jibeapply.com")
+        rows = [simplify_row("Acme", "Software Engineer I", url=jibe_link(1001)),
+                simplify_row("Acme", "Software Engineer II", url=jibe_link(1001, "acme.jibeapply.com"))]
+        for api, host in ((ACME_JIBE_API, ACME_JIBE), (other, "acme.jibeapply.com")):
+            self.pages[api] = jibe_api((1002, "Backend Software Engineer", self.now, "US"), host=host)
+        self.assertEqual(self.run_lists(*rows), {})
+        # Both are new: read once each, and the same job is emailed once.
+        self.assertEqual(self.run_lists(*rows), {"Acme": ["Backend Software Engineer"]})
+        self.assertEqual(sorted(i.get("client") for i in self.saved_state()[jm.BOARDS_KEY]["known"].values()), ["acme", "acme"])
+        # From then on only one is read.
+        self.requests_made.clear()
+        for api, host in ((ACME_JIBE_API, ACME_JIBE), (other, "acme.jibeapply.com")):
+            self.pages[api] = jibe_api((1003, "ML Engineer", self.now, "US"), (1002, "Backend Software Engineer", self.now, "US"), host=host)
+        self.assertEqual(self.run_lists(*rows), {"Acme": ["ML Engineer"]})
+        self.assertEqual([u for u, _ in self.requests_made if "/api/jobs" in u], [other])  # (the first by key)
+
+    def test_your_entry_on_the_site_and_the_site_email_a_job_once(self):
+        # Your AMD entry reads careers.amd.com's search page in the browser; the lists link AMD's Jibe site too.
+        page = {"html": ""}
+        self.patch(jm, "fetch_browser", lambda url, wait_for="", wait_seconds=8: (page["html"], []))
+        mine = target(name="AMD", url="https://careers.acme.com/careers-home/jobs?page=1&location=United%20States",
+                      mode="browser", link_selector="a[href*='/jobs/']")
+        row = simplify_row("AMD", "Software Engineer", url=jibe_link(999))
+
+        def run(*shown, next_due=True):
+            page["html"] = "".join(f'<a href="/careers-home/jobs/{n}?lang=en-us">{title}</a>' for n, title in shown)
+            return self.run_lists(row, mine=[mine], next_due=next_due)
+
+        self.pages[ACME_JIBE_API] = jibe_api((999, "Software Engineer", self.old, "US"))
+        self.assertEqual(run((1000, "Software Engineer, Graduate")), {})  # (first checks)
+        self.pages[ACME_JIBE_API] = jibe_api((1001, "Software Engineer", self.now, "US"), (1002, "Backend Software Engineer", self.now, "US"),
+                                             (999, "Software Engineer", self.old, "US"))
+        self.assertEqual(run((1000, "Software Engineer, Graduate"), (1001, "Software Engineer"), next_due=False),
+                         {"AMD": ["Software Engineer", "Backend Software Engineer"]})
+        # Your entry shows 1002 (the site emailed it) in a run the boards aren't read: not again.
+        self.assertEqual(run((1001, "Software Engineer"), (1002, "Backend Software Engineer")), {})
+        self.assertNotIn(ACME_JIBE_API, [u for u, _ in self.requests_made[-3:]])
+        # Later 1003 is new to both, emailed once.
+        self.pages[ACME_JIBE_API] = jibe_api((1003, "ML Engineer", self.now, "US"), (1001, "Software Engineer", self.now, "US"),
+                                             (1002, "Backend Software Engineer", self.now, "US"))
+        self.assertEqual(run((1001, "Software Engineer"), (1002, "Backend Software Engineer"), (1003, "ML Engineer")),
+                         {"AMD": ["ML Engineer"]})
+
+    def test_a_jibe_site_your_entries_cant_be_matched_with_is_not_read(self):
+        meta = {"known": {}, "list_etags": {}}
+        jm.grow_board_registry(meta["known"], [(jibe_link(5), "Acme"), (jibe_link(6, "careers.other.com"), "Other")], "a list", "2026-11-21")
+        meta["known"][jm._registry_key(ACME_JIBE_API)]["portals"] = ["careers-acme.icims.com"]
+
+        def plan(*mine):
+            return sorted(b["name"] for b in jm.plan_boards({"platforms": ["jibe"]}, list(mine), {}, meta, False))
+
+        self.assertEqual(plan(), ["Acme", "Other"])
+        # Your entry with its name, on the site or one of its portals: matched, both read.
+        self.assertEqual(plan(target(name="Acme", url="https://careers.acme.com/careers-home/jobs", mode="browser"),
+                              target(name="Acme", url="https://careers-acme.icims.com/jobs/search?ss=1", mode="browser")),
+                         ["Acme", "Other"])
+        # On another site with its name, or on the site under another name (paused or not): not read.
+        self.assertEqual(plan(target(name="Acme", url="https://acme.wd1.myworkdayjobs.com/External", mode="browser")), ["Other"])
+        self.assertEqual(plan(target(name="Zenith", url="https://careers.acme.com/careers-home/jobs", mode="browser", paused=True)),
+                         ["Other"])
+        # A domain a site named that is another site's (H-E-B names H&R Block's) isn't this site's: an entry there is the other's.
+        meta["known"][jm._registry_key(ACME_JIBE_API)]["aliases"] = ["careers.other.com", "careers.acme.org"]
+        self.assertEqual(plan(target(name="Other", url="https://careers.other.com/careers-home/jobs", mode="browser")), ["Acme", "Other"])
+        self.assertEqual(plan(target(name="Zenith", url="https://careers.acme.org/jobs", mode="browser")), ["Other"])
+
+    def test_an_old_posting_moving_up_into_the_newest_is_not_new(self):
+        # Only the newest postings are read: when newer ones close, older ones move up into them. A posting seen for
+        # the first time is new only if it went up in the last 7 days.
+        row = simplify_row("Acme", "Software Engineer I", url=jibe_link(999))
+        week_old = (datetime.now(timezone.utc) - timedelta(days=8)).strftime("%Y-%m-%dT%H:%M:00+0000")
+        self.pages[ACME_JIBE_API] = jibe_api((1001, "Software Engineer", self.now, "US"), (1002, "Data Engineer", self.now, "US"))
+        self.run_lists(row)
+        self.assertEqual(self.run_lists(row), {"Acme": ["Software Engineer", "Data Engineer"]})
+        self.pages[ACME_JIBE_API] = jibe_api((1003, "ML Engineer", self.now, "US"), (1002, "Data Engineer", self.now, "US"),
+                                             (900, "Backend Software Engineer", week_old, "US"), (901, "Software Engineer II", self.old, "US"))
+        self.assertEqual(self.run_lists(row), {"Acme": ["ML Engineer"]})
+        board = jm.plan_boards({"platforms": ["jibe"]}, [], {}, self.saved_state()[jm.BOARDS_KEY], False)[0]
+        self.assertEqual((board["_new_within_days"], board["_retention"], board["_retention_reported"]),
+                         (jm.jibe.NEW_WITHIN_DAYS, jm.jibe.RETENTION, jm.jibe.REPORTED_RETENTION))
+
+    def test_a_site_linking_its_postings_on_another_domain_emails_a_job_once(self):
+        # se.jibeapply.com links its postings on careers.se.com; a list links the same job on either.
+        api = jm.jibe.api_url("se.jibeapply.com")
+        page = lambda *p: jibe_api(*p, host="se.jibeapply.com", client="se", canonical_host="careers.se.com")
+        rows = [simplify_row("Schneider Electric", "Software Engineer I", url=jibe_link(999, "se.jibeapply.com"))]
+        self.pages[api] = page((999, "Software Engineer I", self.old, "US"))
+        self.run_lists(*rows)
+        self.pages[api] = page((1002, "Backend Software Engineer", self.now, "US"), (999, "Software Engineer I", self.old, "US"))
+        self.assertEqual(self.run_lists(*rows), {"Schneider Electric": ["Backend Software Engineer"]})
+        self.assertEqual(self.saved_state()[jm.BOARDS_KEY]["known"][jm._registry_key(api)]["aliases"], ["careers.se.com"])
+        self.assertEqual({r["url"].split("/")[2] for r in self.saved_state()[api]}, {"se.jibeapply.com"})  # (the site's own links)
+        for link in (jibe_link(1002, "se.jibeapply.com"), "https://careers.se.com/jobs/1002?lang=en-us&utm_source=x"):
+            more = rows + [simplify_row("Schneider Electric", "Backend Software Engineer", url=link)]
+            self.assertEqual(self.run_lists(*more), {}, link)
+
+    def test_a_site_naming_another_sites_domain_emails_its_own_links_once(self):
+        # H-E-B's careers.heb.com names careers.hrblock.com (H&R Block's own Jibe site) for every posting; they aren't found there.
+        heb, hrb = jm.jibe.api_url("careers.heb.com"), jm.jibe.api_url("careers.hrblock.com")
+        rows = [simplify_row("H-E-B", "Software Engineer", url="https://careers.heb.com/jobs/231773?icims=1"),
+                simplify_row("H&R Block", "Software Engineer", url="https://careers.hrblock.com/jobs/76987?icims=1")]
+        self.pages[heb] = jibe_api((231773, "Software Engineer", self.old, "US"), host="careers.heb.com", client="heb",
+                                   canonical_host="careers.hrblock.com")
+        self.pages[hrb] = jibe_api((76987, "Software Engineer", self.old, "US"), host="careers.hrblock.com", client="hrblock")
+        self.run_lists(*rows)
+        self.run_lists(*rows)  # (first checks)
+        self.pages[heb] = jibe_api((260001, "Software Engineer I", self.now, "US"), (231773, "Software Engineer", self.old, "US"),
+                                   host="careers.heb.com", client="heb", canonical_host="careers.hrblock.com")
+        self.assertEqual(self.run_lists(*rows), {"H-E-B": ["Software Engineer I"]})
+        self.assertIn("https://careers.heb.com/jobs/260001?lang=en-us", [r["url"] for r in self.saved_state()[heb]])
+        self.assertNotIn("aliases", self.saved_state()[jm.BOARDS_KEY]["known"][jm._registry_key(heb)])
+        more = rows + [simplify_row("H-E-B", "Software Engineer I", url="https://careers.heb.com/jobs/260001?icims=1")]
+        self.assertEqual(self.run_lists(*more), {})
+
+    def test_a_skipped_twin_sites_records_dont_hide_a_lists_posting(self):
+        other = jm.jibe.api_url("acme.jibeapply.com")
+        ten_days = (datetime.now(timezone.utc) - timedelta(days=10)).strftime("%Y-%m-%dT%H:%M:00+0000")
+        rows = [simplify_row("Acme", "Software Engineer I", url=jibe_link(1001)),
+                simplify_row("Acme", "Software Engineer II", url=jibe_link(1001, "acme.jibeapply.com"))]
+        for api, host in ((ACME_JIBE_API, ACME_JIBE), (other, "acme.jibeapply.com")):
+            self.pages[api] = jibe_api((1002, "Backend Software Engineer", ten_days, "US"), (1003, "ML Engineer", ten_days, "US"), host=host)
+        self.run_lists(*rows)
+        self.run_lists(*rows)  # (both read: their first checks record 1002 and 1003, too old to email)
+        board = jm.plan_boards({"platforms": ["jibe"]}, [], {}, self.saved_state()[jm.BOARDS_KEY], False)
+        self.assertEqual([(b["url"], b["_twins"]) for b in board], [(other, [ACME_JIBE_API])])
+        # A list adds one later, linked on either address: it's emailed, as with one site.
+        for link, title in ((jibe_link(1002), "Backend Software Engineer"), (jibe_link(1003, "acme.jibeapply.com"), "ML Engineer")):
+            with self.subTest(link=link):
+                late = rows + [simplify_row("Acme", title, url=link)]
+                self.assertEqual(self.run_lists(*late), {"Acme (via SimplifyJobs New Grad)": [title]})
+
+    def test_after_an_outage_a_posting_from_the_outage_is_still_new(self):
+        meta = {"known": {}, "list_etags": {}}
+        jm.grow_board_registry(meta["known"], [(jibe_link(5), "Acme")], "a list", "2026-11-21")
+        info = meta["known"][jm._registry_key(ACME_JIBE_API)]
+        self.assertEqual(jm.plan_boards({"platforms": ["jibe"]}, [], {}, meta, False)[0]["_new_within_days"], jm.jibe.NEW_WITHIN_DAYS)
+        info["read_at"] = (datetime.now(timezone.utc) - timedelta(days=10)).isoformat(timespec="seconds")
+        self.assertAlmostEqual(jm.plan_boards({"platforms": ["jibe"]}, [], {}, meta, False)[0]["_new_within_days"], 11, places=2)
+        # A company's other site, skipped while this one was read, hasn't been down: the company's last good read counts.
+        jm.grow_board_registry(meta["known"], [(jibe_link(6, "acme.jibeapply.com"), "Acme")], "a list", "2026-11-21")
+        twin = meta["known"][jm._registry_key(jm.jibe.api_url("acme.jibeapply.com"))]
+        # (it was read an hour ago, then failed: this one, last read 10 days ago, is read now)
+        twin.update(client="acme", last_read="failed", read_at=(datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(timespec="seconds"))
+        info.update(client="acme", last_read="ok")
+        self.assertEqual([(b["url"], b["_new_within_days"]) for b in jm.plan_boards({"platforms": ["jibe"]}, [], {}, meta, False)],
+                         [(ACME_JIBE_API, jm.jibe.NEW_WITHIN_DAYS)])
+
+    def test_a_jibe_sites_etag_is_used_once_it_is_known_to_list_newest_first(self):
+        etags_sent = []
+        real = jm.fetch_boards
+        self.patch(jm, "fetch_boards", lambda boards, etags: (etags_sent.append(dict(etags)), real(boards, etags))[1])
+        row = simplify_row("Acme", "Software Engineer I", url=jibe_link(999))
+        page = FakeResponse(jibe_api((1001, "Software Engineer", self.now, "US"), (1000, "Data Engineer", self.old, "US")))
+        page.headers["ETag"] = 'W/"one"'
+        self.pages[ACME_JIBE_API] = page
+        self.run_lists(row)
+        self.run_lists(row)  # (its first check: no ETag yet)
+        meta = self.saved_state()[jm.BOARDS_KEY]
+        self.assertEqual((meta["etags"].get(ACME_JIBE_API), meta["known"][jm._registry_key(ACME_JIBE_API)]["order"]),
+                         ('W/"one"', "newest first"))
+        self.run_lists(row)
+        self.assertEqual(etags_sent[-1].get(ACME_JIBE_API), 'W/"one"')
+        # A site saved with an ETag before its order was known (an older version's): not sent until it's read in full.
+        meta = self.saved_state()[jm.BOARDS_KEY]
+        del meta["known"][jm._registry_key(ACME_JIBE_API)]["order"]
+        meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+        jm.save_state({}, boards=meta)
+        self.run_lists(row)
+        self.assertNotIn(ACME_JIBE_API, etags_sent[-1])
+
+    def test_a_dead_site_gives_way_to_the_companys_other_site(self):
+        other = jm.jibe.api_url("acme.jibeapply.com")  # (the first by key)
+        rows = [simplify_row("Acme", "Software Engineer I", url=jibe_link(1001)),
+                simplify_row("Acme", "Software Engineer II", url=jibe_link(1001, "acme.jibeapply.com"))]
+        for api, host in ((ACME_JIBE_API, ACME_JIBE), (other, "acme.jibeapply.com")):
+            self.pages[api] = jibe_api((1002, "Backend Software Engineer", self.old, "US"), host=host)
+        self.run_lists(*rows)
+        self.run_lists(*rows)  # (both read: their first checks)
+        self.pages[other] = FakeResponse("", 500)
+        self.pages[ACME_JIBE_API] = jibe_api((1003, "ML Engineer", self.now, "US"), (1002, "Backend Software Engineer", self.old, "US"))
+        self.requests_made.clear()
+        self.assertEqual(self.run_lists(*rows), {})
+        # (it fails, sorted or not: a site whose API refuses the sort, like AVI-SPL's, is read unsorted)
+        self.assertEqual([u for u, _ in self.requests_made if "/api/jobs" in u], [other, jm.jibe.unsorted_url("acme.jibeapply.com")])
+        self.requests_made.clear()
+        self.assertEqual(self.run_lists(*rows), {"Acme": ["ML Engineer"]})  # (its last read failed: the other site is read)
+        self.assertEqual([u for u, _ in self.requests_made if "/api/jobs" in u], [ACME_JIBE_API])
+
+    def test_your_entry_on_a_companys_second_site_leaves_that_site_read(self):
+        meta = {"known": {}, "list_etags": {}, "missing": {}}
+        jm.grow_board_registry(meta["known"], [(jibe_link(5), "Acme"), (jibe_link(6, "acme.jibeapply.com"), "Acme")], "a list", "2026-11-21")
+        for info in meta["known"].values():
+            info.update(client="acme", last_read="ok")
+        mine = target(name="Acme", url="https://careers.acme.com/careers-home/jobs", mode="browser")
+        self.assertEqual([b["url"] for b in jm.plan_boards({"platforms": ["jibe"]}, [mine], {}, meta, False)], [ACME_JIBE_API])
+        self.assertEqual([b["url"] for b in jm.plan_boards({"platforms": ["jibe"]}, [], {}, meta, False)],
+                         [jm.jibe.api_url("acme.jibeapply.com")])
+        meta["missing"][jm.jibe.api_url("acme.jibeapply.com")] = datetime.now().isoformat(timespec="seconds")
+        self.assertEqual([b["url"] for b in jm.plan_boards({"platforms": ["jibe"]}, [], {}, meta, False)], [ACME_JIBE_API])
+
+    def test_an_entry_on_a_classic_portal_has_the_site_read_once_to_learn_its_portals(self):
+        meta = {"known": {}, "list_etags": {}}
+        jm.grow_board_registry(meta["known"], [(jibe_link(5), "Acme")], "a list", "2026-11-21")
+        mine = target(name="Acme", url="https://careers-acme.icims.com/jobs/search?ss=1", mode="browser")
+
+        def plan():
+            return [b["name"] for b in jm.plan_boards({"platforms": ["jibe"]}, [mine], {}, meta, False)]
+
+        self.assertEqual(plan(), ["Acme"])  # (not read yet: read once)
+        info = meta["known"][jm._registry_key(ACME_JIBE_API)]
+        jm.jibe.learn(meta["known"], {ACME_JIBE_API: ("ok", jm.jibe.jobs_from(json.loads(jibe_api((5, "x", self.now, "US"))), ACME_JIBE), None)})
+        self.assertEqual((info["portals"], plan()), (["careers-acme.icims.com"], ["Acme"]))  # (its own portal: matched)
+        info["portals"] = ["globalcareers-acme.icims.com"]
+        self.assertEqual(plan(), [])  # (another site's: the two couldn't be matched)
+
+    def test_a_search_page_link_under_companies_adds_the_site(self):
+        known = {}
+        jm.grow_board_registry(known, [("https://careers.acme.com/careers-home/jobs?icims=1", "Acme"),
+                                       ("https://acme2.jibeapply.com/jobs", "Acme Two")], "your list", "2026-11-21")
+        self.assertEqual(sorted(i["url"] for i in known.values()), sorted([ACME_JIBE_API, jm.jibe.api_url("acme2.jibeapply.com")]))
+
+    def test_a_later_pages_answer_isnt_the_boards(self):
+        # A later page that isn't found (or any later answer) doesn't make the board "not found": the reader decides.
+        full = jibe_api(*[(n, f"Software Engineer {n}", self.now, "US") for n in range(100)])
+        sent = []
+
+        def get(url, params=None, headers=None, timeout=None):
+            sent.append((url, (headers or {}).get("If-None-Match")))
+            response = FakeResponse(full) if "page=1&" in url else FakeResponse("", 404)
+            response.headers["ETag"] = 'W/"p1"' if "page=1&" in url else 'W/"p2"'
+            return response
+        self.patch(jm.requests, "get", get)
+        status, jobs, etag = jm.fetch_boards([{"url": ACME_JIBE_API, "name": "Acme"}], {ACME_JIBE_API: 'W/"old"'})[ACME_JIBE_API]
+        self.assertEqual((status, len(jobs), etag), ("ok", 100, 'W/"p1"'))
+        self.assertEqual(sent, [(ACME_JIBE_API, 'W/"old"'), (jm.jibe.api_url(ACME_JIBE, 2), None)])  # (the ETag is the first page's)
+        # The first page's answer is the board's: unchanged, or not found.
+        for code, outcome, asked in ((304, "unchanged", 1), (404, "missing", 1), (500, "failed", 2)):
+            sent.clear()
+            self.patch(jm.requests, "get", lambda url, params=None, headers=None, timeout=None, code=code:
+                       (sent.append(url), FakeResponse("", code))[1])
+            self.assertEqual(jm.fetch_boards([{"url": ACME_JIBE_API, "name": "Acme"}], {})[ACME_JIBE_API][0], outcome, code)
+            self.assertEqual(len(sent), asked, code)  # (a server error: the sort may be refused, so its own order is tried too)
+
+    def test_a_rippling_board_is_read_whole_and_its_new_roles_emailed(self):
+        api = jm.rippling.api_url("acme")
+        row = simplify_row("Acme Robotics", "Software Engineer", url=f"https://ats.rippling.com/acme/jobs/{RIPPLING_UUID.format(1)}")
+        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (2, "Backend Software Engineer", "US"))
+        self.assertEqual(self.run_lists(row), {})
+        # Rippling gives no dates: its first check records what it lists, and emails nothing.
+        self.assertEqual(self.run_lists(row), {})
+        self.assertEqual(len(self.saved_state()[api]), 2)
+        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (3, "ML Engineer", "US"), (4, "Software Engineer II", "GB"))
+        self.assertEqual(self.run_lists(row), {"Acme Robotics": ["ML Engineer"]})
+        board = jm.plan_boards({"platforms": ["rippling"]}, [], {}, self.saved_state()[jm.BOARDS_KEY], False)[0]
+        self.assertEqual(board["_forget_gone_days"], jm.FORGET_GONE_DAYS)  # (read whole: a job missing from it has closed)
+        self.assertIn("| Acme Robotics | [Rippling](https://ats.rippling.com/acme/jobs) |", jm.boards_page_path().read_text())
+
+    def test_a_new_rippling_boards_recent_roles_are_emailed_with_dates_from_their_pages(self):
+        api = jm.rippling.api_url("acme")
+        detail = lambda n: f"https://api.rippling.com/platform/api/ats/v1/board/acme/jobs/{RIPPLING_UUID.format(n)}"
+        row = simplify_row("Acme Robotics", "Software Engineer", url=f"https://ats.rippling.com/acme/jobs/{RIPPLING_UUID.format(1)}")
+        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (6, "Software Engineer II", "GB"),
+                                       (7, "Senior Staff Software Engineer", "US"), (2, "Backend Software Engineer", "US"),
+                                       (3, "ML Engineer", "US"), (4, "Office Manager", "US"))
+        recent = json.dumps({"createdOn": datetime.now(timezone.utc).isoformat()})
+        self.pages[detail(1)] = json.dumps({"createdOn": "2026-03-31T17:37:26.093000-07:00"})
+        self.pages[detail(2)] = FakeResponse("", 500)  # (Rippling isn't answering this time)
+        self.pages[detail(3)] = recent
+        self.run_lists(row)
+        self.requests_made.clear()
+        self.assertEqual(self.run_lists(row), {})
+        # Only the jobs the email would keep are dated (not one abroad, a senior one or the office manager); dating
+        # stops when Rippling doesn't answer, and the board isn't caught up: dated again next run.
+        dated = lambda: [u for u, _ in self.requests_made if "/platform/api/" in u]
+        self.assertEqual(dated(), [detail(1), detail(2)])
+        known = lambda: self.saved_state()[jm.BOARDS_KEY]["known"][jm._registry_key(api)]
+        self.assertNotIn("caught_up", known())
+        self.requests_made.clear()
+        self.pages[detail(2)] = recent
+        self.assertEqual(self.run_lists(row), {"Acme Robotics": ["Backend Software Engineer", "ML Engineer"]})
+        self.assertEqual(dated(), [detail(1), detail(2), detail(3)])
+        self.assertIn("caught_up", known())
+        # (from then on a job not seen before is new, without dates)
+        self.requests_made.clear()
+        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (2, "Backend Software Engineer", "US"), (5, "Data Engineer", "US"))
+        self.assertEqual(self.run_lists(row), {"Acme Robotics": ["Data Engineer"]})
+        self.assertFalse(dated())
+
+    def test_a_rippling_job_whose_page_has_no_date_is_left_undated(self):
+        api = jm.rippling.api_url("acme")
+        detail = lambda n: f"https://api.rippling.com/platform/api/ats/v1/board/acme/jobs/{RIPPLING_UUID.format(n)}"
+        row = simplify_row("Acme Robotics", "Software Engineer", url=f"https://ats.rippling.com/acme/jobs/{RIPPLING_UUID.format(1)}")
+        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (2, "Backend Software Engineer", "US"), (3, "ML Engineer", "US"))
+        self.pages[detail(1)] = FakeResponse("", 404)  # (closed since the list was read)
+        self.pages[detail(2)] = FakeResponse("", 404)
+        self.pages[detail(3)] = json.dumps({"createdOn": datetime.now(timezone.utc).isoformat()})
+        self.run_lists(row)
+        self.assertEqual(self.run_lists(row), {"Acme Robotics": ["ML Engineer"]})
+        self.assertIn("caught_up", self.saved_state()[jm.BOARDS_KEY]["known"][jm._registry_key(api)])
+
+    def test_a_rippling_board_whose_dates_cant_be_had_is_caught_up_after_a_few_tries(self):
+        # (its pages answer without a date: Rippling may have changed them; tried again RIPPLING_DATING_TRIES times)
+        api = jm.rippling.api_url("acme")
+        row = simplify_row("Acme Robotics", "Software Engineer", url=f"https://ats.rippling.com/acme/jobs/{RIPPLING_UUID.format(1)}")
+        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (2, "Backend Software Engineer", "US"))
+        for n in (1, 2):
+            self.pages[f"https://api.rippling.com/platform/api/ats/v1/board/acme/jobs/{RIPPLING_UUID.format(n)}"] = json.dumps({"name": "x"})
+        known = lambda: self.saved_state()[jm.BOARDS_KEY]["known"][jm._registry_key(api)]
+        self.run_lists(row)
+        for tries in range(1, jm.RIPPLING_DATING_TRIES):
+            self.assertEqual(self.run_lists(row), {})
+            self.assertEqual((known().get("dating_tries"), "caught_up" in known()), (tries, False))
+        self.assertEqual(self.run_lists(row), {})
+        self.assertEqual((known().get("dating_tries"), "caught_up" in known()), (None, True))
+
+    def test_one_rippling_boards_errors_dont_stop_the_others_dates(self):
+        boards = [jm.rippling.api_url(b) for b in ("acme", "beta", "zeta")]
+        answers = {u: json.loads(rippling_api((1, "Software Engineer", "US"), board=u.split("/")[-2])) for u in boards}
+        asked = []
+        failing = {"acme"}
+
+        def get(url, params=None, timeout=None):
+            asked.append(url)
+            board = url.split("/board/")[1].split("/")[0]
+            if url in answers:
+                get.last_status = 200
+                return answers[url]
+            get.last_status = 500 if board in failing else 200
+            return None if board in failing else {"createdOn": "2026-11-20T00:00:00Z"}
+        for url in boards:
+            jm._RIPPLING_DATING[url] = lambda job: True
+        self.addCleanup(jm._RIPPLING_DATING.clear)
+        jm._RIPPLING_DATING_SPENT[0], jm._RIPPLING_DATING_OFF[0] = 0.0, False
+        jm._RIPPLING_DATING_FAILED.clear()
+        jm._RIPPLING_UNDATED.clear()
+        for url in boards:
+            jm.fetch_rippling_jobs(url, get_json=get)
+        self.assertEqual((jm._RIPPLING_UNDATED, jm._RIPPLING_DATING_OFF[0]), ({boards[0]}, False))
+        # A second board erring too: Rippling's problem, no more dates this run.
+        failing.add("beta")
+        asked.clear()
+        jm._RIPPLING_DATING_FAILED.clear()
+        jm._RIPPLING_UNDATED.clear()
+        for url in boards:
+            jm.fetch_rippling_jobs(url, get_json=get)
+        self.assertEqual((jm._RIPPLING_UNDATED, jm._RIPPLING_DATING_OFF[0]), (set(boards), True))
+        self.assertNotIn("/board/zeta/jobs/", " ".join(u for u in asked if "/platform/api/" in u))
+
+    def test_your_entry_on_a_jibe_site_counts_only_recent_postings_as_new(self):
+        # Only the newest are read: after a passing server error the site is read in its own order, older postings too.
+        api = jm.jibe.api_url(ACME_JIBE)
+        mine = target(name="Acme", url=api, mode="api")
+        self.pages[api] = jibe_api((1001, "Software Engineer", self.now, "US"))
+        self.run_monitor([mine], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)
+        self.pages[api] = FakeResponse("", 502)
+        self.pages[jm.jibe.unsorted_url(ACME_JIBE)] = jibe_api((900, "Backend Software Engineer", self.old, "US"),
+                                                              (1002, "ML Engineer", self.now, "US"), (1001, "Software Engineer", self.now, "US"))
+        with self.assertLogs(jm.log, level="WARNING") as logs:
+            reported = self.run_monitor([mine], email=WORKING_EMAIL, role_filter=REPO_ROLE_FILTER, us_only=True)[1]
+        self.assertEqual(reported, {"Acme": ["ML Engineer"]})
+        self.assertTrue(any("Failed to fetch" in m and "502" in m for m in logs.output))  # (as your entries' reads log)
+        waits = []
+        self.patch(jm.requests, "get", lambda url, params=None, headers=None, timeout=None: (waits.append(timeout), FakeResponse("", 404))[1])
+        self.assertIsNone(jm.fetch_jibe_jobs(api))
+        self.assertEqual(waits, [60])  # (as long as your entries' other reads wait)
+
+    def test_rippling_dating_stops_for_the_run_when_rippling_doesnt_answer(self):
+        boards = [jm.rippling.api_url(b) for b in ("acme", "zeta")]
+        answers = {u: json.loads(rippling_api((1, "Software Engineer", "US"), board=u.split("/")[-2])) for u in boards}
+        asked = []
+
+        def get(url, params=None, timeout=None):
+            asked.append(url)
+            get.last_status = 200 if url in answers else None
+            return answers.get(url)
+        for url in boards:
+            jm._RIPPLING_DATING[url] = lambda job: True
+        self.addCleanup(jm._RIPPLING_DATING.clear)
+        jm._RIPPLING_DATING_SPENT[0], jm._RIPPLING_DATING_OFF[0] = 0.0, False
+        for url in boards:
+            jm.fetch_rippling_jobs(url, get_json=get)
+        self.assertEqual([u for u in asked if "/platform/api/" in u], [jm.rippling.detail_url("acme", "x/" + RIPPLING_UUID.format(1))])
+        self.assertEqual(jm._RIPPLING_UNDATED, set(boards))
+        self.assertTrue(jm._RIPPLING_DATING_OFF[0])
+
+    def test_rippling_datings_time_counts_only_its_own_requests(self):
+        url = jm.rippling.api_url("acme")
+        listing = json.loads(rippling_api(*[(n, "Software Engineer", "US") for n in range(1, 6)]))
+        clock = [1000.0]
+        self.patch(jm.time, "monotonic", lambda: clock[0])
+        self.patch(jm, "RIPPLING_DATING_SECONDS", 5)
+        asked = []
+
+        def get(u, params=None, timeout=None):
+            get.last_status = 200
+            if "/platform/api/" in u:
+                asked.append(u)
+                clock[0] += 3  # (each date takes 3 s)
+                return {"createdOn": "2026-11-20T00:00:00Z"}
+            return listing
+        jm._RIPPLING_DATING[url] = lambda job: True
+        self.addCleanup(jm._RIPPLING_DATING.clear)
+        clock[0] += 500  # (the rest of the run's boards took their time first: it doesn't count)
+        jm._RIPPLING_DATING_SPENT[0], jm._RIPPLING_DATING_OFF[0] = 0.0, False
+        jobs = jm.fetch_rippling_jobs(url, get_json=get)
+        self.assertEqual((len(asked), sum(1 for j in jobs if j.get("posted"))), (2, 2))  # (3 s, 6 s: then the 5 s are up)
+        self.assertIn(url, jm._RIPPLING_UNDATED)
+
+    def test_your_entry_on_a_jibe_site_that_refuses_the_sort_is_read(self):
+        api = jm.jibe.api_url("careers.avispl.com")
+        self.pages[api] = FakeResponse('{"message": "SortBy posted_date desc=false is not supported"}', 503)
+        self.pages[jm.jibe.unsorted_url("careers.avispl.com")] = jibe_api((7, "Software Engineer", self.now, "US"), host="careers.avispl.com")
+        self.assertEqual([j["title"] for j in jm.fetch_jibe_jobs(api)], ["Software Engineer"])
+
+    def test_rippling_dates_have_a_time_limit_per_run(self):
+        api = jm.rippling.api_url("acme")
+        row = simplify_row("Acme Robotics", "Software Engineer", url=f"https://ats.rippling.com/acme/jobs/{RIPPLING_UUID.format(1)}")
+        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (2, "Backend Software Engineer", "US"))
+        self.pages[f"https://api.rippling.com/platform/api/ats/v1/board/acme/jobs/{RIPPLING_UUID.format(2)}"] = \
+            json.dumps({"createdOn": datetime.now(timezone.utc).isoformat()})
+        self.pages[f"https://api.rippling.com/platform/api/ats/v1/board/acme/jobs/{RIPPLING_UUID.format(1)}"] = \
+            json.dumps({"createdOn": "2026-01-01T00:00:00Z"})
+        self.run_lists(row)
+        self.patch(jm, "RIPPLING_DATING_SECONDS", 0)
+        self.requests_made.clear()
+        self.assertEqual(self.run_lists(row), {})  # (no time for dates this run: none asked, not caught up)
+        self.assertFalse([u for u, _ in self.requests_made if "/platform/api/" in u])
+        self.patch(jm, "RIPPLING_DATING_SECONDS", 120)
+        self.assertEqual(self.run_lists(row), {"Acme Robotics": ["Backend Software Engineer"]})
+
+    def test_a_rippling_board_with_a_page_missing_is_not_read(self):
+        api = jm.rippling.api_url("acme")
+        answers = {api: json.loads(rippling_api((1, "Software Engineer", "US"), pages=3)),
+                   jm.rippling.api_url("acme", 1): json.loads(rippling_api((2, "ML Engineer", "US"), pages=3)),
+                   jm.rippling.api_url("acme", 2): json.loads(rippling_api((3, "Data Engineer", "US"), pages=3))}
+        self.assertEqual([j["title"] for j in jm.fetch_rippling_jobs(api, get_json=lambda u, params=None: answers.get(u))],
+                         ["Software Engineer", "ML Engineer", "Data Engineer"])
+        del answers[jm.rippling.api_url("acme", 2)]
+        self.assertIsNone(jm.fetch_rippling_jobs(api, get_json=lambda u, params=None: answers.get(u)))
+        # More pages than are read: not read whole, so not read.
+        huge = {api: json.loads(rippling_api((1, "Software Engineer", "US"), pages=jm.rippling.MAX_PAGES + 1))}
+        self.assertIsNone(jm.fetch_rippling_jobs(api, get_json=lambda u, params=None: huge.get(u, {"items": []})))
+        self.assertIsNone(jm.fetch_rippling_jobs(api, get_json=lambda u, params=None: None))
+
+    def test_a_gem_board_under_companies_is_read(self):
+        api = jm.gem.api_url("nuvo")
+        self.pages[api] = gem_api((1, "Software Engineer", self.now, "San Francisco, United States"),
+                                  (2, "Backend Engineer", self.old, "New York, United States"),
+                                  (3, "ML Engineer", self.now, "Toronto, Canada"),
+                                  (4, "Software Engineer, Platform", self.now, "Remote"))
+        companies = [{"name": "Nuvo", "link": "https://jobs.gem.com/nuvo"}]
+        # Its first check emails what went up in the last 3 days and may be in the US.
+        self.assertEqual(self.run_lists(companies=companies), {"Nuvo": ["Software Engineer", "Software Engineer, Platform"]})
+        self.pages[api] = gem_api((1, "Software Engineer", self.now, "San Francisco, United States"),
+                                  (5, "Data Engineer", self.now, "United States - Remote"))
+        self.assertEqual(self.run_lists(companies=companies), {"Nuvo": ["Data Engineer"]})
+        self.assertIn("1 Gem.", jm.boards_page_path().read_text())
+
+
 def gh_redirect(board, job):
     """Greenhouse's answer about an open job: a redirect naming its board."""
     response = FakeResponse("", 301)
@@ -3078,6 +3668,22 @@ class BoardTests(MonitorTestCase):
         jm.save_state({}, last_email=(datetime.now() - timedelta(hours=3)).isoformat(timespec="seconds"))
         _, reported = self.run_boards(email_every_hours=2)  # boards not due this run
         self.assertEqual(reported, {"Acme": ["Software Engineer"]})
+
+    def test_an_ashby_board_whose_name_has_spaces(self):
+        api = "https://api.ashbyhq.com/posting-api/job-board/Alpaca%20Research"
+        for link in ("https://jobs.ashbyhq.com/Alpaca%20Research/32ea17a8-756d-4873-bd8b-51bd65bac175",
+                     "https://jobs.ashbyhq.com/Alpaca Research", "https://jobs.ashbyhq.com/Alpaca%20Research?utm_source=x"):
+            self.assertEqual(jm.board_api_url(link), ("ashby", api), link)
+        for bad in ("https://jobs.ashbyhq.com/a%2Fb", "https://jobs.ashbyhq.com/", "https://jobs.ashbyhq.com/%3Cx%3E"):
+            self.assertIsNone(jm.board_api_url(bad), bad)
+        self.assertEqual(jm._board_page(api), "https://jobs.ashbyhq.com/Alpaca%20Research")
+        self.pages[api] = json.dumps({"jobs": [{"id": "0e7ecf76-1111-4a2b-9c3d-000000000001", "title": "Software Engineer",
+                                                "jobUrl": "https://jobs.ashbyhq.com/Alpaca%20Research/0e7ecf76-1111-4a2b-9c3d-000000000001",
+                                                "location": "Boise, ID", "isListed": True}]})
+        self.assertEqual([j["title"] for j in jm.fetch_ashby_api_jobs(api)], ["Software Engineer"])
+        known = {}
+        jm.grow_board_registry(known, [("https://jobs.ashbyhq.com/Alpaca%20Research/x", "Alpaca Research")], "a list", "2026-11-21")
+        self.assertEqual([(i["name"], i["url"]) for i in known.values()], [("Alpaca Research", api)])
 
     def test_boards_from_the_config_and_from_lists_used_only_to_find_companies(self):
         self.pages[INTERNSHIPS_URL] = json.dumps([
