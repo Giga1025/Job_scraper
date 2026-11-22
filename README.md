@@ -194,10 +194,12 @@ Three more platforms are read the same way (Nov 2026):
   Every such site serves one public JSON API at its root; the newest 100 postings are read each
   hour, and the next 100 too while they're from the last 3 days (a site posting a hundred a day)
   or, after an outage, from before the site's last good read, with every place's country (by its
-  name: some codes are wrong) and the posting date; `boards/jibe.py`. A site whose API can't list
-  newest first (AVI-SPL refuses the sort, Bowman ignores it) is read in its own order, up to 500
-  postings. Since only the newest are read, a posting seen for the first time is new only if it
-  went up in the last 7 days, or since the site's last good read (an older one moves up into the
+  name: some codes are wrong) and the posting date; `boards/jibe.py`. A site whose API ignores the
+  sort and lists oldest first (Bowman) has its last pages read; one whose API refuses the sort
+  (AVI-SPL) is read in its own order, up to 500 postings. A site's saved ETag (which lets an
+  unchanged site answer "not modified") is used only once it's known to list newest first. Since
+  only the newest are read, a posting seen for the first time is new only if it
+  went up in the last 7 days, or since the company's last good read (an older one moves up into the
   newest when newer ones close); when it went up is the later of its posting date and the day it
   reached the site. The link emailed is always the site's own: some sites name another domain for
   their postings where they aren't found (H-E-B's name careers.hrblock.com). A site is one iCIMS
@@ -212,8 +214,10 @@ Three more platforms are read the same way (Nov 2026):
   read yet (see `TODO.md`).
 - **Rippling** (`ats.rippling.com/<board>/jobs`: about 180 boards in the lists, like Boom
   Supersonic and Foundation Robotics), read whole each hour; `boards/rippling.py`. Rippling's
-  list gives no posting dates, so at a board's first check the jobs its filters keep get their
-  date from their own page, and the ones from the last 3 days are emailed. A read missing a page
+  list gives no posting dates, so at a board's first check the jobs the email would keep (a few
+  per board) get their date from their own page, and the ones from the last 3 days are emailed;
+  if a page can't be read, or the run's 2 minutes for dates are up, the board is dated again next
+  run. A read missing a page
   counts as failed (a job missing from it would be forgotten, then emailed again).
 - **Gem** (`jobs.gem.com/<board>`: Nuvo, Casap, 43North's portfolio companies), read whole each
   hour, with the posting dates; `boards/gem.py`.

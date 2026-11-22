@@ -1079,15 +1079,23 @@ def fetch_jibe_jobs(url: str, get_json=None) -> list[dict] | None:
     return None if jobs is None else _dedupe_jobs(jobs)
 
 
-# Rippling boards being caught up this run (their first check): url -> which titles need a date (set by run())
+# Rippling boards being caught up this run (their first check): url -> which jobs need a date (set by run()),
+# the time (time.monotonic()) after which no more dates are asked this run, and the boards whose dates
+# couldn't all be had (not caught up: dated again next run)
 _RIPPLING_DATING: dict = {}
+_RIPPLING_DATING_UNTIL = [0.0]
+_RIPPLING_UNDATED: set = set()
+RIPPLING_DATING_SECONDS = 120
+RIPPLING_DETAIL_TIMEOUT = 10
 
 
 def fetch_rippling_jobs(url: str, get_json=None) -> list[dict] | None:
     """https://ats.rippling.com/api/v2/board/<board>/jobs?... : a Rippling board, whole (boards/rippling.py).
-    The list gives no dates: at a board's first check (_RIPPLING_DATING), each posting the board's
-    filters would keep gets its own date from its page, so the catch-up can email the recent ones."""
-    get_json = get_json or (lambda u, params=None: _get_json(u, params))
+    The list gives no dates: at a board's first check (_RIPPLING_DATING), each posting the email would
+    keep gets its own date from its page, so the catch-up can email the recent ones; if a page can't be
+    read, or the run's time for dates (RIPPLING_DATING_SECONDS) is up, the board isn't caught up yet
+    (_RIPPLING_UNDATED) and is dated again next run."""
+    get_json = get_json or (lambda u, params=None, timeout=60: _get_json(u, params, timeout))
     board = rippling.board_of(url)
     data = get_json(url) if board else None
     if not isinstance(data, dict):
@@ -1102,10 +1110,16 @@ def fetch_rippling_jobs(url: str, get_json=None) -> list[dict] | None:
             return None  # (not the whole board: a job missing from a part read would be forgotten, then emailed again)
         jobs += rippling.jobs_from(more)[0]
     wanted = _RIPPLING_DATING.get(url)
-    for job in [j for j in jobs if wanted and wanted(j)][:rippling.MAX_DATED]:
-        posted = rippling.created_on(get_json(rippling.detail_url(board, job["url"])))
-        if posted:
-            job["posted"] = posted
+    to_date = [j for j in jobs if wanted and wanted(j)][:rippling.MAX_DATED]
+    for n, job in enumerate(to_date):
+        posted = None
+        if time.monotonic() < _RIPPLING_DATING_UNTIL[0]:
+            posted = rippling.created_on(get_json(rippling.detail_url(board, job["url"]), timeout=RIPPLING_DETAIL_TIMEOUT))
+        if not posted:
+            _RIPPLING_UNDATED.add(url)
+            log.info(f"  [rippling] {board}: dates for {n} of {len(to_date)} roles; the rest next run")
+            break
+        job["posted"] = posted
     return _dedupe_jobs(jobs)
 
 
@@ -1851,12 +1865,14 @@ def plan_boards(entry: dict, targets: list[dict], state: dict, meta: dict, due: 
 
     workday_rules = {"_new_within_days": workday.NEW_WITHIN_DAYS, "_retention": workday.RETENTION,
                      "_retention_reported": workday.REPORTED_RETENTION}
+    last_reads = jibe.last_reads(known)  # (the latest good read of each company's Jibe sites)
+
     def jibe_rules(info):
         """Only a Jibe site's newest are read: a posting seen for the first time is new if it went up in the last
         week, or since the day before the site's last good read (after an outage). The company's other sites
         skipped for this one ("_twins") are its own for the queue and for _drop_repeats."""
         days = float(jibe.NEW_WITHIN_DAYS)
-        read_at = jibe._when(info.get("read_at"))
+        read_at = last_reads.get(urlparse(info["url"]).netloc.lower())
         if read_at:
             days = max(days, (datetime.now(timezone.utc) - read_at).total_seconds() / 86400 + 1)
         client = info.get("client")
@@ -3420,6 +3436,8 @@ def run(config_override: str | None = None) -> bool:
 def _run(config_override: str | None, reader: "workday.Reader") -> bool:
     config = ensure_config(config_override)
     _LIST_WORKABLE_LINKS.clear()
+    _RIPPLING_DATING.clear()
+    _RIPPLING_UNDATED.clear()
     state = load_state()
     loaded_state = copy.deepcopy(state)
     keywords = config.get("keyword_filters", [])
@@ -3478,11 +3496,18 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
         log.info(f"Checking {len(to_fetch)} of {sum(1 for b in board_targets if _board_platform(b['url']) != 'workday')} company job boards"
                  f"{'' if boards_now else ' (new ones, or catching up)'}...")
         catching_up = {b["url"] for b in to_fetch if b["_catch_up_since"]}
-        _RIPPLING_DATING.clear()
-        _RIPPLING_DATING.update({b["url"]: (lambda job, b=b: _title_wanted(b, job, role_patterns)) for b in to_fetch
-                                 if b["_catch_up_since"] and _board_platform(b["url"]) == "rippling"})
+        # (a new Rippling board's jobs the email would keep get their dates: fetch_rippling_jobs)
+        _RIPPLING_DATING_UNTIL[0] = time.monotonic() + RIPPLING_DATING_SECONDS
+        _RIPPLING_DATING.update({b["url"]: (lambda job, b=b: _title_wanted(b, job, role_patterns)
+                                            and not (b.get("us_only", us_only) and is_outside_us(job))
+                                            and bool(split_new_jobs([job], b.get("keyword_filters", keywords), role_patterns)[0]))
+                                 for b in to_fetch if b["_catch_up_since"] and _board_platform(b["url"]) == "rippling"})
+        # (a Jibe site's ETag only once it's known to list newest first: boards/jibe.py, etag_ok)
+        unverified = {i["url"] for i in board_meta["known"].values() if isinstance(i, dict)
+                      and _board_platform(i.get("url", "")) == "jibe" and not jibe.etag_ok(i)}
         fetched.update(fetch_boards(to_fetch, {u: e for u, e in board_meta["etags"].items()
-                                               if u in state and u not in catching_up}))
+                                               if u in state and u not in catching_up and u not in unverified}))
+        _RIPPLING_DATING.clear()
         try:
             jibe.learn(board_meta["known"], fetched)  # (a Jibe site read for the first time: its client and portals)
         except Exception:
@@ -3561,7 +3586,8 @@ def _run(config_override: str | None, reader: "workday.Reader") -> bool:
                 board_meta["etags"][url] = etag
             else:
                 board_meta["etags"].pop(url, None)
-            if target.get("_catch_up_since") and target.get("_board_key") in board_meta["known"]:
+            if target.get("_catch_up_since") and target.get("_board_key") in board_meta["known"] \
+                    and url not in _RIPPLING_UNDATED:  # (a Rippling board whose dates couldn't all be had: again next run)
                 board_meta["known"][target["_board_key"]]["caught_up"] = datetime.now().date().isoformat()
         if workday_entry:
             # A posting a new-grad list (or a company job board), or this entry under an earlier link (Workday

@@ -2603,6 +2603,37 @@ class JibeRipplingGemBoardTests(MonitorTestCase):
         self.assertEqual(jm.plan_boards({"platforms": ["jibe"]}, [], {}, meta, False)[0]["_new_within_days"], jm.jibe.NEW_WITHIN_DAYS)
         info["read_at"] = (datetime.now(timezone.utc) - timedelta(days=10)).isoformat(timespec="seconds")
         self.assertAlmostEqual(jm.plan_boards({"platforms": ["jibe"]}, [], {}, meta, False)[0]["_new_within_days"], 11, places=2)
+        # A company's other site, skipped while this one was read, hasn't been down: the company's last good read counts.
+        jm.grow_board_registry(meta["known"], [(jibe_link(6, "acme.jibeapply.com"), "Acme")], "a list", "2026-11-21")
+        twin = meta["known"][jm._registry_key(jm.jibe.api_url("acme.jibeapply.com"))]
+        # (it was read an hour ago, then failed: this one, last read 10 days ago, is read now)
+        twin.update(client="acme", last_read="failed", read_at=(datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(timespec="seconds"))
+        info.update(client="acme", last_read="ok")
+        self.assertEqual([(b["url"], b["_new_within_days"]) for b in jm.plan_boards({"platforms": ["jibe"]}, [], {}, meta, False)],
+                         [(ACME_JIBE_API, jm.jibe.NEW_WITHIN_DAYS)])
+
+    def test_a_jibe_sites_etag_is_used_once_it_is_known_to_list_newest_first(self):
+        etags_sent = []
+        real = jm.fetch_boards
+        self.patch(jm, "fetch_boards", lambda boards, etags: (etags_sent.append(dict(etags)), real(boards, etags))[1])
+        row = simplify_row("Acme", "Software Engineer I", url=jibe_link(999))
+        page = FakeResponse(jibe_api((1001, "Software Engineer", self.now, "US"), (1000, "Data Engineer", self.old, "US")))
+        page.headers["ETag"] = 'W/"one"'
+        self.pages[ACME_JIBE_API] = page
+        self.run_lists(row)
+        self.run_lists(row)  # (its first check: no ETag yet)
+        meta = self.saved_state()[jm.BOARDS_KEY]
+        self.assertEqual((meta["etags"].get(ACME_JIBE_API), meta["known"][jm._registry_key(ACME_JIBE_API)]["order"]),
+                         ('W/"one"', "newest first"))
+        self.run_lists(row)
+        self.assertEqual(etags_sent[-1].get(ACME_JIBE_API), 'W/"one"')
+        # A site saved with an ETag before its order was known (an older version's): not sent until it's read in full.
+        meta = self.saved_state()[jm.BOARDS_KEY]
+        del meta["known"][jm._registry_key(ACME_JIBE_API)]["order"]
+        meta["checked_at"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+        jm.save_state({}, boards=meta)
+        self.run_lists(row)
+        self.assertNotIn(ACME_JIBE_API, etags_sent[-1])
 
     def test_a_dead_site_gives_way_to_the_companys_other_site(self):
         other = jm.jibe.api_url("acme.jibeapply.com")  # (the first by key)
@@ -2670,12 +2701,12 @@ class JibeRipplingGemBoardTests(MonitorTestCase):
         self.assertEqual((status, len(jobs), etag), ("ok", 100, 'W/"p1"'))
         self.assertEqual(sent, [(ACME_JIBE_API, 'W/"old"'), (jm.jibe.api_url(ACME_JIBE, 2), None)])  # (the ETag is the first page's)
         # The first page's answer is the board's: unchanged, or not found.
-        for code, outcome, asked in ((304, "unchanged", 1), (404, "missing", 2), (500, "failed", 2)):
+        for code, outcome, asked in ((304, "unchanged", 1), (404, "missing", 1), (500, "failed", 2)):
             sent.clear()
             self.patch(jm.requests, "get", lambda url, params=None, headers=None, timeout=None, code=code:
                        (sent.append(url), FakeResponse("", code))[1])
             self.assertEqual(jm.fetch_boards([{"url": ACME_JIBE_API, "name": "Acme"}], {})[ACME_JIBE_API][0], outcome, code)
-            self.assertEqual(len(sent), asked, code)  # (unchanged: nothing more asked; else its own order is tried too)
+            self.assertEqual(len(sent), asked, code)  # (a server error: the sort may be refused, so its own order is tried too)
 
     def test_a_rippling_board_is_read_whole_and_its_new_roles_emailed(self):
         api = jm.rippling.api_url("acme")
@@ -2695,20 +2726,48 @@ class JibeRipplingGemBoardTests(MonitorTestCase):
         api = jm.rippling.api_url("acme")
         detail = lambda n: f"https://api.rippling.com/platform/api/ats/v1/board/acme/jobs/{RIPPLING_UUID.format(n)}"
         row = simplify_row("Acme Robotics", "Software Engineer", url=f"https://ats.rippling.com/acme/jobs/{RIPPLING_UUID.format(1)}")
-        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (2, "Backend Software Engineer", "US"),
+        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (6, "Software Engineer II", "GB"),
+                                       (7, "Senior Staff Software Engineer", "US"), (2, "Backend Software Engineer", "US"),
                                        (3, "ML Engineer", "US"), (4, "Office Manager", "US"))
+        recent = json.dumps({"createdOn": datetime.now(timezone.utc).isoformat()})
         self.pages[detail(1)] = json.dumps({"createdOn": "2026-03-31T17:37:26.093000-07:00"})
-        self.pages[detail(2)] = json.dumps({"createdOn": datetime.now(timezone.utc).isoformat()})
-        self.pages[detail(3)] = FakeResponse("", 404)  # (its page couldn't be read: no date, so not emailed)
+        self.pages[detail(2)] = FakeResponse("", 404)  # (its page can't be read this time)
+        self.pages[detail(3)] = recent
         self.run_lists(row)
         self.requests_made.clear()
-        self.assertEqual(self.run_lists(row), {"Acme Robotics": ["Backend Software Engineer"]})
-        self.assertEqual(sorted(u for u, _ in self.requests_made if "/platform/api/" in u), [detail(1), detail(2), detail(3)])
-        # (only at the first check: from then on a job not seen before is new)
+        self.assertEqual(self.run_lists(row), {})
+        # Only the jobs the email would keep are dated (not one abroad, a senior one or the office manager); dating
+        # stops at the first that fails, and the board isn't caught up: dated again next run.
+        dated = lambda: [u for u, _ in self.requests_made if "/platform/api/" in u]
+        self.assertEqual(dated(), [detail(1), detail(2)])
+        known = lambda: self.saved_state()[jm.BOARDS_KEY]["known"][jm._registry_key(api)]
+        self.assertNotIn("caught_up", known())
+        self.requests_made.clear()
+        self.pages[detail(2)] = recent
+        self.assertEqual(self.run_lists(row), {"Acme Robotics": ["Backend Software Engineer", "ML Engineer"]})
+        self.assertEqual(dated(), [detail(1), detail(2), detail(3)])
+        self.assertIn("caught_up", known())
+        # (from then on a job not seen before is new, without dates)
         self.requests_made.clear()
         self.pages[api] = rippling_api((1, "Software Engineer", "US"), (2, "Backend Software Engineer", "US"), (5, "Data Engineer", "US"))
         self.assertEqual(self.run_lists(row), {"Acme Robotics": ["Data Engineer"]})
+        self.assertFalse(dated())
+
+    def test_rippling_dates_have_a_time_limit_per_run(self):
+        api = jm.rippling.api_url("acme")
+        row = simplify_row("Acme Robotics", "Software Engineer", url=f"https://ats.rippling.com/acme/jobs/{RIPPLING_UUID.format(1)}")
+        self.pages[api] = rippling_api((1, "Software Engineer", "US"), (2, "Backend Software Engineer", "US"))
+        self.pages[f"https://api.rippling.com/platform/api/ats/v1/board/acme/jobs/{RIPPLING_UUID.format(2)}"] = \
+            json.dumps({"createdOn": datetime.now(timezone.utc).isoformat()})
+        self.pages[f"https://api.rippling.com/platform/api/ats/v1/board/acme/jobs/{RIPPLING_UUID.format(1)}"] = \
+            json.dumps({"createdOn": "2026-01-01T00:00:00Z"})
+        self.run_lists(row)
+        self.patch(jm, "RIPPLING_DATING_SECONDS", 0)
+        self.requests_made.clear()
+        self.assertEqual(self.run_lists(row), {})  # (no time for dates this run: none asked, not caught up)
         self.assertFalse([u for u, _ in self.requests_made if "/platform/api/" in u])
+        self.patch(jm, "RIPPLING_DATING_SECONDS", 120)
+        self.assertEqual(self.run_lists(row), {"Acme Robotics": ["Backend Software Engineer"]})
 
     def test_a_rippling_board_with_a_page_missing_is_not_read(self):
         api = jm.rippling.api_url("acme")

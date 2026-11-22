@@ -7,9 +7,10 @@ page, newest first (sortBy=posted_date), with the title, the iCIMS job id, every
 and the posting date (read_site). Only the newest are read (a big company lists thousands): the
 first page, and the next while the last posting on a page went up in the last DEEP_DAYS days (a
 site that posts a hundred a day, like Schneider Electric's), or since a day before the site's last
-good read (after an outage), up to MAX_PAGES. A site that can't give its newest first (AVI-SPL's
-API refuses the sort; Bowman's ignores it, oldest first) is read in its own order instead, up to
-MAX_PAGES pages (all of a site with up to MAX_PAGES * LIMIT postings).
+good read of the company's sites (after an outage), up to MAX_PAGES. A site whose API ignores the
+sort and lists oldest first (Bowman) has its last pages read, newest first; one whose API refuses
+the sort (AVI-SPL answers 503) is read in its own order, up to MAX_PAGES pages. A site's saved
+ETag is only used once a read has seen it list newest first (etag_ok).
 
 So a posting missing from a read may still be open; it isn't forgotten for that
 (job_monitor.FORGET_GONE_PLATFORMS). And a posting seen for the first time is new only if it went
@@ -56,9 +57,8 @@ _US_PLACES = {"united states", "united states of america", "usa", "us", "puerto 
 _CLIENTS: dict[str, str] = {}
 _SITES: set[str] = set()  # the hosts of the Jibe sites in the registry (their links needn't say icims=1)
 _ALIASES: set[str] = set()  # other domains a site names for its postings (keys only: not sites to read)
-_UNSORTED: set[str] = set()  # sites read in their own order (their API can't give newest first)
-_READ_AT: dict[str, datetime] = {}  # host -> the site's last good read
-_FOUND_UNSORTED: set[str] = set()  # sites found this run to list oldest first (learn() notes them)
+_READ_AT: dict[str, datetime] = {}  # host -> the last good read of any of its client's sites
+_ORDER: dict[str, str] = {}  # host -> the order this run's read found ("newest first", "oldest first"; learn() notes it)
 
 
 def _parse(link):
@@ -134,30 +134,61 @@ def _oldest_first(jobs: list[dict]) -> bool:
 
 def read_site(host: str, get_json) -> list[dict] | None:
     """A site's newest postings (see the module's notes), or None if it couldn't be read (or, when
-    get_json says so with last_status 304, it hasn't changed)."""
-    unsorted = host in _UNSORTED
-    data = get_json(unsorted_url(host) if unsorted else api_url(host))
-    if data is None and getattr(get_json, "last_status", None) == 304:
-        return None
+    get_json says so with last_status 304, it hasn't changed). get_json's last_status, when it has
+    one, is the HTTP status of its last request (None: no answer)."""
+    data = get_json(api_url(host))
+    status = getattr(get_json, "last_status", None)
     jobs = jobs_from(data, host) if _usable(data) else None
-    if not unsorted and (jobs is None or _oldest_first(jobs)):
-        if jobs is not None:
-            _FOUND_UNSORTED.add(host)  # (Bowman: the sort is ignored; from now on read in the site's own order)
-        unsorted = True  # (AVI-SPL: the sort is refused, every time)
-        data = get_json(unsorted_url(host))
-        jobs = jobs_from(data, host) if _usable(data) else None
     if jobs is None:
-        return None
+        # (an HTTP error other than "not found" or a throttle: the sort may be refused, as AVI-SPL's 503; no
+        # answer at all, a timeout, isn't asked again; nor is "unchanged", a 304)
+        return _own_order(host, get_json) if isinstance(status, int) and status not in (304, 403, 404, 429) else None
     since = datetime.now(timezone.utc) - timedelta(days=DEEP_DAYS)
     if host in _READ_AT:
         since = min(since, _READ_AT[host] - timedelta(days=1))  # (after an outage: back to the last good read)
+    if _oldest_first(jobs):
+        _ORDER[host] = "oldest first"
+        return jobs + _newest_from_the_end(host, get_json, data, since)
+    _ORDER[host] = "newest first"
     page = 1
-    while page < MAX_PAGES and len(data["jobs"]) >= LIMIT and (unsorted or read_further(jobs, len(data["jobs"]), since)):
+    while page < MAX_PAGES and read_further(jobs, len(data["jobs"]), since):
         page += 1
-        data = get_json((unsorted_url if unsorted else api_url)(host, page))
+        data = get_json(api_url(host, page))
         if not _usable(data):
             break  # (what was read stands: a Jibe site's postings aren't forgotten for missing from a read)
         jobs += jobs_from(data, host)
+    return jobs
+
+
+def _newest_from_the_end(host: str, get_json, first: dict, since: datetime) -> list[dict]:
+    """For a site listing oldest first (Bowman): its last pages, newest last, back to `since`, up
+    to MAX_PAGES - 1 of them (page 1, the oldest, is read already)."""
+    try:
+        last = -(-int(first.get("totalCount") or 0) // LIMIT)
+    except (TypeError, ValueError):
+        last = 0
+    jobs: list[dict] = []
+    for page in list(range(last, 1, -1))[:MAX_PAGES - 1]:
+        data = get_json(api_url(host, page))
+        if not _usable(data):
+            break
+        found = jobs_from(data, host)
+        jobs += found
+        oldest = _when(found[0].get("listed")) if found else None
+        if not oldest or oldest < since:
+            break
+    return jobs
+
+
+def _own_order(host: str, get_json) -> list[dict] | None:
+    """A site whose API refuses the sort (AVI-SPL), read in its own order: up to MAX_PAGES pages."""
+    jobs, page, data = None, 0, {"jobs": [None] * LIMIT}
+    while page < MAX_PAGES and len(data["jobs"]) >= LIMIT:
+        page += 1
+        data = get_json(unsorted_url(host, page))
+        if not _usable(data):
+            break
+        jobs = (jobs or []) + jobs_from(data, host)
     return jobs
 
 
@@ -201,7 +232,7 @@ def learn(known: dict, fetched: dict | None = None):
     """Note in the registry (known: {board key: info}), from this run's reads (fetched: {api url:
     (status, jobs, etag)}), each Jibe site's client, the classic portals its postings apply on, the
     other domains it names for them, whether its last read worked ("last_read", for same_client)
-    and when its last good read was ("read_at"), and whether it lists oldest first ("unsorted");
+    and when its last good read was ("read_at"), and the order its API lists in ("order");
     and load all of it for job_key() and read_site()."""
     now = datetime.now(timezone.utc)
     by_url = {info.get("url"): info for info in known.values() if isinstance(info, dict) and isinstance(info.get("url"), str)}
@@ -217,8 +248,9 @@ def learn(known: dict, fetched: dict | None = None):
         if status != "ok":
             continue
         host = _host(_parse(url))
-        if host in _FOUND_UNSORTED:
-            info["unsorted"] = True
+        if host in _ORDER:
+            info["order"] = _ORDER[host]
+        info.pop("unsorted", None)
         client = client_of(url, jobs)
         if client:
             info["client"] = client
@@ -231,22 +263,18 @@ def learn(known: dict, fetched: dict | None = None):
             info["aliases"] = sorted(aliases)[:10]
         else:
             info.pop("aliases", None)
-    _FOUND_UNSORTED.clear()
+    _ORDER.clear()
     _CLIENTS.clear()
     _SITES.clear()
     _ALIASES.clear()
-    _UNSORTED.clear()
     _READ_AT.clear()
+    _READ_AT.update(last_reads(known))
     _SITES.update(site_hosts)
     for info in sites:
         host = _host(_parse(info["url"]))
         who = str(info["client"]) if info.get("client") else host
         if info.get("client"):
             _CLIENTS[host] = who
-        if info.get("unsorted") is True:
-            _UNSORTED.add(host)
-        if _when(info.get("read_at")):
-            _READ_AT[host] = _when(info["read_at"])
         for portal in _strings(info.get("portals")):
             _CLIENTS.setdefault(portal, who)
         for alias in addresses(info, site_hosts) - {host} - set(_strings(info.get("portals"))):
@@ -259,6 +287,27 @@ def addresses(info: dict, site_hosts) -> set[str]:
     domains it names (not one that is another site in the registry: site_hosts)."""
     host = _host(_parse(info.get("url")))
     return {host} | set(_strings(info.get("portals"))) | (set(_strings(info.get("aliases"))) - set(site_hosts))
+
+
+def last_reads(known: dict) -> dict[str, datetime]:
+    """host -> the latest good read ("read_at") of the site or of another site of its client: a
+    company's second address, skipped for weeks while the first was read, hasn't been down."""
+    sites = [i for i in known.values() if isinstance(i, dict) and is_api_url(i.get("url"))]
+    latest: dict[str, datetime] = {}
+    for info in sites:
+        when, who = _when(info.get("read_at")), str(info.get("client") or _host(_parse(info["url"])))
+        if when and (who not in latest or when > latest[who]):
+            latest[who] = when
+    return {_host(_parse(i["url"])): latest[w] for i in sites
+            for w in [str(i.get("client") or _host(_parse(i["url"])))] if w in latest}
+
+
+def etag_ok(info) -> bool:
+    """Whether a site's saved ETag may be sent: only once a read has seen it list newest first
+    ("order"). A site listing oldest first (Bowman) keeps the same first page while new postings
+    go up at the end, so its ETag would answer "unchanged" for ever; one whose API refuses the sort
+    (AVI-SPL) is read in full every time."""
+    return isinstance(info, dict) and info.get("order") == "newest first"
 
 
 def same_client(known: dict, skipped=frozenset(), missing=frozenset()) -> set[str]:
@@ -298,6 +347,15 @@ def _country(place: dict) -> str | None:
     return "United States" if name.lower() in _US_PLACES else name or None
 
 
+def _place_text(text: str, place: dict) -> str:
+    """A place's text for the US filter: with its location_name too when it doesn't name its country
+    (AVI-SPL's "Farnborough" is "United Kingdom" there)."""
+    text, name = text.strip(), str(place.get("location_name") or "").strip()
+    if not place.get("country") and name and name.lower() not in text.lower():
+        text = f"{text}, {name}" if text else name
+    return text
+
+
 def jobs_from(data, host: str) -> list[dict]:
     """The postings in an API answer: title, link (the site's own page), places and their
     countries (the main one and every other: none if a place doesn't name its country, so the US
@@ -322,9 +380,8 @@ def jobs_from(data, host: str) -> list[dict]:
             continue
         others = [o for o in job.get("additional_locations") or [] if isinstance(o, dict)]
         countries = [_country(p) for p in [job] + others]
-        places = [str(job.get("full_location") or job.get("short_location") or "").strip()] + [
-            ", ".join(str(o[k]).strip() for k in ("city", "state", "country") if o.get(k)) or str(o.get("location_name") or "").strip()
-            for o in others]
+        places = [_place_text(str(job.get("full_location") or job.get("short_location") or ""), job)] + [
+            _place_text(", ".join(str(o[k]).strip() for k in ("city", "state", "country") if o.get(k)), o) for o in others]
         apply_host = _host(_parse(job.get("apply_url")))
         named_path = (_parse(canonical).path.rstrip("/") or "/") if named else ""
         out = {"title": str(job["title"]).strip()[:200], "url": url,
